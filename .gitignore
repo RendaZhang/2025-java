@@ -1,0 +1,38 @@
+# Java specific
+*.class
+*.jar
+*.war
+*.ear
+
+# Maven
+target/
+*.log
+pom.xml.versionsBackup
+pom.xml.lock
+
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# Eclipse
+*.classpath
+*.project
+*.settings/
+
+# NetBeans
+nbproject/
+
+# VS Code
+.vscode/
+
+# MacOS specific
+.DS_Store
+
+# Windows specific
+Thumbs.db
+
+# Log files
+*.log
+
