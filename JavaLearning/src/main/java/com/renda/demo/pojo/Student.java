@@ -1,4 +1,4 @@
-package com.renda.demo;
+package com.renda.demo.pojo;
 
 public class Student implements Person{
     private String name;

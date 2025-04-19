@@ -1,4 +1,4 @@
-package com.renda.demo;
+package com.renda.demo.pojo;
 
 public interface Person {
 
