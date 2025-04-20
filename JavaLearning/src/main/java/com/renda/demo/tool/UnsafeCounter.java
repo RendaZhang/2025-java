@@ -1,6 +1,6 @@
 package com.renda.demo.tool;
 
-public class UnsafeCounter {
+public class UnsafeCounter implements CounterInterface {
 
     int counter = 0;
 
