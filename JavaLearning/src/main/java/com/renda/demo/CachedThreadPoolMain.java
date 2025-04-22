@@ -7,11 +7,12 @@ import java.util.concurrent.Executors;
 
 public class CachedThreadPoolMain {
     public static void main(String[] args) {
-        ExecutorService executor = Executors.newCachedThreadPool();
-        for (int i = 0; i < 10; i++) {
-            executor.submit(new RendaRunnable(i));
+        try (ExecutorService executor = Executors.newCachedThreadPool()) {
+            for (int i = 0; i < 10; i++) {
+                executor.submit(new RendaRunnable(i));
+            }
+            executor.shutdown();
         }
-        executor.shutdown();
     }
 }
 
