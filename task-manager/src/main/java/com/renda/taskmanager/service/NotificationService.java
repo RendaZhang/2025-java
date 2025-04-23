@@ -2,7 +2,7 @@ package com.renda.taskmanager.service;
 
 import org.springframework.stereotype.Service;
 
-@Service
+//@Service
 public class NotificationService {
 
     public void sendNotification(String message) {

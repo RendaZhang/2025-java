@@ -4,7 +4,7 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import org.springframework.stereotype.Service;
 
-@Service
+//@Service
 public class LifecycleDemoService {
 
     @PostConstruct

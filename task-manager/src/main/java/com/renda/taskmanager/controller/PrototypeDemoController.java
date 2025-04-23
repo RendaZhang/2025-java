@@ -4,7 +4,7 @@ import com.renda.taskmanager.service.PrototypeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
-@Controller
+//@Controller
 public class PrototypeDemoController {
 
     private final PrototypeService prototypeService1;
