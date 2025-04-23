@@ -1,0 +1,66 @@
+今天我将按照以下学习计划进行学习。请充当我的老师，并指导我一步步完成每个学习环节。在我执行每个步骤时，如果有任何问题或疑问，请帮助我解决，并在我理解并完成当前步骤后，指导我进入下一个步骤。请确保每次只给我当前步骤的内容，等我完成后再继续给我下一步内容。
+
+---
+
+我已经成功在我的win11电脑的WSL的Ubuntu中使用MySQL服务并且使用IDEA配置了数据库连接并且按照要求使用Spring Initializr创建了一个SpringBoot项目，我稍微改进了一下项目的名字。如下是这个项目的目录结构。
+目前这个springboot项目顺利启动，日志无异常；已确认三种依赖注入方式均可正常工作；已验证@Scope("prototype")作用域，每次获取Bean实例时都是不同实例；已观察生命周期方法的输出，已经明确理解Bean生命周期。
+
+---
+
+项目目录结构
+
+D:\2025-JAVA\TASK-MANAGER
+├─src
+│  ├─main
+│  │  ├─java
+│  │  │  └─com
+│  │  │      └─renda
+│  │  │          └─taskmanager
+│  │  │              ├─aspect
+│  │  │              ├─config
+│  │  │              ├─controller
+│  │  │              ├─entity
+│  │  │              ├─repository
+│  │  │              ├─service
+│  │  │              │   ├─NotificationService.java
+│  │  │              │   └─UserService.java
+│  │  │              └─TaskManagerApplication.java
+│  │  └─resources
+│  │      ├─static
+│  │      ├─templates
+│  │      └─application.yml
+│  └─test
+│      └─java
+│          └─com
+│              └─renda
+│                  └─taskmanager
+│                      └─TaskManagerApplicationTests.java
+├─Dockerfile
+├─pom.xml
+└─README.md
+
+---
+
+项目元数据：
+
+Project：Maven
+
+Language：Java
+
+Spring Boot：3.4.4
+
+Group：com.renda
+
+Artifact：task-manager
+
+Name：task-manager
+
+Package name：com.renda.taskmanager
+
+Packaging：Jar
+
+Java：21
+
+---
+
+**请指导我从第一步开始，并在我完成每一部分后，再给我下一个步骤。如果有问题，我会及时向你求助。**
