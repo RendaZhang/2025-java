@@ -1,13 +1,22 @@
 package com.renda.taskmanager.aspect;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+
+import java.util.Arrays;
 
 @Aspect
 @Component
 public class LoggingAspect {
+
+    private static final Logger logger = LoggerFactory.getLogger(LoggingAspect.class);
 
     /**
      * Define a pointcut to match all methods in the service package
@@ -17,11 +26,18 @@ public class LoggingAspect {
     }
 
     /**
+     * Define a pointcut to match all methods in the controller package
+     */
+    @Pointcut("execution(* com.renda.taskmanager.controller.*.*(..))")
+    public void controllerMethods() {
+    }
+
+    /**
      * Before Advice
      */
     @Before("serviceMethods()")
     public void beforeAdvice(JoinPoint joinPoint) {
-        System.out.println("[Before Advice] Starting Method: " + joinPoint.getSignature().getName());
+        logger.info("[Before Advice] Starting Method: {}", joinPoint.getSignature().getName());
     }
 
     /**
@@ -29,7 +45,7 @@ public class LoggingAspect {
      */
     @After("serviceMethods()")
     public void afterAdvice(JoinPoint joinPoint) {
-        System.out.println("[After Advice] Completed Method: " + joinPoint.getSignature().getName());
+        logger.info("[After Advice] Completed Method: {}", joinPoint.getSignature().getName());
     }
 
     /**
@@ -37,8 +53,8 @@ public class LoggingAspect {
      */
     @AfterReturning(value = "serviceMethods()", returning = "result")
     public void afterReturningAdvice(JoinPoint joinPoint, Object result) {
-        System.out.println("[After Returning Advice] Method: " + joinPoint.getSignature().getName()
-                + ", Return Value: " + result);
+        logger.info("[After Returning Advice] Method: {}, Return Value: {}",
+                joinPoint.getSignature().getName(), result);
     }
 
     /**
@@ -46,8 +62,8 @@ public class LoggingAspect {
      */
     @AfterThrowing(value = "serviceMethods()", throwing = "ex")
     public void afterThrowingAdvice(JoinPoint joinPoint, Exception ex) {
-        System.out.println("[After Throwing Advice] Method: " + joinPoint.getSignature().getName()
-                + " threw an exception: " + ex.getMessage());
+        logger.info("[After Throwing Advice] Method: {} threw an exception: {}",
+                joinPoint.getSignature().getName(), ex.getMessage());
     }
 
     /**
@@ -58,9 +74,32 @@ public class LoggingAspect {
         long startTime = System.currentTimeMillis();
         Object result = joinPoint.proceed();
         long duration = System.currentTimeMillis() - startTime;
-        System.out.println("[Around Advice] Method: " + joinPoint.getSignature().getName()
-                + " executed in " + duration + "ms");
+        logger.info("[Around Advice] Method: {} executed in {}ms", joinPoint.getSignature().getName(), duration);
         return result;
     }
 
+    /**
+     * Around advice for controller methods (to log request and response)
+     */
+    @Around("controllerMethods()")
+    public Object logControllerMethods(ProceedingJoinPoint joinPoint) throws Throwable {
+        ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+
+        if (attributes != null) {
+            HttpServletRequest request = attributes.getRequest();
+            logger.info("[Controller Request] Method: {}, URI: {}, Params: {}, Body: {}",
+                    request.getMethod(),
+                    request.getRequestURI(),
+                    request.getQueryString(),
+                    Arrays.toString(joinPoint.getArgs()));
+        } else {
+            logger.error("[Controller Request] No HTTP request context available for method: {}", joinPoint.getSignature().getName());
+        }
+
+        Object result = joinPoint.proceed();
+
+        logger.info("[Controller Response] Method: {}, Response: {}", joinPoint.getSignature().getName(), result);
+
+        return result;
+    }
 }

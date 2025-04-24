@@ -1,14 +1,17 @@
 package com.renda.taskmanager.controller;
 
 import com.renda.taskmanager.entity.Task;
+import com.renda.taskmanager.entity.TaskStatus;
 import com.renda.taskmanager.exception.TaskNotFoundException;
 import com.renda.taskmanager.service.TaskService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import java.util.List;
+import java.net.URI;
 
 @RestController
 @RequestMapping("/api/tasks")
@@ -17,10 +20,7 @@ public class TaskController {
 
     private final TaskService taskService;
 
-    @PostMapping
-    public ResponseEntity<Task> createTask(@RequestBody Task task) {
-        return ResponseEntity.status(HttpStatus.OK).body(taskService.createTask(task));
-    }
+    /* ---------- Read Endpoints ---------- */
 
     @GetMapping("/{id}")
     public ResponseEntity<?> getTaskById(@PathVariable Long id) throws TaskNotFoundException {
@@ -28,8 +28,37 @@ public class TaskController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Task>> getAllTasks() {
-        return ResponseEntity.ok(taskService.getAllTasks());
+    public ResponseEntity<?> getTasks(@RequestParam(required = false) Integer page,
+                                      @RequestParam(required = false) Integer size,
+                                      @RequestParam(defaultValue = "createdTime") String sortBy) {
+        if (page == null || size == null) {
+            return ResponseEntity.ok(taskService.getAllTasks());
+        }
+        return ResponseEntity.ok(taskService.getTasks(page, size, sortBy));
+    }
+
+    @GetMapping("/status/{status}")
+    public ResponseEntity<?> getTasksByStatus(@PathVariable("status") TaskStatus status,
+                                              @RequestParam(required = false) Integer page,
+                                              @RequestParam(required = false) Integer size,
+                                              @RequestParam(defaultValue = "createdTime") String sortBy) {
+        if (page == null || size == null) {
+            return ResponseEntity.ok(taskService.getTasksByStatus(status));
+        }
+        return ResponseEntity.ok(taskService.getTasksByStatus(status, page, size, sortBy));
+    }
+
+    /* ---------- Write Endpoints ---------- */
+
+    @PostMapping
+    public ResponseEntity<Task> createTask(@Valid @RequestBody Task task) {
+        Task createdTask = taskService.createTask(task);
+        URI location = ServletUriComponentsBuilder
+                .fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(createdTask.getId())
+                .toUri();
+        return ResponseEntity.created(location).body(createdTask);
     }
 
     @PutMapping("/{id}")

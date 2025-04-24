@@ -1,9 +1,7 @@
 package com.renda.taskmanager.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -22,7 +20,11 @@ public class Task {
 
     private String title;
     private String description;
-    private String status;
+
+    @Enumerated(EnumType.STRING)
+    @NotNull(message = "Status cannot be null")
+    private TaskStatus status;
+
     private LocalDateTime createdTime;
 
 }
