@@ -1,12 +1,12 @@
 package com.renda.taskmanager.controller;
 
-import com.renda.taskmanager.entity.Task;
+import com.renda.taskmanager.dto.TaskRequestDto;
+import com.renda.taskmanager.dto.TaskResponseDto;
 import com.renda.taskmanager.entity.TaskStatus;
 import com.renda.taskmanager.exception.TaskNotFoundException;
 import com.renda.taskmanager.service.TaskService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -23,8 +23,8 @@ public class TaskController {
     /* ---------- Read Endpoints ---------- */
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> getTaskById(@PathVariable Long id) throws TaskNotFoundException {
-        return taskService.getTaskById(id).map(ResponseEntity::ok).orElseThrow(() -> new TaskNotFoundException(id));
+    public ResponseEntity<TaskResponseDto> getTask(@PathVariable Long id) throws TaskNotFoundException {
+        return ResponseEntity.ok(taskService.findOne(id));
     }
 
     @GetMapping
@@ -32,9 +32,9 @@ public class TaskController {
                                       @RequestParam(required = false) Integer size,
                                       @RequestParam(defaultValue = "createdTime") String sortBy) {
         if (page == null || size == null) {
-            return ResponseEntity.ok(taskService.getAllTasks());
+            return ResponseEntity.ok(taskService.findAll());
         }
-        return ResponseEntity.ok(taskService.getTasks(page, size, sortBy));
+        return ResponseEntity.ok(taskService.findPaged(page, size, sortBy));
     }
 
     @GetMapping("/status/{status}")
@@ -43,32 +43,35 @@ public class TaskController {
                                               @RequestParam(required = false) Integer size,
                                               @RequestParam(defaultValue = "createdTime") String sortBy) {
         if (page == null || size == null) {
-            return ResponseEntity.ok(taskService.getTasksByStatus(status));
+            return ResponseEntity.ok(taskService.findByStatus(status));
         }
-        return ResponseEntity.ok(taskService.getTasksByStatus(status, page, size, sortBy));
+        return ResponseEntity.ok(taskService.findByStatusPaged(status, page, size, sortBy));
     }
 
     /* ---------- Write Endpoints ---------- */
 
     @PostMapping
-    public ResponseEntity<Task> createTask(@Valid @RequestBody Task task) {
-        Task createdTask = taskService.createTask(task);
+    public ResponseEntity<TaskResponseDto> create(@Valid @RequestBody TaskRequestDto req) {
+        TaskResponseDto created = taskService.create(req);
         URI location = ServletUriComponentsBuilder
                 .fromCurrentRequest()
                 .path("/{id}")
-                .buildAndExpand(createdTask.getId())
+                .buildAndExpand(created.getId())
                 .toUri();
-        return ResponseEntity.created(location).body(createdTask);
+        return ResponseEntity.created(location).body(created);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Task> updateTask(@PathVariable Long id, @RequestBody Task taskDetails) throws TaskNotFoundException {
-        return ResponseEntity.ok(taskService.updateTask(id, taskDetails));
+    public ResponseEntity<TaskResponseDto> update(@PathVariable Long id,
+                                                  @RequestBody TaskRequestDto req)
+            throws TaskNotFoundException {
+        return ResponseEntity.ok(taskService.update(id, req));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> deleteTask(@PathVariable Long id) {
-        taskService.deleteTask(id);
+    public ResponseEntity<String> delete(@PathVariable Long id) {
+        taskService.delete(id);
         return ResponseEntity.ok("Task deleted successfully");
     }
+
 }

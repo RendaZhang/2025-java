@@ -1,10 +1,12 @@
 package com.renda.taskmanager.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import java.time.LocalDateTime;
 
@@ -12,6 +14,8 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
+@ToString(exclude = "category")
+@Table(name = "tasks")
 public class Task {
 
     @Id
@@ -24,6 +28,10 @@ public class Task {
     @Enumerated(EnumType.STRING)
     @NotNull(message = "Status cannot be null")
     private TaskStatus status;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id")
+    private Category category;
 
     private LocalDateTime createdTime;
 

@@ -1,8 +1,12 @@
 package com.renda.taskmanager.service;
 
+import com.renda.taskmanager.dto.TaskRequestDto;
+import com.renda.taskmanager.dto.TaskResponseDto;
 import com.renda.taskmanager.entity.Task;
 import com.renda.taskmanager.entity.TaskStatus;
 import com.renda.taskmanager.exception.TaskNotFoundException;
+import com.renda.taskmanager.mapper.TaskMapper;
+import com.renda.taskmanager.repository.CategoryRepository;
 import com.renda.taskmanager.repository.TaskRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -14,7 +18,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -22,17 +25,20 @@ import java.util.Optional;
 public class TaskService {
 
     private final TaskRepository taskRepository;
+    private final CategoryRepository categoryRepository;
+    private final TaskMapper taskMapper;
 
     /* ---------- Read Operations ---------- */
 
     @Transactional(readOnly = true)
-    public Optional<Task> getTaskById(Long id) {
-        return taskRepository.findById(id);
+    public TaskResponseDto findOne(Long id) throws TaskNotFoundException {
+        Task task = taskRepository.findById(id).orElseThrow(() -> new TaskNotFoundException(id));
+        return taskMapper.toDto(task);
     }
 
     @Transactional(readOnly = true)
-    public List<Task> getAllTasks() {
-        return taskRepository.findAll();
+    public List<TaskResponseDto> findAll() {
+        return taskMapper.toDtoList(taskRepository.findAll());
     }
 
     /**
@@ -43,38 +49,41 @@ public class TaskService {
      * @param sortBy Sorting field
      */
     @Transactional(readOnly = true)
-    public Page<Task> getTasks(int page, int size, String sortBy) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by(sortBy).descending());
-        return taskRepository.findAll(pageable);
+    public Page<TaskResponseDto> findPaged(int page, int size, String sortBy) {
+        Pageable p = PageRequest.of(page, size, Sort.by(sortBy).descending());
+        return taskRepository.findAll(p).map(taskMapper::toDto);
     }
 
     @Transactional(readOnly = true)
-    public List<Task> getTasksByStatus(TaskStatus status) {
-        return taskRepository.findByStatus(status);
+    public List<TaskResponseDto> findByStatus(TaskStatus status) {
+        return taskMapper.toDtoList(taskRepository.findByStatus(status));
     }
 
     @Transactional(readOnly = true)
-    public Page<Task> getTasksByStatus(TaskStatus status, int page, int size, String sortBy) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by(sortBy).descending());
-        return taskRepository.findByStatus(status, pageable);
+    public Page<TaskResponseDto> findByStatusPaged(TaskStatus status, int page, int size, String sortBy) {
+        Pageable p = PageRequest.of(page, size, Sort.by(sortBy).descending());
+        return taskRepository.findByStatus(status, p).map(taskMapper::toDto);
     }
 
     /* ---------- Write Operations ---------- */
 
-    public Task createTask(Task task) {
+    public TaskResponseDto create(TaskRequestDto req) {
+        Task task = taskMapper.toEntity(req);
+        task.setCategory(categoryRepository.getReferenceById(req.getCategoryId()));
         task.setCreatedTime(LocalDateTime.now());
-        return taskRepository.save(task);
+        return taskMapper.toDto(taskRepository.save(task));
     }
 
-    public Task updateTask(Long id, Task taskDetails) throws TaskNotFoundException {
+    public TaskResponseDto update(Long id, TaskRequestDto req) throws TaskNotFoundException {
         Task task = taskRepository.findById(id).orElseThrow(() -> new TaskNotFoundException(id));
-        task.setTitle(taskDetails.getTitle());
-        task.setDescription(taskDetails.getDescription());
-        task.setStatus(taskDetails.getStatus());
-        return taskRepository.save(task);
+        task.setTitle(req.getTitle());
+        task.setDescription(req.getDescription());
+        task.setStatus(req.getStatus());
+        task.setCategory(categoryRepository.getReferenceById(req.getCategoryId()));
+        return taskMapper.toDto(taskRepository.save(task));
     }
 
-    public void deleteTask(Long id) {
+    public void delete(Long id) {
         taskRepository.deleteById(id);
     }
 
