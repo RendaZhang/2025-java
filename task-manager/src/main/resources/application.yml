@@ -16,3 +16,9 @@ spring:
     properties:
       hibernate:
         format_sql: true # format SQL statements
+
+springdoc:
+  swagger-ui:
+    path: /api/docs         # Access URL becomes http://localhost:8080/api/docs
+  api-docs:
+    path: /api/openapi.json # Raw JSON URL

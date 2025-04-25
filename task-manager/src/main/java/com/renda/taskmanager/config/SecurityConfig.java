@@ -22,7 +22,14 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable) // Disable CSRF Protection
                 .authorizeHttpRequests((auth) -> auth
-                        .requestMatchers("/public/**").permitAll()
+                        .requestMatchers(
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**",
+                                "/swagger-resources/**",
+                                "/api/docs/**",
+                                "/api/swagger-ui/**",
+                                "/public/**"
+                        ).permitAll()
                         .anyRequest().authenticated() // Secure all other endpoints
                 ).httpBasic(Customizer.withDefaults()); // Enable HTTP Basic Authentication
         return http.build();
