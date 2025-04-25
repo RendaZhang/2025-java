@@ -1,4 +1,4 @@
-package com.renda.taskmanager.entity;
+package com.renda.taskmanager.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -8,7 +8,7 @@ import java.util.List;
 
 @Data
 @AllArgsConstructor
-public class ErrorResponse {
+public class ErrorResponseDto {
 
     private int status;
     private String message;
