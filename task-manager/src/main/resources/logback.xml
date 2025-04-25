@@ -1,23 +1,23 @@
 <configuration>
 
-    <!-- 控制台 -->
+    <!-- Console Appender -->
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>%d{HH:mm:ss.SSS} [%X{traceId}] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
 
-    <!-- 文件滚动：使用 SizeAndTimeBasedRollingPolicy（1.4/1.5 都支持） -->
+    <!-- File Rolling Appender: Using SizeAndTimeBasedRollingPolicy (supported in 1.4/1.5) -->
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>logs/app.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <!-- 日期 + 序号 + 压缩 -->
+            <!-- Date + Sequence + Compression -->
             <fileNamePattern>logs/app.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
-            <!-- 单文件最大 10MB，超过则 %i 递增 -->
+            <!-- Maximum file size of 10MB, %i increments if exceeded -->
             <maxFileSize>10MB</maxFileSize>
-            <!-- 保留 30 天 -->
+            <!-- Retain logs for 30 days -->
             <maxHistory>30</maxHistory>
-            <!-- 所有日志文件总占用上限 -->
+            <!-- Total size cap for all log files -->
             <totalSizeCap>1GB</totalSizeCap>
         </rollingPolicy>
         <encoder>
@@ -25,13 +25,13 @@
         </encoder>
     </appender>
 
-    <!-- 根日志级别 -->
+    <!-- Root Logger Level -->
     <root level="info">
         <appender-ref ref="STDOUT"/>
         <appender-ref ref="FILE"/>
     </root>
 
-    <!-- 业务包示例：按需保留 -->
+    <!-- Example for Business Package: Retain as needed -->
     <!-- <logger name="com.renda" level="debug" additivity="false">
         <appender-ref ref="STDOUT"/>
         <appender-ref ref="FILE"/>

@@ -13,6 +13,10 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.UUID;
 
+/**
+ * A filter that generates or retrieves a unique trace ID for each request.
+ * `@Order(Ordered.HIGHEST_PRECEDENCE)` Ensures this filter runs before others in the filter chain.
+ */
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public class TraceIdFilter extends OncePerRequestFilter {
@@ -32,7 +36,7 @@ public class TraceIdFilter extends OncePerRequestFilter {
                 id = UUID.randomUUID().toString().replace("-", "");
             }
             MDC.put(KEY, id);
-            // 让客户端也拿得到
+            // Make the trace ID available to Client Side (e.g. Browser)
             res.setHeader(HEADER, id);
             chain.doFilter(req, res);
         } finally {
