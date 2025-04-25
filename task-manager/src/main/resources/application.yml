@@ -1,7 +1,6 @@
 spring:
   application:
     name: task-manager
-
   datasource:
     hikari:
       maximum-pool-size: 10
@@ -10,7 +9,6 @@ spring:
     username: root
     password: password
     driver-class-name: com.mysql.cj.jdbc.Driver
-
   jpa:
     hibernate:
       ddl-auto: update # Automatically update table structure

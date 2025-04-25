@@ -1,37 +1,46 @@
+<!-- src/main/resources/logback.xml -->
 <configuration>
-    <!-- Define the appender for console output -->
+
+    <!-- 控制台 -->
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <!-- Define the log pattern -->
             <pattern>%d{yyyy-MM-dd HH:mm:ss} %-5level %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
 
-    <!-- Define the appender for file output -->
+    <!-- 文件滚动：使用 SizeAndTimeBasedRollingPolicy（1.4/1.5 都支持） -->
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>logs/app.log</file> <!-- Log file location -->
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <!-- Rollover daily and keep logs for 30 days -->
-            <fileNamePattern>logs/app.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+        <file>logs/app.log</file>
+
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <!-- 日期 + 序号 + 压缩 -->
+            <fileNamePattern>logs/app.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+
+            <!-- 单文件最大 10MB，超过则 %i 递增 -->
+            <maxFileSize>10MB</maxFileSize>
+
+            <!-- 保留 30 天 -->
             <maxHistory>30</maxHistory>
-            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
-                <maxFileSize>10MB</maxFileSize> <!-- Rollover when file size exceeds 10MB -->
-            </timeBasedFileNamingAndTriggeringPolicy>
+
+            <!-- 所有日志文件总占用上限 -->
+            <totalSizeCap>1GB</totalSizeCap>
         </rollingPolicy>
+
         <encoder>
             <pattern>%d{yyyy-MM-dd HH:mm:ss} %-5level %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
 
-    <!-- Define the root logger level and appender -->
+    <!-- 根日志级别 -->
     <root level="info">
-        <appender-ref ref="STDOUT" /> <!-- Output to console -->
-        <appender-ref ref="FILE" />   <!-- Output to file -->
+        <appender-ref ref="STDOUT"/>
+        <appender-ref ref="FILE"/>
     </root>
 
-    <!-- Define specific logger levels (optional) -->
-    <logger name="com.example" level="debug" additivity="false">
-        <appender-ref ref="STDOUT" />
-        <appender-ref ref="FILE" />
-    </logger>
+    <!-- 业务包示例：按需保留 -->
+    <!-- <logger name="com.renda" level="debug" additivity="false">
+        <appender-ref ref="STDOUT"/>
+        <appender-ref ref="FILE"/>
+    </logger> -->
+
 </configuration>
