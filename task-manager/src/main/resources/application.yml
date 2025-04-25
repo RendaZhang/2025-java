@@ -19,6 +19,6 @@ spring:
 
 springdoc:
   swagger-ui:
-    path: /api/docs         # Access URL becomes http://localhost:8080/api/docs
+    path: /docs         # Access URL becomes http://localhost:8080/docs
   api-docs:
-    path: /api/openapi.json # Raw JSON URL
+    path: /openapi.json # Raw JSON URL http://localhost:8080/openapi.json
