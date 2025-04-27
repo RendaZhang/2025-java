@@ -1,0 +1,23 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql-container
+    platform: linux/amd64
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: task_db
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - backend
+
+volumes:
+  mysql-data:
+    name: task-management-system_mysql-data
+
+networks:
+  backend:
+    name: task-management-system_backend
