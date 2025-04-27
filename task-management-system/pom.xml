@@ -27,5 +27,6 @@
     <modules>
         <module>task-manager</module>
         <module>registry-server</module>
+        <module>user-service</module>
     </modules>
 </project>

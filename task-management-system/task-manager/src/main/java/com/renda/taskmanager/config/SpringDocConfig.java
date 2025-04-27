@@ -35,6 +35,16 @@ public class SpringDocConfig {
     }
 
     @Bean
+    public GroupedOpenApi callsApi(OpenApiCustomizer globalErrorCustomizer) {
+        return GroupedOpenApi.builder()
+                .group("calls")
+                .packagesToScan("com.renda.taskmanager.controller")
+                .pathsToMatch("/api/calls/**")
+                .addOpenApiCustomizer(globalErrorCustomizer)
+                .build();
+    }
+
+    @Bean
     public OpenApiCustomizer globalErrorCustomizer() {
         return openApi -> {
             Components comps = openApi.getComponents();

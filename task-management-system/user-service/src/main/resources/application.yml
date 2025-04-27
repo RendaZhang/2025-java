@@ -1,0 +1,15 @@
+server:
+  port: ${server.port:8082}  # Default is 8082，can be overridden by `-Dserver.port` VM option
+
+spring:
+  application:
+    name: user-service
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka
+  instance:
+    # Use the INSTANCE_ID passed via JVM to identify different instances.
+    # Default to <application-name>-<random-value>.
+    instance-id: ${INSTANCE_ID:${spring.application.name}-${random.value}}
