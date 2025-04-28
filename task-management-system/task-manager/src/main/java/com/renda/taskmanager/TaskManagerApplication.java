@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import io.swagger.v3.oas.annotations.servers.Server;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.context.ApplicationContext;
 
 @SecurityScheme(
@@ -31,10 +32,11 @@ import org.springframework.context.ApplicationContext;
         }
 )
 @SpringBootApplication
+@EnableFeignClients(basePackages = "com.renda.taskmanager.client")
 public class TaskManagerApplication {
 
     public static void main(String[] args) {
-        ApplicationContext context = SpringApplication.run(TaskManagerApplication.class, args);
+        SpringApplication.run(TaskManagerApplication.class, args);
     }
 
 }
