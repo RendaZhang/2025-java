@@ -1,11 +1,10 @@
 package com.renda.taskmanager.fallback;
 
-import com.renda.taskmanager.dto.ErrorResponseDto;
+import com.renda.taskmanager.dto.CommonResponseDto;
+import com.renda.taskmanager.util.ResponseUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
-
-import java.util.Collections;
 
 @Slf4j
 @Component
@@ -16,16 +15,9 @@ public class GlobalFeignFallbackHandler {
         return "Fallback response: " + t.getMessage();
     }
 
-    public ResponseEntity<ErrorResponseDto> fallbackResponse(Throwable t) {
+    public ResponseEntity<CommonResponseDto<Void>> fallbackResponse(Throwable t) {
         log.error("Feign fallback triggered: {}", t.toString());
-
-        ErrorResponseDto error = ErrorResponseDto.builder()
-                .status(503)
-                .message("User-service is unavailable: " + t.getMessage())
-                .fieldErrors(Collections.emptyList())
-                .build();
-
-        return ResponseEntity.status(503).body(error);
+        return ResponseUtils.error(503, "Service temporarily unavailable: " + t.getMessage());
     }
 
 }

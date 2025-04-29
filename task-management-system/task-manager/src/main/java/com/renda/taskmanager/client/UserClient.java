@@ -1,10 +1,12 @@
 package com.renda.taskmanager.client;
 
 import com.renda.taskmanager.config.FeignConfig;
+import com.renda.taskmanager.dto.CommonResponseDto;
 import com.renda.taskmanager.fallback.GlobalFeignFallbackHandler;
 import com.renda.taskmanager.util.SpringContextHolder;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 
 @FeignClient(
@@ -15,10 +17,10 @@ public interface UserClient {
 
     @GetMapping("/hello")
     @CircuitBreaker(name = "userClientHello", fallbackMethod = "helloFallback")
-    String hello();
+    ResponseEntity<CommonResponseDto<String>> hello();
 
-    default String helloFallback(Throwable t) {
-        return SpringContextHolder.getBean(GlobalFeignFallbackHandler.class).fallbackString(t);
+    default ResponseEntity<CommonResponseDto<Void>> helloFallback(Throwable t) {
+        return SpringContextHolder.getBean(GlobalFeignFallbackHandler.class).fallbackResponse(t);
     }
 
 }

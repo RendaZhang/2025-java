@@ -1,9 +1,9 @@
 package com.renda.taskmanager.exception;
 
-import com.renda.taskmanager.dto.ErrorResponseDto;
+import com.renda.taskmanager.dto.CommonResponseDto;
+import com.renda.taskmanager.util.ResponseUtils;
 import jakarta.persistence.EntityNotFoundException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -11,71 +11,42 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
-import java.util.List;
 import java.util.Optional;
 
+@Slf4j
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
-    private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
-
     @ExceptionHandler(TaskNotFoundException.class)
-    public ResponseEntity<ErrorResponseDto> handleTaskNotFoundException(TaskNotFoundException e) {
-        logger.warn("Task not found: {}", e.getMessage());
-
-        ErrorResponseDto errorResponseDto = new ErrorResponseDto(
-                HttpStatus.NOT_FOUND.value(),
-                e.getMessage(),
-                List.of()
-        );
-
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponseDto);
+    public ResponseEntity<CommonResponseDto<Void>> handleTaskNotFoundException(TaskNotFoundException e) {
+        log.warn("Task not found: {}", e.getMessage());
+        return ResponseUtils.error(HttpStatus.NOT_FOUND.value(), e.getMessage());
     }
 
     @ExceptionHandler(EntityNotFoundException.class)
-    public ResponseEntity<ErrorResponseDto> handleEntityNotFoundException(EntityNotFoundException e) {
-        logger.warn("Entity not found: {}", e.getMessage());
-
-        ErrorResponseDto errorResponseDto = new ErrorResponseDto(
-                HttpStatus.NOT_FOUND.value(),
-                e.getMessage(),
-                List.of()
-        );
-
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponseDto);
+    public ResponseEntity<CommonResponseDto<Void>> handleEntityNotFoundException(EntityNotFoundException e) {
+        log.warn("Entity not found: {}", e.getMessage());
+        return ResponseUtils.error(HttpStatus.NOT_FOUND.value(), e.getMessage());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponseDto> handleArgumentNotValidException(MethodArgumentNotValidException e) {
-        List<ErrorResponseDto.FieldError> fieldErrors = e.getBindingResult().getFieldErrors().stream()
-                .map(error ->
-                        new ErrorResponseDto.FieldError(error.getField(), error.getDefaultMessage()))
-                .toList();
-
-        ErrorResponseDto errorResponseDto = new ErrorResponseDto(
-                HttpStatus.BAD_REQUEST.value(),
-                "validation failed",
-                fieldErrors
-        );
-
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponseDto);
+    public ResponseEntity<CommonResponseDto<Void>> handleArgumentNotValidException(MethodArgumentNotValidException e) {
+        String message = e.getBindingResult().getFieldErrors().stream()
+                .map(err -> err.getField() + " " + err.getDefaultMessage())
+                .findFirst()
+                .orElse("Validation failed");
+        log.warn("Validation failed: {}", message);
+        return ResponseUtils.error(HttpStatus.BAD_REQUEST.value(), message);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<ErrorResponseDto> handleIllegalArgumentException(IllegalArgumentException e) {
-        logger.warn("Invalid argument: {}", e.getMessage());
-
-        ErrorResponseDto errorResponseDto = new ErrorResponseDto(
-                HttpStatus.BAD_REQUEST.value(),
-                e.getMessage(),
-                List.of()
-        );
-
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponseDto);
+    public ResponseEntity<CommonResponseDto<Void>> handleIllegalArgumentException(IllegalArgumentException e) {
+        log.warn("Invalid argument: {}", e.getMessage());
+        return ResponseUtils.error(HttpStatus.BAD_REQUEST.value(), e.getMessage());
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
-    public ResponseEntity<ErrorResponseDto> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
+    public ResponseEntity<CommonResponseDto<Void>> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
         String rootMsg = Optional.of(ex.getMostSpecificCause())
                 .map(Throwable::getMessage)
                 .orElse(ex.getMessage());
@@ -94,34 +65,15 @@ public class GlobalExceptionHandler {
             message = "Data integrity violation";
         }
 
-        logger.warn("{}: {}", message, rootMsg);
-
-        ErrorResponseDto body = new ErrorResponseDto(
-                status.value(),
-                message,
-                List.of()
-        );
-
-        return ResponseEntity.status(status).body(body);
+        log.warn("{}: {}", message, rootMsg);
+        return ResponseUtils.error(status.value(), message);
     }
 
-    /**
-     * Fallback for all other exceptions
-     *
-     * @param e exception
-     * @return a generic error message with HTTP 500
-     */
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponseDto> handleGenericException(Exception e) {
-        logger.error("An unexpected error occurred: {}", e.getMessage(), e);
-
-        ErrorResponseDto errorResponseDto = new ErrorResponseDto(
-                HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                "An unexpected error occurred. Please try again later.",
-                List.of()
-        );
-
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponseDto);
+    public ResponseEntity<CommonResponseDto<Void>> handleGenericException(Exception e) {
+        log.error("Unexpected exception: {}", e.getMessage(), e);
+        return ResponseUtils.error(HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                "An unexpected error occurred. Please try again later.");
     }
 
 }

@@ -2,6 +2,7 @@ package com.renda.taskmanager.controller;
 
 import com.renda.taskmanager.client.UserClient;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -17,7 +18,7 @@ public class CallController {
     private final UserClient userClient;
 
     @GetMapping("/hello-user-feign")
-    public String callUserViaFeign() {
+    public ResponseEntity<?> callUserViaFeign() {
         return userClient.hello();
     }
 

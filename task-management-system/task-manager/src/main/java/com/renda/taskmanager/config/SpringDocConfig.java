@@ -1,6 +1,6 @@
 package com.renda.taskmanager.config;
 
-import com.renda.taskmanager.dto.ErrorResponseDto;
+import com.renda.taskmanager.dto.CommonResponseDto;
 import io.swagger.v3.core.converter.ModelConverters;
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.media.Content;
@@ -49,9 +49,9 @@ public class SpringDocConfig {
         return openApi -> {
             Components comps = openApi.getComponents();
 
-            ModelConverters.getInstance().readAll(ErrorResponseDto.class).forEach(comps::addSchemas);
+            ModelConverters.getInstance().readAll(CommonResponseDto.class).forEach(comps::addSchemas);
 
-            String schemaKey = "ErrorResponseDto";
+            String schemaKey = "CommonResponseDto";
 
             comps.addResponses("BadRequest",
                     apiResp(schemaKey, "Bad Request", BAD_REQ_EX));
@@ -78,7 +78,7 @@ public class SpringDocConfig {
             {
               "status": 400,
               "message": "Validation failed",
-              "fieldErrors": [
+              "data": [
                 {"field": "title", "message": "must not be blank"},
                 {"field": "status", "message": "must not be null"}
               ]
@@ -89,7 +89,7 @@ public class SpringDocConfig {
             {
               "status": 404,
               "message": "Task with id 99 not found",
-              "fieldErrors": []
+              "data": null
             }
             """;
 
@@ -97,7 +97,7 @@ public class SpringDocConfig {
             {
               "status": 500,
               "message": "Unexpected server error",
-              "fieldErrors": []
+              "data": null
             }
             """;
 
