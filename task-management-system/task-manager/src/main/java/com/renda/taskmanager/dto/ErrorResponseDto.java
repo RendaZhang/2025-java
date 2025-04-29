@@ -2,12 +2,16 @@ package com.renda.taskmanager.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 
 
 @Data
+@Builder
+@Slf4j
 @AllArgsConstructor
 @Schema(name = "ErrorResponseDto", description = "Unified error response model")
 public class ErrorResponseDto {
