@@ -3,7 +3,6 @@ package com.renda.userservice.controller;
 import com.renda.userservice.dto.CommonResponseDto;
 import com.renda.userservice.dto.UserRequestDto;
 import com.renda.userservice.dto.UserResponseDto;
-import com.renda.userservice.entity.User;
 import com.renda.userservice.service.UserService;
 import com.renda.userservice.util.ResponseUtils;
 import io.swagger.v3.oas.annotations.tags.Tag;

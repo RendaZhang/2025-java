@@ -1,7 +1,9 @@
 package com.renda.taskmanager.controller;
 
 import com.renda.taskmanager.dto.CategoryDto;
+import com.renda.taskmanager.dto.CommonResponseDto;
 import com.renda.taskmanager.service.CategoryService;
+import com.renda.taskmanager.util.ResponseUtils;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -20,27 +22,27 @@ public class CategoryController {
     private final CategoryService categoryService;
 
     @GetMapping
-    public ResponseEntity<List<CategoryDto>> getAll() {
-        return ResponseEntity.ok(categoryService.findAll());
+    public ResponseEntity<CommonResponseDto<List<CategoryDto>>> getAll() {
+        return ResponseUtils.success(categoryService.findAll());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<CategoryDto> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(categoryService.findOne(id));
+    public ResponseEntity<CommonResponseDto<CategoryDto>> getById(@PathVariable Long id) {
+        return ResponseUtils.success(categoryService.findOne(id));
     }
 
     @PostMapping
-    public ResponseEntity<CategoryDto> create(@RequestParam String name) {
+    public ResponseEntity<CommonResponseDto<CategoryDto>> create(@RequestParam String name) {
         CategoryDto created = categoryService.create(name);
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}").buildAndExpand(created.getId()).toUri();
-        return ResponseEntity.created(location).body(created);
+        return ResponseUtils.created(location, created);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> delete(@PathVariable Long id) {
+    public ResponseEntity<CommonResponseDto<String>> delete(@PathVariable Long id) {
         categoryService.delete(id);
-        return ResponseEntity.ok("Category with id " + id + " deleted.");
+        return ResponseUtils.success("Category with id " + id + " deleted.");
     }
 
 }

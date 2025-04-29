@@ -1,177 +1,181 @@
-# 🧩 Task Management System - Spring Boot 微服务项目
+# 🧩 Task Management System - 微服务任务管理系统
 
-> 一个基于 Spring Cloud 微服务架构的任务管理系统，集成服务注册发现、远程调用、容错降级、统一响应格式与接口文档展示。支持多实例负载均衡与容灾回退，适合作为面试展示或企业项目模板。
+> 这是一个基于 Spring Cloud 微服务架构构建的任务管理系统，具备注册发现、负载均衡、远程调用、认证鉴权、容错降级、统一响应封装、接口聚合文档等特性，适合作为中高级 Java 后端面试项目展示模板。
 
 ---
 
-## 🧱 项目结构
+## 📁 项目结构
 
 ```
 task-management-system/
-├── task-manager/         # 主业务服务（管理任务与分类）
-├── user-service/         # 用户服务（提供示例接口用于调用与容错演示）
-├── registry-server/      # Eureka 注册中心
-└── docker-compose.yml    # 本地数据库容器管理（MySQL）
+├── gateway-server/         # 🔀 Spring Cloud Gateway 网关（统一入口 + Swagger聚合）
+├── registry-server/        # 📘 Eureka 注册中心
+├── task-manager/           # ✅ 主业务服务（任务管理 + Feign/RestTemplate调用）
+├── user-service/           # 👤 用户服务（带安全保护，供调用测试用）
+└── docker-compose.yml      # 🐳 启动 MySQL 数据库的容器配置
 ```
 
 ---
 
-## 🚀 技术栈
+## 🧱 技术架构
 
-| 技术方向 | 使用框架 |
-|----------|-----------|
-| 服务注册与发现 | Spring Cloud Netflix Eureka |
-| 远程调用 | Spring Cloud OpenFeign |
-| 负载均衡 | Spring Cloud LoadBalancer |
-| 容错处理 | Resilience4j（熔断 + fallback） |
-| 持久化 | Spring Data JPA + MySQL |
-| 接口文档 | SpringDoc OpenAPI + Swagger UI |
-| 异常处理 | GlobalExceptionHandler + CommonResponseDto |
-| 统一响应格式 | CommonResponseDto<T> |
-| 日志管理 | Logback（可支持 traceId） |
-| 部署管理 | Docker Compose 管理 MySQL 服务 |
-
----
-
-## 📦 模块功能概览
-
-### ✅ task-manager
-
-- 提供任务/分类管理的 CRUD 接口
-- 提供 `/api/calls/hello-user-feign` 接口用于调用 `user-service`（通过 Feign 实现）
-- 对调用失败支持自动 fallback，返回统一错误结构
-
-### ✅ user-service
-
-- 模拟用户服务，提供 `/api/users/hello` 接口
-- 支持多实例注册到 Eureka，用于演示负载均衡
-
-### ✅ registry-server
-
-- Spring Cloud Eureka Server
-- 提供 http://localhost:8761 控制台查看所有服务实例状态
+| 功能领域         | 技术栈组件 |
+|------------------|------------|
+| 微服务注册发现   | Spring Cloud Netflix Eureka |
+| API 网关         | Spring Cloud Gateway |
+| 声明式远程调用   | OpenFeign |
+| 客户端负载均衡   | Spring Cloud LoadBalancer |
+| 容错降级机制     | Resilience4j CircuitBreaker |
+| 安全认证         | Spring Security + Basic Auth |
+| 认证统一配置     | 自定义认证组件（支持 Basic/Bearer/Custom） |
+| 数据访问         | Spring Data JPA + MySQL |
+| 接口文档         | SpringDoc OpenAPI + 聚合 Swagger |
+| 异常处理         | GlobalExceptionHandler + CommonResponseDto |
+| 日志管理         | Logback + traceId 支持 |
+| 服务配置         | application.yml 多服务隔离配置 |
 
 ---
 
-## 🔁 调用链演示：Feign + 熔断 + fallback
+## 🔗 模块间调用链流程
 
-1. 用户访问 `GET /api/calls/hello-user-feign`
-2. `task-manager` 使用 Feign 调用 `user-service`
-3. Feign 请求经过 Spring Cloud LoadBalancer 实现轮询
-4. 如果 `user-service` 实例不可用，自动触发 fallback：
-   - 进入 `GlobalFeignFallbackHandler`
-   - 返回统一结构的 JSON 错误响应
+以用户请求 `/api/calls/hello-user-feign` 为例：
+
+```text
+[Browser]
+   ↓ ① HTTP GET /api/calls/hello-user-feign
+[Gateway] (8888)
+   ↓ ② 路由转发至 /task-manager/api/calls/hello-user-feign
+[task-manager]
+   ↓ ③ 使用 FeignClient 调用 user-service（附带认证头）
+[user-service]
+   ↓ ④ 返回 “Hello from user-service-1”
+[task-manager]
+   ↓ ⑤ 封装为统一响应 CommonResponseDto
+[Gateway → 浏览器]
+```
+
+✅ 支持多个实例轮询调用（基于 Eureka 注册）
+
+✅ 调用失败自动触发 fallback 并返回友好 JSON 错误结构
 
 ---
 
-## 📄 响应格式（统一封装）
-
-#### ✅ 成功响应
+## 📄 响应格式（统一结构）
 
 ```json
+// ✅ 成功响应
 {
   "status": 200,
   "message": "Success",
   "data": "Hello from user-service-1"
 }
-```
 
-#### ❌ 错误响应
-
-```json
+// ❌ 失败响应（例如 Feign 调用失败）
 {
   "status": 503,
-  "message": "Service temporarily unavailable: Load balancer does not contain an instance for the service user-service",
-  "data": null
+  "message": "Service temporarily unavailable: ..."
 }
 ```
 
 ---
 
-## 📚 接口文档 (Swagger UI)
+## 🧪 接口测试与聚合文档
 
-> ✅ 自动根据代码生成接口文档
+### 🔗 Swagger 地址（聚合展示）：
 
-访问地址：[http://localhost:8080/docs](http://localhost:8080/docs)
+```
+http://localhost:8888/swagger-ui.html
+```
 
-- 所有接口自动包含 400/404/500 错误结构
-- 支持 Authorize 按钮（可集成 Basic Auth 或 JWT）
-- 所有接口响应与错误结构统一标准展示
+> 网关统一聚合 task-manager / user-service 的所有接口，支持切换服务查看。
 
 ---
 
-## 🐳 本地启动 MySQL（Docker）
+## 🛡️ 安全认证（Basic Auth）
 
-确保已安装 Docker，然后运行：
+- `user-service` 启用 Basic Auth 保护 `/api/**`
+- `task-manager` 中 RestTemplate / Feign 调用会自动附带认证头
+
+统一配置于 `application.yml`：
+
+```yaml
+auth:
+  services:
+    user-service:
+      type: basic
+      username: renda
+      password: password
+```
+
+✅ 还支持 bearer token、自定义 header 类型
+
+---
+
+## 🧩 RestTemplate 与 Feign 统一认证机制
+
+内置拦截器自动根据服务名读取配置，附加认证头：
+
+```java
+// RestTemplate 调用（自动附带认证）
+restTemplate.getForObject("http://user-service/api/users/hello", String.class);
+
+// FeignClient 调用（自动附带认证）
+userClient.hello();
+```
+
+无需在业务代码中显式处理认证逻辑。
+
+---
+
+## 🐳 本地运行（MySQL 容器）
 
 ```bash
 docker compose up -d
 ```
 
-默认连接配置：
-
-- Host: `localhost`
-- Port: `3306`
-- Username: `root`
-- Password: `password`
-- Database: `task_db`
+- MySQL 端口：3306
+- 用户名：root
+- 密码：password
+- 数据库名：task_db
 
 ---
 
-## 🧪 本地多实例测试
+## ✅ 快速启动顺序
 
-1. 启动两个 `user-service` 实例（分别使用端口 8082、8083）：
-
-```
--Dserver.port=8082 -DINSTANCE_ID=user-service-1
--Dserver.port=8083 -DINSTANCE_ID=user-service-2
-```
-
-2. 访问 `/api/calls/hello-user-feign` 多次，观察轮询结果
-3. 关闭其中一个实例，观察 fallback 自动触发
+1. 启动 `registry-server`：Eureka 控制台 http://localhost:8761
+2. 启动 `user-service`（支持多实例注册：8082/8083）
+3. 启动 `task-manager`（包含调用接口）
+4. 启动 `gateway-server`：网关入口 http://localhost:8888
 
 ---
 
-## ✅ 异常统一处理（GlobalExceptionHandler）
+## 🎯 面试讲解建议
 
-支持捕获并统一响应：
-
-- 参数校验失败（MethodArgumentNotValidException）
-- 实体未找到（EntityNotFoundException）
-- 数据库约束冲突（DataIntegrityViolationException）
-- 未知异常（Exception）
+> “这个项目采用 Spring Cloud 架构搭建，包含服务注册发现、网关转发、认证鉴权、熔断降级、负载均衡、统一响应封装等模块，并整合了 RestTemplate 和 FeignClient 的通用认证机制，接口聚合到 Gateway 的 Swagger 页面中，展示了微服务架构在中型系统中的标准应用场景。”
 
 ---
 
-## 🎯 项目亮点
+## 🧠 后续可扩展方向
 
-- 全链路负载均衡 + fallback
-- 统一响应格式 `CommonResponseDto<T>`
-- 响应结构兼容 Swagger 展示
-- 优雅日志与异常结构
-- 完善模块分层架构
-- 高度工程化标准，适合面试展示与实际部署
-
----
-
-## 🧠 可扩展建议
-
-| 功能 | 说明 |
+| 方向 | 描述 |
 |------|------|
-| Gateway 接入 | 使用 Spring Cloud Gateway 聚合路由 |
-| Redis 缓存 | 支持高频读场景（如任务列表缓存） |
-| 鉴权支持 | 集成 Spring Security + JWT |
-| 云部署 | 将整个系统部署至云服务器（阿里云/腾讯云） |
-| 微服务治理 | 接入 Micrometer + Prometheus + Grafana 实现监控告警 |
+| ✅ Spring Cloud Config | 配置中心支持动态刷新 |
+| ✅ JWT + 权限控制 | 使用 Spring Security 细粒度控制接口权限 |
+| ✅ Gray release | 灰度发布 + Canary 流量控制 |
+| ✅ Prometheus + Grafana | 服务监控告警与指标收集 |
+| ✅ Docker Compose 多服务 | 多模块一键部署 |
+| ✅ Kubernetes 部署 | Helm + Ingress 实现容器化交付
 
 ---
 
 ## 👨‍💻 作者
 
 - 👤 **Renda Zhang**
-- 🌐 个人主页：[www.rendazhang.com](http://www.rendazhang.com)
-- 📬 联系方式：_可添加_
+- 🌐 [www.rendazhang.com](http://www.rendazhang.com)
+- 📫 更多功能请参考项目文档或联系作者定制
 
 ---
 
-> 本项目为 Spring Cloud 微服务架构学习与面试展示示例。支持完整本地部署、多实例注册、熔断降级、统一响应封装、Swagger 文档等常用能力。可作为 Java 后端开发工程师中高级面试项目模板参考。
+> 如需源码 Demo 或部署模板，请联系作者。欢迎用于学习、展示、实战练习等用途！
+
+```
