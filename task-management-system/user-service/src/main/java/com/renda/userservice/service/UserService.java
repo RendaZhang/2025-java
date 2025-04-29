@@ -5,6 +5,7 @@ import com.renda.userservice.dto.UserResponseDto;
 import com.renda.userservice.entity.User;
 import com.renda.userservice.mapper.UserMapper;
 import com.renda.userservice.repository.UserRepository;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,7 +25,7 @@ public class UserService {
 
     @Transactional(readOnly = true)
     public UserResponseDto findOne(Long id) {
-        User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
+        User user = userRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("User ID: " + id + " not found"));
         return userMapper.toDto(user);
     }
 
@@ -42,7 +43,7 @@ public class UserService {
     }
 
     public UserResponseDto update(Long id, UserRequestDto req) {
-        User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
+        User user = userRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("User ID: " + id + " not found"));
         user.setUsername(req.getUsername());
         user.setEmail(req.getEmail());
         user.setPassword(req.getPassword());
