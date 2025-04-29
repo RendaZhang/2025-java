@@ -19,7 +19,7 @@ public interface TaskMapper {
 
     List<TaskResponseDto> toDtoList(List<Task> tasks);
 
-    /* ============ DTO → Entity (Only for create) ============ */
+    /* ============ DTO → Entity ============ */
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "createdTime", ignore = true)

@@ -1,6 +1,8 @@
 package com.renda.userservice.controller;
 
 import com.renda.userservice.dto.CommonResponseDto;
+import com.renda.userservice.dto.UserRequestDto;
+import com.renda.userservice.dto.UserResponseDto;
 import com.renda.userservice.entity.User;
 import com.renda.userservice.service.UserService;
 import com.renda.userservice.util.ResponseUtils;
@@ -21,41 +23,40 @@ public class UserController {
     @Value("${eureka.instance.instance-id}")
     private String instanceID;
 
+    /* ---------- Read Endpoints ---------- */
+
     @GetMapping("/hello")
     public ResponseEntity<CommonResponseDto<String>> hello() {
         return ResponseUtils.success("Hello from " + instanceID);
     }
 
-    @PostMapping
-    public User createUser(@RequestBody User user) {
-        return userService.createUser(user);
-    }
-
     @GetMapping("/{id}")
-    public User getUserById(@PathVariable Long id) {
-        return userService.getUserById(id).orElseThrow(() -> new RuntimeException("User not found"));
+    public ResponseEntity<CommonResponseDto<UserResponseDto>> getUser(@PathVariable Long id) {
+        return ResponseUtils.success(userService.findOne(id));
     }
 
     @GetMapping
-    public List<User> getAllUsers() {
-        return userService.getAllUsers();
+    public ResponseEntity<CommonResponseDto<List<UserResponseDto>>> getUsers() {
+        return ResponseUtils.success(userService.findAll());
+    }
+
+    /* ---------- Write Endpoints ---------- */
+
+    @PostMapping
+    public ResponseEntity<CommonResponseDto<UserResponseDto>> create(@RequestBody UserRequestDto req) {
+        return ResponseUtils.success(userService.create(req));
     }
 
     @PutMapping("/{id}")
-    public User updateUser(@PathVariable Long id, @RequestBody User userDetails) {
-        User user = userService.getUserById(id).orElseThrow(() -> new RuntimeException("User not found"));
-
-        user.setUsername(userDetails.getUsername());
-        user.setEmail(userDetails.getEmail());
-        user.setPassword(userDetails.getPassword());
-
-        return userService.updateUser(user);
+    public ResponseEntity<CommonResponseDto<UserResponseDto>> update(@PathVariable Long id,
+                                                                     @RequestBody UserRequestDto req) {
+        return ResponseUtils.success(userService.update(id, req));
     }
 
     @DeleteMapping("/{id}")
-    public String deleteUser(@PathVariable Long id) {
-        userService.deleteUser(id);
-        return "User deleted successfully";
+    public ResponseEntity<CommonResponseDto<String>> delete(@PathVariable Long id) {
+        userService.delete(id);
+        return ResponseUtils.success("User deleted successfully");
     }
 
 
