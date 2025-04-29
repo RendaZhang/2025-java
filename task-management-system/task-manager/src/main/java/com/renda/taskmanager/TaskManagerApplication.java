@@ -11,7 +11,6 @@ import io.swagger.v3.oas.annotations.servers.Server;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.openfeign.EnableFeignClients;
-import org.springframework.context.ApplicationContext;
 
 @SecurityScheme(
         name = "basicAuth",
@@ -22,7 +21,7 @@ import org.springframework.context.ApplicationContext;
         info = @Info(
                 title = "Task Manager API",
                 version = "v1.0",
-                description = "Demo project for interview. Manage tasks & categories.",
+                description = "Manage tasks & categories.",
                 contact = @Contact(name = "Renda Zhang", email = "rendazhang@qq.com"),
                 license = @License(name = "Apache 2.0", url = "https://www.apache.org/licenses/LICENSE-2.0")
         ),
