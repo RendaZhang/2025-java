@@ -1,6 +1,6 @@
-package com.renda.taskmanager.repository;
+package com.renda.userservice.repository;
 
-import com.renda.taskmanager.entity.User;
+import com.renda.userservice.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

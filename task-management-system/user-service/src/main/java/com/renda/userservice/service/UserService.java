@@ -1,7 +1,7 @@
-package com.renda.taskmanager.service;
+package com.renda.userservice.service;
 
-import com.renda.taskmanager.entity.User;
-import com.renda.taskmanager.repository.UserRepository;
+import com.renda.userservice.entity.User;
+import com.renda.userservice.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

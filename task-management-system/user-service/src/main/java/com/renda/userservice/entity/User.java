@@ -1,4 +1,4 @@
-package com.renda.taskmanager.entity;
+package com.renda.userservice.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
