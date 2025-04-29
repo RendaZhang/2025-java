@@ -42,7 +42,13 @@ eureka:
     prefer-ip-address: true
     hostname: localhost
 
-spring-security:
-  auth:
-    username: renda
-    password: password
+auth:
+  services:
+    user-service:
+      type: basic
+      username: renda
+      password: password
+    task-manager:
+      type: basic
+      username: renda
+      password: password

@@ -22,10 +22,10 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableWebSecurity
 public class SecurityConfig {
 
-    @Value("${spring-security.auth.username}")
+    @Value("${auth.services.task-manager.username}")
     private String username;
 
-    @Value("${spring-security.auth.password}")
+    @Value("${auth.services.task-manager.password}")
     private String password;
 
     @Bean

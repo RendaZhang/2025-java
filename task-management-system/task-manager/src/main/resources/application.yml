@@ -54,7 +54,13 @@ resilience4j:
       userClientHello:
         base-config: default
 
-spring-security:
-  auth:
-    username: renda
-    password: password
+auth:
+  services:
+    user-service:
+      type: basic
+      username: renda
+      password: password
+    task-manager:
+      type: basic
+      username: renda
+      password: password
