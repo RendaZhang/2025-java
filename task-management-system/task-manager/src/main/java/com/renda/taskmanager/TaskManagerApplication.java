@@ -27,7 +27,8 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
         ),
         security = @SecurityRequirement(name = "basicAuth"),
         servers = {
-                @Server(url = "/", description = "default")
+                @Server(url = "/task-manager"),
+                @Server(url = "/")
         }
 )
 @SpringBootApplication

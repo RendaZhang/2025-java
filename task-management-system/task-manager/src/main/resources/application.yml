@@ -23,17 +23,22 @@ spring:
 springdoc:
   swagger-ui:
     path: /docs         # Access URL becomes http://localhost:8080/docs
+    use-root-path: false
+    config-url: /v3/api-docs/swagger-config
   api-docs:
-    path: /openapi.json # Raw JSON URL http://localhost:8080/openapi.json
+    path: /v3/api-docs
+  default-produces-media-type: application/json
+  default-consumes-media-type: application/json
+  show-actuator: false
 
 eureka:
-  instance:
-    prefer-ip-address: true
-    instance-id: ${spring.application.name}:${server.port}
-    hostname: 127.0.0.1
   client:
     service-url:
       defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${server.port}
+    hostname: localhost
 
 resilience4j:
   circuitbreaker:
@@ -48,3 +53,8 @@ resilience4j:
     instances:
       userClientHello:
         base-config: default
+
+spring-security:
+  auth:
+    username: renda
+    password: password

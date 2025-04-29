@@ -6,6 +6,7 @@ import com.renda.userservice.dto.UserResponseDto;
 import com.renda.userservice.entity.User;
 import com.renda.userservice.service.UserService;
 import com.renda.userservice.util.ResponseUtils;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Tag(name = "User Management", description = "Operations related to users")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/users")

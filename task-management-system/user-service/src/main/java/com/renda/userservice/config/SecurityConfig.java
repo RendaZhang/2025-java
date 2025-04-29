@@ -1,6 +1,7 @@
 package com.renda.userservice.config;
 
 import com.renda.userservice.security.Json401EntryPoint;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -20,6 +21,12 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableWebSecurity
 public class SecurityConfig {
 
+    @Value("${spring-security.auth.username}")
+    private String username;
+
+    @Value("${spring-security.auth.password}")
+    private String password;
+
     @Bean
     public Json401EntryPoint json401EntryPoint() {
         return new Json401EntryPoint();
@@ -29,7 +36,7 @@ public class SecurityConfig {
     @Bean
     @Order(1)
     public SecurityFilterChain swaggerChain(HttpSecurity http) throws Exception {
-        http.securityMatcher("/docs/**", "/openapi.json")
+        http.securityMatcher("/docs/**", "/v3/api-docs/**")
                 .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
                 .csrf(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)     // Disable Basic challenge
@@ -67,8 +74,8 @@ public class SecurityConfig {
 
     @Bean
     public UserDetailsService userDetailsService() {
-        UserDetails user = User.withUsername("renda")
-                .password(passwordEncoder().encode("password"))
+        UserDetails user = User.withUsername(username)
+                .password(passwordEncoder().encode(password))
                 .roles("USER")
                 .build();
         return new InMemoryUserDetailsManager(user);

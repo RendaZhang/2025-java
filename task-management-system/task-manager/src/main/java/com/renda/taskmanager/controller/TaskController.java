@@ -5,6 +5,7 @@ import com.renda.taskmanager.dto.TaskResponseDto;
 import com.renda.taskmanager.entity.TaskStatus;
 import com.renda.taskmanager.exception.TaskNotFoundException;
 import com.renda.taskmanager.service.TaskService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -13,6 +14,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
 
+@Tag(name = "Task Management", description = "Operations related to tasks")
 @RestController
 @RequestMapping("/api/tasks")
 @RequiredArgsConstructor

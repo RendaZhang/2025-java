@@ -26,7 +26,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
         ),
         security = @SecurityRequirement(name = "basicAuth"),
         servers = {
-                @Server(url = "/", description = "default")
+                @Server(url = "/user-service"),
+                @Server(url = "/")
         }
 )
 @SpringBootApplication
