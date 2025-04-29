@@ -13,3 +13,5 @@ eureka:
     # Use the INSTANCE_ID passed via JVM to identify different instances.
     # Default to <application-name>-<random-value>.
     instance-id: ${INSTANCE_ID:${spring.application.name}-${random.value}}
+    prefer-ip-address: true
+    hostname: 127.0.0.1
