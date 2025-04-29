@@ -5,6 +5,12 @@ spring:
   application:
     name: user-service
 
+springdoc:
+  swagger-ui:
+    path: /docs         # Access URL becomes http://localhost:8080/docs
+  api-docs:
+    path: /openapi.json # Raw JSON URL http://localhost:8080/openapi.json
+
 eureka:
   client:
     service-url:
