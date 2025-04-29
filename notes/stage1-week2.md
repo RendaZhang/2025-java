@@ -72,3 +72,23 @@ Introduced **MapStruct** to convert between entities and DTOs, preventing over-e
 All endpoints were validated with Postman, including edge cases such as unique-constraint violations and validation errors.
 
 ---
+
+## Day 4 – Spring Cloud Microservices Fundamentals
+
+| Component | Purpose | Key Takeaways |
+|-----------|---------|---------------|
+| **Eureka** | Service registry / discovery | TASK-MANAGER and USER-SERVICE instances register & self-heal |
+| **Spring Cloud LoadBalancer** | Client-side load balancing | `@LoadBalanced RestTemplate` and Feign resolve `http://USER-SERVICE` |
+| **Feign + Resilience4j** | Declarative HTTP client with circuit-breaking | Global fallback returns graceful degradation when USER-SERVICE is down |
+| **Tracing & Observability** | `TraceIdFilter` + MDC + Feign full logging | Logs show traceId across inter-service calls |
+| **Swagger Groups** | Separate docs per service group | Access via `/docs` with Basic Auth |
+
+### End-to-end Flow
+
+1. `task-manager` uses Feign `UserClient`
+2. Feign asks LoadBalancer for a healthy USER-SERVICE instance from Eureka
+3. If failures exceed threshold, Resilience4j opens the circuit and `GlobalFeignFallbackHandler` returns a fallback response.
+
+This hands-on exercise solidified my understanding of distributed service discovery, client-side load balancing, and fault-tolerance patterns in Spring Cloud.
+
+---
