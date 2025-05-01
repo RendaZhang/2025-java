@@ -242,15 +242,15 @@ Thinking 40min3s, Coding 11min47s, Debugging 0min0s.
 
 #### State Definition
 
-f[i][j] = The number of unique paths that the robot can move to position (i, j)
+`f[i][j]` = The number of unique paths that the robot can move to position (i, j)
 
 #### Transition
 
-f[i][j] = f[i-1][j] + f[i][j-1]
+`f[i][j] = f[i-1][j] + f[i][j-1]`
 
 #### Initialization & Order
 
-f[0][0] = 1, f[0...m][n] = 1, f[0][0...n] = 1
+`f[0][0] = 1, f[0...m][n] = 1, f[0][0...n] = 1`
 
 #### Complexity
 
@@ -284,17 +284,17 @@ Thinking 11min22s, Coding 15min50s, Debugging 7min9s.
 
 #### State Definition
 
-f[i] = the Number of the path that the robot can move to the column position j of the current row or previous row.
+`f[i]` = the Number of the path that the robot can move to the column position j of the current row or previous row.
 
 #### Transition
 
-f[i] = f[i - 1] + prev(f[i])
+`f[i] = f[i - 1] + prev(f[i])`
 
 #### Initialization & Order
 
-f[0...n] = 1
+`f[0...n] = 1`
 
-f[0] = 1 for every beginning of new row
+`f[0] = 1` for every beginning of new row
 
 #### Complexity
 
@@ -327,62 +327,113 @@ class Solution {
 
 ## LC 1143 “Longest Common Subsequence”
 
-
+A common substring of two String is a subsequence that is common to both string.
+Input text consist of only lowercase English letter.
 
 ### 2D Dynamic Programming (Bottom-up)
 
-#### Time
-
-Thinking mins, Coding mins, Debugging mins.
-
 #### State Definition
 
-f[i][j] = 
+`f[i][j]` = the length of the longest common subsequence for the two substrings - `text1[0...i]` and `text2[0...j]`.
 
 #### Transition
 
-f[i][j] = 
+```text
+if (text1[i] == text2[j]), f[i][j] = f[i-1][j-1] + 1;
+otherwise, f[i][j] = max(f[i-1][j], f[i][j-1]).
+```
 
 #### Initialization & Order
 
-f[][] = 
+Init `f[0][0...n]` and `f[0...m][0]`
 
 #### Complexity
 
-Time O(), Space O()
+Time O(m*n), Space O(m*n)
 
 #### Code
 
 ```java
+class Solution {
+    public int longestCommonSubsequence(String text1, String text2) {
+        int m = text1.length(), n = text2.length();
+        int[][] dp = new int[m + 1][n + 1];
+
+        for (int i = 1; i <= m; i++) {
+            char c1 = text1.charAt(i - 1);
+            for (int j = 1; j <= n; j++) {
+                char c2 = text2.charAt(j - 1);
+                if (c1 == c2) {
+                    dp[i][j] = dp[i - 1][j - 1] + 1;
+                } else {
+                    dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+                }
+            }
+        }
+        return dp[m][n];
+    }
+}
 
 ```
 
-### 1D Dynamic Programming (Space-Optimized)
-
-#### Time
-
-Thinking mins, Coding mins, Debugging mins.
+### Two-Row Rolling Array DP (Space-Optimized)
 
 #### State Definition
 
-f[i] = 
+`f[i]` → Optimized into a two-row rolling array format
+
+`f[2][j]` = The length of the longest common subsequence between the `i-th` row of text1 and the first j characters of text2
+
+Use `f[curr][j]` to represent the current row being processed (i.e., the `i-th` character of text1);
+
+Use `f[prev][j]` to represent the previous row (i.e., the `(i-1)-th` character of text1.
 
 #### Transition
 
-f[i]
+When two characters match → Take the value from the diagonal previous state + 1;
+
+When they don’t match → Take the maximum value from the left or top;
+
+`prev = (i - 1) % 2`, `curr = i % 2` to implement the rolling alternation.
 
 #### Initialization & Order
 
-f
+```pseudo
+f[0][0...n] = 0  // Initialize the first row (i=0) to 0
+```
+
+Traversal order:
+```pseudo
+for (i = 1 ... m)
+  for (j = 1 ... n)
+```
 
 #### Complexity
 
-Time O(), Space O()
+Time O(m*n), Space O(n)
 
 #### Code
 
 ```java
+class Solution {
+    public int longestCommonSubsequence(String text1, String text2) {
+        int m = text1.length(), n = text2.length();
+        int[][] dp = new int[2][n + 1];
 
+        for (int i = 1; i <= m; i++) {
+            int curr = i % 2, prev = (i - 1) % 2;
+            for (int j = 1; j <= n; j++) {
+                if (text1.charAt(i - 1) == text2.charAt(j - 1)) {
+                    dp[curr][j] = dp[prev][j - 1] + 1;
+                } else {
+                    dp[curr][j] = Math.max(dp[prev][j], dp[curr][j - 1]);
+                }
+            }
+        }
+
+        return dp[m % 2][n];
+    }
+}
 ```
 
 ---
