@@ -144,22 +144,84 @@ Time Complexity: `O(n² * m)`, Space Complexity: O(m)
 
 ---
 
-## LC 1039 Minimum Score Triangulation of Polygon
+## 🧠 LC 1039 - Minimum Score Triangulation of Polygon
 
-Thinking mins, Coding mins, Debugging mins.
+**Algorithm Type**: Interval DP  
+**Time Complexity**: O(n³)  
+**Space Complexity**: O(n²)
 
 ```java
+class Solution {
+    public int minScoreTriangulation(int[] values) {
+        int n = values.length;
+        int[][] dp = new int[n][n];
+             
+        for (int j = 2; j < n; j++) {
+            for (int i = j - 2; i >= 0; i--) {
+                dp[i][j] = Integer.MAX_VALUE;
+                for (int k = i + 1; k < j; k++) {
+                    dp[i][j] = Math.min(dp[i][j],
+                        dp[i][k] + dp[k][j] + values[i]*values[j]*values[k]);
+                }
+            }
+        }
 
+        return dp[0][n-1];
+    }
+}
 ```
+
+### Example Validation: `[1,3,1,4,1,5]`
+
+Minimum Triangulation Score: `13` ✅
 
 ---
 
-## LC 1312 Minimum Insertion Steps to Make a String Palindrome
+## 🧠 LC 1312 - Minimum Insertion Steps to Make a String Palindrome
 
-Thinking mins, Coding mins, Debugging mins.
+**Algorithm Type**: Interval DP  
+**Time Complexity**: O(n²)  
+**Space Complexity**: O(n²)
 
 ```java
-
+class Solution {
+    public int minInsertions(String s) {
+        char[] charArray = s.toCharArray();
+        int len = charArray.length;
+        int[][] dp = new int[len][len];
+        for (int j = 1; j < len; j++) {
+            for (int i = j - 1; i >= 0; i--) {
+                if (charArray[i] != charArray[j]) {
+                    dp[i][j] = Math.min(dp[i+1][j], dp[i][j-1]) + 1;
+                } else {
+                    dp[i][j] = dp[i+1][j-1];
+                }
+            }
+        }
+        return dp[0][len-1];
+    }
+}
 ```
 
+### Example Validation: `"abcba"`
+
+Output: `0` (Already a palindrome) ✅
+
 ---
+
+## 🧮 Additional: DP Table Structure Explanation
+
+Taking LC 1312 as an example, for the string `"abcba"`, the `dp[i][j]` table is constructed as follows:
+
+| i \ j | 0 | 1 | 2 | 3 | 4 |
+| ----- | - | - | - | - | - |
+| 0     | 0 | 1 | 2 | 1 | 0 |
+| 1     |   | 0 | 1 | 0 | 1 |
+| 2     |   |   | 0 | 1 | 2 |
+| 3     |   |   |   | 0 | 1 |
+| 4     |   |   |   |   | 0 |
+
+Each cell represents the minimum number of insertions required to make `s[i..j]` a palindrome.
+
+---
+
