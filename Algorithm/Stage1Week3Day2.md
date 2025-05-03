@@ -225,3 +225,105 @@ Each cell represents the minimum number of insertions required to make `s[i..j]`
 
 ---
 
+## LC 698 Partition to K Equal Sum Subsets
+
+Thinking mins, Coding mins, Debugging mins.
+
+### **Algorithm Type**: 
+
+Backtracking (DFS with Pruning) + Greedy Preprocessing (Sorting)
+
+### **Time Complexity**:
+
+Worst-case O(k × 2ⁿ)
+
+n is the number of elements in nums
+
+Each element can either be used or not → 2ⁿ states
+
+Pruning (bucketSum > target & sorting) greatly reduces branches in practice
+
+### **Space Complexity**: 
+
+O(n + k)
+
+boolean[] used → O(n)
+
+Call stack recursion depth up to n levels → O(n)
+
+No extra DP cache used in this version
+
+### **Code Review Tips**:
+
+* When `bucketSum == target`, recursively move to the next bucket to avoid redundant searches from the beginning;
+* `if (bucketSum == 0) break;` is a clever **same-level pruning** technique;
+* `Arrays.sort(nums)` is a key optimization, ensuring larger numbers are placed first to prune invalid paths early;
+* Although the time complexity is exponential, **it performs stably under the constraint of `n ≤ 16`**.
+
+### Code:
+
+```java
+class Solution {
+    public boolean canPartitionKSubsets(int[] nums, int k) {
+        if (k == 1) return true;
+        int sum = Arrays.stream(nums).sum();
+        if (sum % k != 0) return false;
+        int len = nums.length;
+        int target = sum / k;
+        // Sorting Pruning
+        Arrays.sort(nums);
+        if (nums[len - 1] > target) return false;
+        return dfs(nums, target, k, 0, 0, new boolean[len]);
+    }
+
+    boolean dfs(int[] nums, int target, int k, int s_i, int bucketSum, boolean[] used) {
+        if (k == 0) return true;
+        if (target == bucketSum) {
+            // Current bucket is full, move to the next bucket
+            return dfs(nums, target, k - 1, 0, 0, used);
+        }
+
+        for (int i = s_i; i < nums.length; i++) {
+            if (used[i]) continue;
+            int currSum = bucketSum + nums[i];
+            // Pruning: If adding nums[i] exceeds the target, skip
+            if (currSum > target) continue;
+            used[i] = true;
+            if(dfs(nums, target, k, i + 1, currSum, used)) return true;
+            used[i] = false;
+            // Pruning: Break on the first failure at the same level
+            if (bucketSum == 0) break;
+        }
+
+        return false;
+    }
+}
+```
+
+---
+
+## LC 354 Russian Doll Envelopes
+
+Thinking mins, Coding mins, Debugging mins.
+
+**Algorithm Type**:
+**Time Complexity**:
+**Space Complexity**:
+
+```java
+
+```
+
+---
+
+## LC 464 Can I Win
+
+Thinking mins, Coding mins, Debugging mins.
+
+**Algorithm Type**:
+**Time Complexity**:
+**Space Complexity**:
+
+```java
+
+```
