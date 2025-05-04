@@ -302,28 +302,196 @@ class Solution {
 
 ---
 
-## LC 354 Russian Doll Envelopes
+## LC 464 Can I Win
 
-Thinking mins, Coding mins, Debugging mins.
-
-**Algorithm Type**:
-**Time Complexity**:
-**Space Complexity**:
-
-```java
-
-```
+Fantastic! Below is the complete algorithm record for **LC 464 - Can I Win**, including thinking and implementation details, time and space complexity analysis, and more:
 
 ---
 
-## LC 464 Can I Win
+## LC 464 - Can I Win
 
-Thinking mins, Coding mins, Debugging mins.
+### **Algorithm Type**:  
+🎲 **Minimax + Memoized DFS + State Compression** (Bitmask Approach)
 
-**Algorithm Type**:
-**Time Complexity**:
-**Space Complexity**:
+### **Time Complexity**:  
+**O(2ⁿ × n)**
+
+* There are at most `2ⁿ` states (each number is either chosen or not).
+* For each state, enumerate `n` possible next numbers.
+
+> The actual complexity is much smaller than `2ⁿ` because many states are pruned early (e.g., winning immediately upon selection).
+
+### **Space Complexity**:  
+**O(2ⁿ + n)**
+
+* Memoization table `memo[2^n]` space.
+* Recursion call stack depth up to `n` (i.e., a total of `n` numbers can be chosen).
+* Additional `boolean[] used` and `int[] pow2`, both O(n).
+
+### ✅ Key Points Explained
+
+| Element          | Description                                                                 |
+| ---------------- | --------------------------------------------------------------------------- |
+| **Pruning 1**    | If `desiredTotal <= 0`, win immediately (initial condition).                 |
+| **Pruning 2**    | If `1+2+…+maxChoosable < desiredTotal`, even selecting all numbers will lose.|
+| **State Representation** | Use `int mask` to represent which numbers are currently chosen (up to 20 bits). |
+| **Memoization Table** | `Boolean[] memo = new Boolean[2^(max+1)]` records whether the current state is a winning position for the first player. |
+| **Search Logic** | The current player enumerates a number `i`. If `i >= remain`, win immediately; otherwise, pass the problem to the opponent recursively. |
+| **Winning Strategy** | If there exists a number that forces the opponent into a losing state ⇒ the current player is in a winning position. |
+
+### Code
 
 ```java
+class Solution {
 
+  private int max;          // 最大可选数
+  private int[] pow2;       // pow2[i] = 2^(i-1)，不用位移
+  private Boolean[] memo;   // 记忆化表：mask → 当前轮是否必胜
+
+  public boolean canIWin(int maxChoosableInteger, int desiredTotal) {
+
+    // 0. 目标 <= 0，先手直接赢
+    if (desiredTotal <= 0) return true;
+
+    // 1. 下界剪枝：最大总和仍达不到目标，必输
+    int maxSum = (maxChoosableInteger + 1) * maxChoosableInteger / 2;
+    if (maxSum < desiredTotal) return false;
+
+    // 2. 预处理
+    this.max = maxChoosableInteger;
+    buildPow2();                              // 填充 pow2[]
+    memo = new Boolean[2*(1 << max)];            // 2*2^max 个状态
+
+    boolean[] used = new boolean[max + 1];    // 1‑based
+    return dfs(desiredTotal, used, 0);
+  }
+
+  /** 递归判断“当前局面（remain, used, mask）”先手是否必胜 */
+  private boolean dfs(int remain, boolean[] used, int mask) {
+    // 3. 记忆化
+    if (memo[mask] != null) return memo[mask];
+
+    // 4. 枚举可选数字：从大到小能更快触发“直接赢”剪枝
+    for (int i = max; i >= 1; i--) {
+      if (used[i]) continue;
+
+      // 4‑1. 选 i 就能凑够或超出目标 ⇒ 当前玩家立刻获胜
+      if (i >= remain) {
+        return memo[mask] = true;
+      }
+
+      // 4‑2. 尝试选 i，递归让对手去玩剩下的局面
+      used[i] = true;
+      boolean opponentWin = dfs(remain - i, used, mask + pow2[i]);
+      used[i] = false;          // 回溯
+
+      // 只要有一种选择让对手必败，当前必胜
+      if (!opponentWin) return memo[mask] = true;
+    }
+
+    // 5. 遍历完仍没有必胜手段 ⇒ 当前必败
+    return memo[mask] = false;
+  }
+
+  /** 构造 pow2[]：pow2[i] = 2^(i-1)，全部用乘法，无位移 */
+  private void buildPow2() {
+    pow2 = new int[max + 1];   // 下标 0..max
+    pow2[0] = 1;               // 2^0
+    for (int i = 1; i <= max; i++) {
+      pow2[i] = pow2[i - 1] * 2;   // 连乘得到 2^(i-1)
+    }
+  }
+}
 ```
+
+### 🧠 Additional Suggestions:
+
+Your code is very well-structured, and the use of `pow2[i]` instead of `(1 << (i-1))`, though slightly more verbose, effectively avoids bit-shifting pitfalls 👏.
+
+For further space optimization, you can:
+
+* Replace `pow2[i]` with `1 << (i-1)`;
+* Use `memo = new Boolean[1 << max]` to avoid wasting space on unused states;
+* Replace `used[]` with a dynamically generated mask instead of a separate array.
+
+---
+
+## LC 354 Russian Doll Envelopes
+
+
+### **Algorithm Type**:
+📦 **2D to 1D Transformation + Longest Increasing Subsequence (LIS) + Binary Search Optimization**
+
+### **Time Complexity**:
+**O(n × log n)**
+
+* Sorting takes O(n × log n).
+* LIS with binary search maintains the `tails` array, each operation takes O(log n), performed n times → O(n × log n).
+
+### **Space Complexity**:
+**O(n)**
+
+* The `tails` array is used to record the smallest possible tail elements of all increasing subsequences.
+
+## 🧠 Key Insights:
+
+### 🚩 1. Cannot directly apply LIS to 2D arrays
+
+Since both dimensions (width `w` and height `h`) need to satisfy the increasing condition, direct sorting and 2D comparison are not feasible.
+
+### 🚩 2. Special Sorting Technique (Core Trick ⚠️):
+
+```java
+Arrays.sort(envelopes, (a, b) -> 
+    a[0] == b[0] ? Integer.compare(b[1], a[1]) : Integer.compare(a[0], b[0]));
+```
+
+| Sorting Logic                     | Purpose                                   |
+| ---------------------------------- | ----------------------------------------- |
+| Sort by `width` in ascending order  | Ensures that later envelopes are "at least not smaller". |
+| If `width` is equal, sort by `height` in descending order | Prevents misjudgment of nesting for `[w, h1], [w, h2]` (which cannot be nested). |
+
+This reduces the problem to 1D, allowing us to apply LIS only on the **`height`** dimension.
+
+### 🚩 3. Binary Search-Optimized LIS (Explanation of `tails`)
+
+* `tails[i]` represents the smallest possible tail element of all increasing subsequences of length `i+1`.
+* Each `height` is inserted into the `tails` array using binary search.
+* If an old value can be replaced, replace it (to maintain the optimal tail); otherwise, append it.
+* The length of `tails` at the end is the maximum number of nested envelopes.
+
+### ✨ Example
+
+```java
+Input: envelopes = [[5,4],[6,4],[6,7],[2,3]]
+Output: 3
+Explanation: The sequence [2,3] => [5,4] => [6,7]
+```
+
+### Code
+
+```java
+class Solution {
+    // Constraints: 1 <= envelopes.length <= 105, envelopes[i].length == 2, 1 <= wi, hi <= 105
+    public int maxEnvelopes(int[][] envelopes) {
+        Arrays.sort(envelopes, (a, b) -> a[0] == b[0] ? Integer.compare(b[1], a[1]) : Integer.compare(a[0], b[0]));
+
+        int[] tails = new int[envelopes.length];
+        int size = 0;
+        for (int[] env : envelopes) {
+            int h = env[1];
+            int l = 0, r = size;
+            while (l < r) {
+                int m = (l + r) >>> 1;
+                if (tails[m] < h) l = m + 1;
+                else r = m;
+            }
+            tails[l] = h;
+            if (l == size) size++;
+        }
+        return size;
+    }
+}
+```
+
+---
