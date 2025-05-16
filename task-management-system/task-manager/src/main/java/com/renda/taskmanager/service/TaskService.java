@@ -9,6 +9,8 @@ import com.renda.taskmanager.mapper.TaskMapper;
 import com.renda.taskmanager.repository.CategoryRepository;
 import com.renda.taskmanager.repository.TaskRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -30,10 +32,12 @@ public class TaskService {
 
     /* ---------- Read Operations ---------- */
 
+    @Cacheable(value = "taskCache", key = "#id", unless = "#result == null")
     @Transactional(readOnly = true)
     public TaskResponseDto findOne(Long id) throws TaskNotFoundException {
-        Task task = taskRepository.findById(id).orElseThrow(() -> new TaskNotFoundException(id));
-        return taskMapper.toDto(task);
+        return taskRepository.findById(id)
+                .map(taskMapper::toDto)
+                .orElseThrow(() -> new TaskNotFoundException(id));
     }
 
     @Transactional(readOnly = true)
@@ -74,6 +78,7 @@ public class TaskService {
         return taskMapper.toDto(taskRepository.save(task));
     }
 
+    @CacheEvict(value = "taskCache", key = "#id")
     public TaskResponseDto update(Long id, TaskRequestDto req) throws TaskNotFoundException {
         Task task = taskRepository.findById(id).orElseThrow(() -> new TaskNotFoundException(id));
         task.setTitle(req.getTitle());
@@ -83,8 +88,11 @@ public class TaskService {
         return taskMapper.toDto(taskRepository.save(task));
     }
 
+    @CacheEvict(value = "taskCache", key = "#id")
     public void delete(Long id) {
-        taskRepository.deleteById(id);
+        if (taskRepository.existsById(id)) {
+            taskRepository.deleteById(id);
+        }
     }
 
 }
