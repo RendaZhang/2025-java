@@ -93,11 +93,11 @@ This hands-on exercise solidified my understanding of distributed service discov
 
 ---
 
-### Day 5 – MySQL Query‑Optimization Summary 🚀
+## Day 5 – MySQL Query‑Optimization Summary 🚀
 
 **Key focus:** understanding indexes, reading execution plans, and speeding‑up the `task‑manager` DB queries.
 
-#### 🔍 Indexing Strategy
+### 🔍 Indexing Strategy
 
 * Added **composite covering index** `idx_status_created_id (status, created_time DESC, id)` on **tasks**.
   \* Effect: pagination query
@@ -115,7 +115,7 @@ This hands-on exercise solidified my understanding of distributed service discov
 * Ensured single‑column indexes on high‑cardinality fields:
   `category_id`, `created_time`, and `users.email`.
 
-#### 🛠 Execution‑Plan Analysis
+### 🛠 Execution‑Plan Analysis
 
 * Used `EXPLAIN ANALYZE` and focused on:
 
@@ -131,7 +131,7 @@ This hands-on exercise solidified my understanding of distributed service discov
 
   to an **INNER JOIN**, dropping scanned rows from 30 k ➜ 90.
 
-#### ⚡️ Query‑Pattern Improvements
+### ⚡️ Query‑Pattern Improvements
 
 | Technique                     | Example & Result                                                                                            |
 | ----------------------------- | ----------------------------------------------------------------------------------------------------------- |
@@ -140,7 +140,7 @@ This hands-on exercise solidified my understanding of distributed service discov
 | **Range instead of function** | Replaced `DATE(created_time)=?` with `BETWEEN '2025-05‑01 00:00:00' AND '05‑02 00:00:00'` – preserved index |
 | **Slow‑log profiling**        | Enabled `slow_query_log`, `long_query_time = 1 s`; worst call fell from **850 ms ➜ 35 ms** after indexing   |
 
-#### 📈 Measurable Gains
+### 📈 Measurable Gains
 
 | Endpoint                                | Before  | After                 | Gain |
 | --------------------------------------- | ------- | --------------------- | ---- |
@@ -158,4 +158,55 @@ This hands-on exercise solidified my understanding of distributed service discov
 These optimisations leave the `task‑manager` micro‑services ready for higher traffic and set a solid foundation for future caching and sharding work.
 
 ---
+
+## Day 6 – Redis Caching Integration Summary 🚀
+
+Today I focused on introducing a high-performance **Redis** cache layer into the Spring-Boot-based micro-services.
+
+---
+
+### 🔑 Key Redis Concepts Reviewed
+
+* **In-memory, single-threaded design** → sub-millisecond reads/writes.
+* Data structures mastered: **String** (hot key/value), **Hash** (object fields), **List** (queue), **ZSet** (rank).
+* Persistence & HA: **RDB / AOF** snapshots, master-replica with Sentinel.
+
+---
+
+### 🛠 Implementation Highlights
+
+| Aspect                  | Approach                                                                                     |
+| ----------------------- | -------------------------------------------------------------------------------------------- |
+| **Dependency & Config** | `spring-boot-starter-data-redis` with Lettuce, pool 10/2; `EnableCaching` global switch.     |
+| **Read-through cache**  | `@Cacheable(value="taskCache", key="#id", unless="#result==null")` on `TaskService.findOne`. |
+| **Write consistency**   | `@CacheEvict` on `update` & `delete` to prevent stale reads.                                 |
+| **TTL strategy**        | 30 min ± random jitter to avoid **cache avalanche**.                                         |
+| **Cache penetration**   | `unless="#result==null"` still caches empty result (short TTL) to block repeated misses.     |
+| **Cache breakdown**     | Prepared Mutex lock (Redisson) for future hot-key protection; logical-expiry pattern noted.  |
+
+---
+
+### 📈 Measured Performance
+
+| Scenario               | Latency  |
+| ---------------------- | -------- |
+| Cache disabled         | 120 ms   |
+| First query (miss)     | 115 ms   |
+| Subsequent query (hit) | **8 ms** |
+
+Hit rate visible via `keyspace_hits / keyspace_misses` and application logs (“Cache hit for key 1”).
+
+---
+
+### 🧩 Lessons Learned
+
+1. **Cover more than 95 % reads** with a disciplined read-through pattern; write-invalidate keeps data fresh.
+2. Randomised TTL and small null-value caches effectively neutralise avalanche & penetration.
+3. Even a single hot entity cached drops latency by an order of magnitude and cuts DB load dramatically.
+4. Spring’s annotation-driven caching is fast to adopt, yet allows fine-grained tuning via custom `CacheManager`.
+
+With Redis caching in place, the Task-Manager service set is ready to handle higher traffic while keeping database pressure low.
+
+---
+
 
