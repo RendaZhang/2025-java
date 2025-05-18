@@ -1,179 +1,130 @@
-# 🧩 Task Management System - 微服务任务管理系统
+# 🧩 Task Management System — 微服务任务管理系统
 
-> 这是一个基于 Spring Cloud 微服务架构构建的任务管理系统，具备注册发现、负载均衡、远程调用、认证鉴权、容错降级、统一响应封装、接口聚合文档等特性，适合作为中高级 Java 后端面试项目展示模板。
+> 一个基于 **Spring Boot 3.3** + **Spring Cloud 2023** 的微服务示例，整合 MySQL 8、Redis 7、Docker Compose、日志追踪、熔断降级与聚合 Swagger 文档，可用于中高级 Java 后端面试展示或自学实践。
+
+![Java](https://img.shields.io/badge/JDK-21-blue)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.3-brightgreen)
+![Spring Cloud](https://img.shields.io/badge/Spring%20Cloud-2023.0-blueviolet)
+![License](https://img.shields.io/badge/License-Apache%202.0-yellowgreen)
 
 ---
 
 ## 📁 项目结构
 
-```
-task-management-system/
-├── gateway-server/         # 🔀 Spring Cloud Gateway 网关（统一入口 + Swagger聚合）
-├── registry-server/        # 📘 Eureka 注册中心
-├── task-manager/           # ✅ 主业务服务（任务管理 + Feign/RestTemplate调用）
-├── user-service/           # 👤 用户服务（带安全保护，供调用测试用）
-└── docker-compose.yml      # 🐳 启动 MySQL 数据库的容器配置
-```
-
----
-
-## 🧱 技术架构
-
-| 功能领域         | 技术栈组件 |
-|------------------|------------|
-| 微服务注册发现   | Spring Cloud Netflix Eureka |
-| API 网关         | Spring Cloud Gateway |
-| 声明式远程调用   | OpenFeign |
-| 客户端负载均衡   | Spring Cloud LoadBalancer |
-| 容错降级机制     | Resilience4j CircuitBreaker |
-| 安全认证         | Spring Security + Basic Auth |
-| 认证统一配置     | 自定义认证组件（支持 Basic/Bearer/Custom） |
-| 数据访问         | Spring Data JPA + MySQL |
-| 接口文档         | SpringDoc OpenAPI + 聚合 Swagger |
-| 异常处理         | GlobalExceptionHandler + CommonResponseDto |
-| 日志管理         | Logback + traceId 支持 |
-| 服务配置         | application.yml 多服务隔离配置 |
-
----
-
-## 🔗 模块间调用链流程
-
-以用户请求 `/api/calls/hello-user-feign` 为例：
-
 ```text
-[Browser]
-   ↓ ① HTTP GET /api/calls/hello-user-feign
-[Gateway] (8888)
-   ↓ ② 路由转发至 /task-manager/api/calls/hello-user-feign
-[task-manager]
-   ↓ ③ 使用 FeignClient 调用 user-service（附带认证头）
-[user-service]
-   ↓ ④ 返回 “Hello from user-service-1”
-[task-manager]
-   ↓ ⑤ 封装为统一响应 CommonResponseDto
-[Gateway → 浏览器]
+ task-management-system/
+ ├── registry-server/     # 📘 Eureka 注册中心 (8761)
+ ├── gateway-server/      # 🔀 Spring Cloud Gateway + Swagger 聚合 (8888)
+ ├── user-service/        # 👤 用户服务 (8082 / 8083)
+ ├── task-manager/        # ✅ 任务&分类服务 (8080)
+ ├── common-lib/          # 📦 公共 DTO / 日志切面 / 响应封装
+ └── docker/docker-compose.yml   # 🐳 MySQL + Redis
 ```
 
-✅ 支持多个实例轮询调用（基于 Eureka 注册）
-
-✅ 调用失败自动触发 fallback 并返回友好 JSON 错误结构
+> **多模块 monorepo**：公共代码抽取到 `common-lib`，其余服务仅关注各自业务。
 
 ---
 
-## 📄 响应格式（统一结构）
+## 🧱 技术栈
+
+| 领域      | 组件                                              |
+| ------- | ----------------------------------------------- |
+| 微服务注册发现 | **Netflix Eureka**                              |
+| 网关      | **Spring Cloud Gateway**                        |
+| 客户端负载均衡 | **Spring Cloud LoadBalancer**                   |
+| 声明式调用   | **OpenFeign** + **Resilience4j CircuitBreaker** |
+| 安全      | **Spring Security** Basic Auth + 全局 Feign 认证拦截器 |
+| 数据持久化   | **Spring Data JPA** / MySQL 复合索引优化              |
+| 缓存      | **Redis** 读穿透/击穿/雪崩方案 + `@Cacheable`            |
+| 文档      | **SpringDoc OpenAPI** 聚合到 Gateway               |
+| 观测      | Logback + MDC traceId 统一日志；Actuator (可选)        |
+
+---
+
+## 🔗 服务调用链（示例）
+
+```mermaid
+sequenceDiagram
+  participant G as Gateway (8888)
+  participant TM as Task‑Manager (8080)
+  participant US as User‑Service (8082/8083)
+  participant R as Redis
+  participant DB as MySQL
+
+  G->>TM: /task-manager/api/tasks/1 (GET)
+  TM->>R: GET taskCache::1  (miss)
+  TM->>DB: SELECT ...
+  DB-->>TM: row
+  TM->>R: SET taskCache::1 EX 1800s
+  TM-->>G: 200 OK
+```
+
+* 同一路径亦可通过 `Feign → LoadBalancer → USER-SERVICE` 演示服务间调用与熔断降级。
+
+---
+
+## 🚀 快速启动
+
+```bash
+# 1️⃣ 构建全部模块
+mvn clean install -DskipTests
+
+# 2️⃣ 启动基础设施
+cd docker && docker compose up -d        # MySQL(3306) + Redis(6379)
+
+# 3️⃣ 依次启动服务（新终端中执行）
+mvn -pl registry-server spring-boot:run              # 8761
+mvn -pl user-service spring-boot:run -Dserver.port=8082
+mvn -pl user-service spring-boot:run -Dserver.port=8083 &
+mvn -pl task-manager spring-boot:run                 # 8080
+mvn -pl gateway-server spring-boot:run               # 8888
+```
+
+| URL                                                                            | 说明            |
+| ------------------------------------------------------------------------------ | ------------- |
+| [http://localhost:8761](http://localhost:8761)                                 | Eureka 控制台    |
+| [http://localhost:8888/swagger-ui.html](http://localhost:8888/swagger-ui.html) | 聚合 Swagger UI |
+
+默认 Basic Auth 账号：`renda / password`
+
+---
+
+## 🛡️ 统一认证机制
+
+`task-manager` 在调用 `user-service` 时无需关心凭证，`GlobalFeignAuthInterceptor` 会读取 `application-common.yml` 中的配置自动注入 `Authorization` 头，支持 **Basic / Bearer / 自定义 Header** 三种方式。
+
+---
+
+## 🧩 响应规范
 
 ```json
-// ✅ 成功响应
 {
   "status": 200,
   "message": "Success",
-  "data": "Hello from user-service-1"
-}
-
-// ❌ 失败响应（例如 Feign 调用失败）
-{
-  "status": 503,
-  "message": "Service temporarily unavailable: ..."
+  "data": { ... }
 }
 ```
 
----
-
-## 🧪 接口测试与聚合文档
-
-### 🔗 Swagger 地址（聚合展示）：
-
-```
-http://localhost:8888/swagger-ui.html
-```
-
-> 网关统一聚合 task-manager / user-service 的所有接口，支持切换服务查看。
+失败或熔断降级时以相同结构返回，方便前端统一处理。
 
 ---
 
-## 🛡️ 安全认证（Basic Auth）
+## 🧪 测试要点
 
-- `user-service` 启用 Basic Auth 保护 `/api/**`
-- `task-manager` 中 RestTemplate / Feign 调用会自动附带认证头
-
-统一配置于 `application.yml`：
-
-```yaml
-auth:
-  services:
-    user-service:
-      type: basic
-      username: renda
-      password: password
-```
-
-✅ 还支持 bearer token、自定义 header 类型
+* **负载均衡**：多次请求 `/task-manager/api/calls/hello-user-feign`，观察轮询 8082/8083。
+* **缓存命中**：`GET /task-manager/api/tasks/1` 二次访问用时从 \~120 ms → \~8 ms。
+* **熔断**：停掉 `user-service` 实例，CircuitBreaker 打开并返回 fallback JSON。
 
 ---
 
-## 🧩 RestTemplate 与 Feign 统一认证机制
+## 🔮 待办 & 进阶
 
-内置拦截器自动根据服务名读取配置，附加认证头：
-
-```java
-// RestTemplate 调用（自动附带认证）
-restTemplate.getForObject("http://user-service/api/users/hello", String.class);
-
-// FeignClient 调用（自动附带认证）
-userClient.hello();
-```
-
-无需在业务代码中显式处理认证逻辑。
+* Spring Cloud Config Server + 动态刷新
+* JWT + OAuth2 统一网关鉴权
+* GitHub Actions CI/CD & Docker 发布
+* Prometheus + Grafana 指标监控
+* Kubernetes Helm Chart 部署
 
 ---
 
-## 🐳 本地运行（MySQL 容器）
-
-```bash
-docker compose up -d
-```
-
-- MySQL 端口：3306
-- 用户名：root
-- 密码：password
-- 数据库名：task_db
-
----
-
-## ✅ 快速启动顺序
-
-1. 启动 `registry-server`：Eureka 控制台 http://localhost:8761
-2. 启动 `user-service`（支持多实例注册：8082/8083）
-3. 启动 `task-manager`（包含调用接口）
-4. 启动 `gateway-server`：网关入口 http://localhost:8888
-
----
-
-## 🎯 面试讲解建议
-
-> “这个项目采用 Spring Cloud 架构搭建，包含服务注册发现、网关转发、认证鉴权、熔断降级、负载均衡、统一响应封装等模块，并整合了 RestTemplate 和 FeignClient 的通用认证机制，接口聚合到 Gateway 的 Swagger 页面中，展示了微服务架构在中型系统中的标准应用场景。”
-
----
-
-## 🧠 后续可扩展方向
-
-| 方向 | 描述 |
-|------|------|
-| ✅ Spring Cloud Config | 配置中心支持动态刷新 |
-| ✅ JWT + 权限控制 | 使用 Spring Security 细粒度控制接口权限 |
-| ✅ Gray release | 灰度发布 + Canary 流量控制 |
-| ✅ Prometheus + Grafana | 服务监控告警与指标收集 |
-| ✅ Docker Compose 多服务 | 多模块一键部署 |
-| ✅ Kubernetes 部署 | Helm + Ingress 实现容器化交付
-
----
-
-## 👨‍💻 作者
-
-- 👤 **Renda Zhang**
-- 🌐 [www.rendazhang.com](http://www.rendazhang.com)
-- 📫 更多功能请参考项目文档或联系作者定制
-
----
-
-> 如需源码 Demo 或部署模板，请联系作者。欢迎用于学习、展示、实战练习等用途！
+## © 2025 Renda Zhang — Apache 2.0 License
