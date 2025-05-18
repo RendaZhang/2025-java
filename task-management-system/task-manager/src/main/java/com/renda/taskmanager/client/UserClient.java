@@ -1,6 +1,6 @@
 package com.renda.taskmanager.client;
 
-import com.renda.taskmanager.dto.CommonResponseDto;
+import com.renda.common.dto.CommonResponseDto;
 import com.renda.taskmanager.fallback.GlobalFeignFallbackHandler;
 import com.renda.taskmanager.util.SpringContextHolder;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;

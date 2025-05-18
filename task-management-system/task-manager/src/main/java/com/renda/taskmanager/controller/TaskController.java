@@ -1,12 +1,12 @@
 package com.renda.taskmanager.controller;
 
-import com.renda.taskmanager.dto.CommonResponseDto;
+import com.renda.common.dto.CommonResponseDto;
+import com.renda.common.util.ResponseUtils;
 import com.renda.taskmanager.dto.TaskRequestDto;
 import com.renda.taskmanager.dto.TaskResponseDto;
 import com.renda.taskmanager.entity.TaskStatus;
 import com.renda.taskmanager.exception.TaskNotFoundException;
 import com.renda.taskmanager.service.TaskService;
-import com.renda.taskmanager.util.ResponseUtils;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

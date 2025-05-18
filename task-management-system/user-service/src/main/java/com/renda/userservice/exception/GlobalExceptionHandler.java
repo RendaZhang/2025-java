@@ -1,7 +1,7 @@
 package com.renda.userservice.exception;
 
-import com.renda.userservice.dto.CommonResponseDto;
-import com.renda.userservice.util.ResponseUtils;
+import com.renda.common.dto.CommonResponseDto;
+import com.renda.common.util.ResponseUtils;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;

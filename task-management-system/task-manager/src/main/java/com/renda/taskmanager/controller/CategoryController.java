@@ -1,9 +1,9 @@
 package com.renda.taskmanager.controller;
 
+import com.renda.common.util.ResponseUtils;
 import com.renda.taskmanager.dto.CategoryDto;
-import com.renda.taskmanager.dto.CommonResponseDto;
+import com.renda.common.dto.CommonResponseDto;
 import com.renda.taskmanager.service.CategoryService;
-import com.renda.taskmanager.util.ResponseUtils;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

@@ -1,4 +1,4 @@
-package com.renda.taskmanager.dto;
+package com.renda.common.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;

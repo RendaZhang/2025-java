@@ -1,6 +1,6 @@
 package com.renda.userservice.config;
 
-import com.renda.userservice.dto.CommonResponseDto;
+import com.renda.common.dto.CommonResponseDto;
 import io.swagger.v3.core.converter.ModelConverters;
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.media.Content;

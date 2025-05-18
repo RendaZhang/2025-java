@@ -1,6 +1,6 @@
-package com.renda.userservice.util;
+package com.renda.common.util;
 
-import com.renda.userservice.dto.CommonResponseDto;
+import com.renda.common.dto.CommonResponseDto;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 

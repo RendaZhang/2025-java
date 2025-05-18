@@ -1,7 +1,7 @@
 package com.renda.taskmanager.fallback;
 
-import com.renda.taskmanager.dto.CommonResponseDto;
-import com.renda.taskmanager.util.ResponseUtils;
+import com.renda.common.dto.CommonResponseDto;
+import com.renda.common.util.ResponseUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;

@@ -1,10 +1,10 @@
 package com.renda.userservice.controller;
 
-import com.renda.userservice.dto.CommonResponseDto;
+import com.renda.common.dto.CommonResponseDto;
+import com.renda.common.util.ResponseUtils;
 import com.renda.userservice.dto.UserRequestDto;
 import com.renda.userservice.dto.UserResponseDto;
 import com.renda.userservice.service.UserService;
-import com.renda.userservice.util.ResponseUtils;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
