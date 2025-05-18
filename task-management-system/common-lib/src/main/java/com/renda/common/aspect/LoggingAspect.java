@@ -1,4 +1,4 @@
-package com.renda.taskmanager.aspect;
+package com.renda.common.aspect;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.aspectj.lang.JoinPoint;
@@ -21,14 +21,14 @@ public class LoggingAspect {
     /**
      * Define a pointcut to match all methods in the service package
      */
-    @Pointcut("execution(* com.renda.taskmanager.service.*.*(..))")
+    @Pointcut("execution(* com.renda..service.*.*(..))")
     public void serviceMethods() {
     }
 
     /**
      * Define a pointcut to match all methods in the controller package
      */
-    @Pointcut("execution(* com.renda.taskmanager.controller.*.*(..))")
+    @Pointcut("execution(* com.renda..controller.*.*(..))")
     public void controllerMethods() {
     }
 
