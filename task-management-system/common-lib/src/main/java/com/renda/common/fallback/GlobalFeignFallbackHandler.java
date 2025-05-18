@@ -1,4 +1,4 @@
-package com.renda.taskmanager.fallback;
+package com.renda.common.fallback;
 
 import com.renda.common.dto.CommonResponseDto;
 import com.renda.common.util.ResponseUtils;

@@ -1,5 +1,7 @@
-package com.renda.taskmanager.config;
+package com.renda.common.interceptor;
 
+import com.renda.common.config.AuthConfigProperties;
+import com.renda.common.config.ServiceAuthConfig;
 import feign.RequestInterceptor;
 import feign.RequestTemplate;
 import lombok.RequiredArgsConstructor;

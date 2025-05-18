@@ -1,4 +1,4 @@
-package com.renda.taskmanager.config;
+package com.renda.common.config;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.web.client.RestTemplateBuilder;
