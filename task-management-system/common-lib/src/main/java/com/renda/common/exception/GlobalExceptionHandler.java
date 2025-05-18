@@ -1,4 +1,4 @@
-package com.renda.taskmanager.exception;
+package com.renda.common.exception;
 
 import com.renda.common.dto.CommonResponseDto;
 import com.renda.common.util.ResponseUtils;
