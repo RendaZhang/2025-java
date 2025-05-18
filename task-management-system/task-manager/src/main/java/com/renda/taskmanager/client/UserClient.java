@@ -1,7 +1,7 @@
 package com.renda.taskmanager.client;
 
 import com.renda.common.dto.CommonResponseDto;
-import com.renda.taskmanager.util.SpringContextHolder;
+import com.renda.common.util.SpringContextHolder;
 import com.renda.common.fallback.GlobalFeignFallbackHandler;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import org.springframework.cloud.openfeign.FeignClient;

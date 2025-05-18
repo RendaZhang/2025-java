@@ -1,4 +1,4 @@
-package com.renda.taskmanager.util;
+package com.renda.common.util;
 
 import lombok.Getter;
 import org.springframework.beans.BeansException;

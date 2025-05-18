@@ -1,4 +1,4 @@
-package com.renda.userservice.security;
+package com.renda.common.security;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;

@@ -1,6 +1,6 @@
 package com.renda.taskmanager.config;
 
-import com.renda.taskmanager.security.Json401EntryPoint;
+import com.renda.common.security.Json401EntryPoint;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
