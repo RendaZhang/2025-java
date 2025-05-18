@@ -209,4 +209,29 @@ With Redis caching in place, the Task-Manager service set is ready to handle hig
 
 ---
 
+## Day 7 - Weekly Technical Log
+
+This week I transformed a simple Spring-Boot application into a fully-fledged **micro-service playground** and, in the process, level-upped my back-end toolkit.
+
+### 🛠 Platform & Infrastructure
+
+* **Modularised** the code-base into eight Maven modules: *registry-server*, *gateway-server*, *task-manager*, *user-service* and a shared *common-lib* that contains DTOs, a Trace-ID logging filter and a Feign auth interceptor.
+* Spun up **Docker Compose** for MySQL 8 and Redis 7, plus multi-instance `user-service` containers to visualise client-side load-balancing.
+* Exposed a **Spring-Cloud-Gateway** (port 8888) that aggregates Swagger UIs and routes traffic to downstream services discovered through **Eureka**.
+
+### ⚙️ Core Features Delivered
+
+* Built CRUD REST APIs for **tasks**, **categories** and **users**, documented automatically via SpringDoc OpenAPI.
+* Added **Feign + Spring Cloud LoadBalancer** for declarative service-to-service calls; wrapped them with **Resilience4j circuit-breakers** and a global fallback handler.
+* Integrated **Redis read-through caching** (`@Cacheable`) on hot task look-ups, with 30-minute TTL and random jitter to mitigate cache avalanche. Cold query latency fell from 120 ms to **8 ms** on cache hit.
+* Tuned MySQL with composite covering indexes (`status, created_time, id`) and rewrote sub-queries into joins; `EXPLAIN ANALYZE` shows row scans dropping from 50 k to 25 and filesort removed.
+* Centralised observability: Logback now prints `[traceId]` for each request, propagated across Feign calls; rolling logs persist 30 days.
+
+### 📈 Outcomes & Lessons
+
+* **Service discovery + client-side LB** eliminates hard-coded URLs and scales horizontally with zero config.
+* A single, well-designed covering index can yield **×24** performance gains—measure before optimising.
+* Caching is powerful but fragile; mixing TTL randomisation, null-value caching and mutex locks prevents penetration, avalanche and breakdown.
+* Writing a shared *common-lib* slashes duplicate code and keeps cross-cutting concerns (logging, error envelopes) consistent.
+
 
