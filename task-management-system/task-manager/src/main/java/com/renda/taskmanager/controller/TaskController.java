@@ -5,7 +5,6 @@ import com.renda.common.util.ResponseUtils;
 import com.renda.taskmanager.dto.TaskRequestDto;
 import com.renda.taskmanager.dto.TaskResponseDto;
 import com.renda.taskmanager.entity.TaskStatus;
-import com.renda.taskmanager.exception.TaskNotFoundException;
 import com.renda.taskmanager.service.TaskService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -28,8 +27,7 @@ public class TaskController {
     /* ---------- Read Endpoints ---------- */
 
     @GetMapping("/{id}")
-    public ResponseEntity<CommonResponseDto<TaskResponseDto>> getTask(@PathVariable Long id)
-            throws TaskNotFoundException {
+    public ResponseEntity<CommonResponseDto<TaskResponseDto>> getTask(@PathVariable Long id) {
         return ResponseUtils.success(taskService.findOne(id));
     }
 
@@ -65,8 +63,7 @@ public class TaskController {
 
     @PutMapping("/{id}")
     public ResponseEntity<CommonResponseDto<TaskResponseDto>> update(@PathVariable Long id,
-                                                  @RequestBody TaskRequestDto req)
-            throws TaskNotFoundException {
+                                                  @RequestBody TaskRequestDto req) {
         return ResponseUtils.success(taskService.update(id, req));
     }
 

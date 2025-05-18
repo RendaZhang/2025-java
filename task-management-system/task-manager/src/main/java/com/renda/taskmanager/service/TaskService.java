@@ -4,10 +4,10 @@ import com.renda.taskmanager.dto.TaskRequestDto;
 import com.renda.taskmanager.dto.TaskResponseDto;
 import com.renda.taskmanager.entity.Task;
 import com.renda.taskmanager.entity.TaskStatus;
-import com.renda.taskmanager.exception.TaskNotFoundException;
 import com.renda.taskmanager.mapper.TaskMapper;
 import com.renda.taskmanager.repository.CategoryRepository;
 import com.renda.taskmanager.repository.TaskRepository;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -34,10 +34,10 @@ public class TaskService {
 
     @Cacheable(value = "taskCache", key = "#id", unless = "#result == null")
     @Transactional(readOnly = true)
-    public TaskResponseDto findOne(Long id) throws TaskNotFoundException {
+    public TaskResponseDto findOne(Long id) throws EntityNotFoundException {
         return taskRepository.findById(id)
                 .map(taskMapper::toDto)
-                .orElseThrow(() -> new TaskNotFoundException(id));
+                .orElseThrow(() -> new EntityNotFoundException("Task with id " + id + " not found"));
     }
 
     @Transactional(readOnly = true)
@@ -79,8 +79,9 @@ public class TaskService {
     }
 
     @CacheEvict(value = "taskCache", key = "#id")
-    public TaskResponseDto update(Long id, TaskRequestDto req) throws TaskNotFoundException {
-        Task task = taskRepository.findById(id).orElseThrow(() -> new TaskNotFoundException(id));
+    public TaskResponseDto update(Long id, TaskRequestDto req) throws EntityNotFoundException {
+        Task task = taskRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Task with id " + id + " not found"));
         task.setTitle(req.getTitle());
         task.setDescription(req.getDescription());
         task.setStatus(req.getStatus());

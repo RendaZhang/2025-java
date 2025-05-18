@@ -17,12 +17,6 @@ import java.util.Optional;
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(TaskNotFoundException.class)
-    public ResponseEntity<CommonResponseDto<Void>> handleTaskNotFoundException(TaskNotFoundException e) {
-        log.warn("Task not found: {}", e.getMessage());
-        return ResponseUtils.error(HttpStatus.NOT_FOUND.value(), e.getMessage());
-    }
-
     @ExceptionHandler(EntityNotFoundException.class)
     public ResponseEntity<CommonResponseDto<Void>> handleEntityNotFoundException(EntityNotFoundException e) {
         log.warn("Entity not found: {}", e.getMessage());

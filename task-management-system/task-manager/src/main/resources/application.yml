@@ -4,6 +4,8 @@ server:
 spring:
   application:
     name: task-manager
+  config:
+    import: "file:application-common.yml"
   datasource:
     hikari:
       maximum-pool-size: 10
@@ -43,13 +45,8 @@ springdoc:
   show-actuator: false
 
 eureka:
-  client:
-    service-url:
-      defaultZone: http://localhost:8761/eureka/
   instance:
-    prefer-ip-address: true
     instance-id: ${spring.application.name}:${server.port}
-    hostname: localhost
 
 resilience4j:
   circuitbreaker:
@@ -64,14 +61,3 @@ resilience4j:
     instances:
       userClientHello:
         base-config: default
-
-auth:
-  services:
-    user-service:
-      type: basic
-      username: renda
-      password: password
-    task-manager:
-      type: basic
-      username: renda
-      password: password
