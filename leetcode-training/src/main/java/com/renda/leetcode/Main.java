@@ -14,6 +14,9 @@ public class Main {
 
 //        LC104_MaximumDepthOfBinaryTree lc104MaximumDepthOfBinaryTree = new LC104_MaximumDepthOfBinaryTree();
 //        System.out.println("LC104 Maximum Depth of Binary Tree: " + lc104MaximumDepthOfBinaryTree.maxDepth(buildTree(new Integer[]{3, 9, 20, null, null, 15, 7})));
+
+        LC3_LongestSubstringWithoutRepeatingCharacters lc3 = new LC3_LongestSubstringWithoutRepeatingCharacters();
+        System.out.println("LC3 Longest Substring Without Repeating Characters: " + lc3.lengthOfLongestSubstring("abc"));
     }
 
 }
