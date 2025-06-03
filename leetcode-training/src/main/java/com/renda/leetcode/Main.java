@@ -24,9 +24,12 @@ public class Main {
 //
 //        LC102_BinaryTreeLevelOrderTraversal lc102 = new LC102_BinaryTreeLevelOrderTraversal();
 //        System.out.println("LC102 Binary Tree Level Order Traversal: " + lc102.levelOrder(buildTree(new Integer[]{3, 9, 20, null, null, 15, 7})));
+//
+//        LC122_BestTimeToBuyAndSellStockII lc122 = new LC122_BestTimeToBuyAndSellStockII();
+//        System.out.println("LC122 Best Time to Buy and Sell Stock II: " + lc122.maxProfit(new int[]{7, 1, 5, 3, 6, 4}));
 
-        LC122_BestTimeToBuyAndSellStockII lc122 = new LC122_BestTimeToBuyAndSellStockII();
-        System.out.println("LC122 Best Time to Buy and Sell Stock II: " + lc122.maxProfit(new int[]{7, 1, 5, 3, 6, 4}));
+        LC200_NumberOfIslands lc200 = new LC200_NumberOfIslands();
+        System.out.println("LC200 Number of Islands: " + lc200.numIslands(new char[][]{{'1', '1', '0', '0', '0'}, {'1', '1', '0', '0', '0'}, {'0', '0', '1', '0', '0'}, {'0', '0', '0', '1', '1'}}));
     }
 
 }
