@@ -27,9 +27,12 @@ public class Main {
 //
 //        LC122_BestTimeToBuyAndSellStockII lc122 = new LC122_BestTimeToBuyAndSellStockII();
 //        System.out.println("LC122 Best Time to Buy and Sell Stock II: " + lc122.maxProfit(new int[]{7, 1, 5, 3, 6, 4}));
+//
+//        LC200_NumberOfIslands lc200 = new LC200_NumberOfIslands();
+//        System.out.println("LC200 Number of Islands: " + lc200.numIslands(new char[][]{{'1', '1', '0', '0', '0'}, {'1', '1', '0', '0', '0'}, {'0', '0', '1', '0', '0'}, {'0', '0', '0', '1', '1'}}));
 
-        LC200_NumberOfIslands lc200 = new LC200_NumberOfIslands();
-        System.out.println("LC200 Number of Islands: " + lc200.numIslands(new char[][]{{'1', '1', '0', '0', '0'}, {'1', '1', '0', '0', '0'}, {'0', '0', '1', '0', '0'}, {'0', '0', '0', '1', '1'}}));
+        LC347_TopKFrequentElements lc347 = new LC347_TopKFrequentElements();
+        System.out.println("LC347 Top K Frequent Elements: " + Arrays.toString(lc347.topKFrequent(new int[]{1, 1, 1, 2, 2, 3}, 2)));
     }
 
 }
