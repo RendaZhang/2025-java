@@ -34,9 +34,11 @@ public class Main {
 //
 //        LC347_TopKFrequentElements lc347 = new LC347_TopKFrequentElements();
 //        System.out.println("LC347 Top K Frequent Elements: " + Arrays.toString(lc347.topKFrequent(new int[]{1, 1, 1, 2, 2, 3}, 2)));
-
-        LC120_Triangle lc120 = new LC120_Triangle();
-        System.out.println("LC120 Triangle: " + lc120.minimumTotal(Arrays.asList(List.of(2), Arrays.asList(3, 4), Arrays.asList(6, 5, 7), Arrays.asList(4, 1, 8, 3))));
+//
+//        LC120_Triangle lc120 = new LC120_Triangle();
+//        System.out.println("LC120 Triangle: " + lc120.minimumTotal(Arrays.asList(List.of(2), Arrays.asList(3, 4), Arrays.asList(6, 5, 7), Arrays.asList(4, 1, 8, 3))));
+        LC79_WordSearch lc79 = new LC79_WordSearch();
+        System.out.println("LC79 Word Search: " + lc79.exist(new char[][]{{'A', 'B', 'C', 'E'}, {'S', 'F', 'C', 'S'}, {'A', 'D', 'E', 'E'}}, "ABCCED"));
     }
 
 }
