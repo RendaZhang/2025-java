@@ -1,6 +1,7 @@
 package com.renda.leetcode;
 
 import java.util.Arrays;
+import java.util.List;
 
 import static com.renda.leetcode.util.TreeUtils.buildTree;
 
@@ -30,9 +31,12 @@ public class Main {
 //
 //        LC200_NumberOfIslands lc200 = new LC200_NumberOfIslands();
 //        System.out.println("LC200 Number of Islands: " + lc200.numIslands(new char[][]{{'1', '1', '0', '0', '0'}, {'1', '1', '0', '0', '0'}, {'0', '0', '1', '0', '0'}, {'0', '0', '0', '1', '1'}}));
+//
+//        LC347_TopKFrequentElements lc347 = new LC347_TopKFrequentElements();
+//        System.out.println("LC347 Top K Frequent Elements: " + Arrays.toString(lc347.topKFrequent(new int[]{1, 1, 1, 2, 2, 3}, 2)));
 
-        LC347_TopKFrequentElements lc347 = new LC347_TopKFrequentElements();
-        System.out.println("LC347 Top K Frequent Elements: " + Arrays.toString(lc347.topKFrequent(new int[]{1, 1, 1, 2, 2, 3}, 2)));
+        LC120_Triangle lc120 = new LC120_Triangle();
+        System.out.println("LC120 Triangle: " + lc120.minimumTotal(Arrays.asList(List.of(2), Arrays.asList(3, 4), Arrays.asList(6, 5, 7), Arrays.asList(4, 1, 8, 3))));
     }
 
 }
