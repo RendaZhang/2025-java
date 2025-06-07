@@ -183,3 +183,142 @@ Future work includes evaluating ZGC on JDK 21, aligning heap sizing with contain
 
 ---
 
+## Day 6 - MySQL Advanced Indexing & Tuning
+
+### Problem
+
+A hot query on **tasks** scanned ~50 k rows and dominated the slow log
+(124 ms average, 380 ms P99). InnoDB showed a 94 % buffer-pool hit rate
+and a full table scan (`index_name = NULL`) for that statement.
+
+### Analysis
+
+- `EXPLAIN JSON` revealed `key=null`, `rows=50432`, and no
+  `using_index_condition`.
+- `optimizer_trace` confirmed the optimizer rejected the only
+  available index due to low selectivity on the **status** column.
+- `performance_schema.table_io_waits_summary_by_index_usage` reported
+  18 k reads with `index_name=NULL` during the 10-minute baseline run.
+
+### Fix
+
+```sql
+CREATE INDEX idx_status_time_title
+  ON tasks(created_time, status, title);   -- covering & high-selectivity
+ANALYZE TABLE tasks;
+````
+
+### Result
+
+| Metric        |  Before |     After |  Delta |
+| ------------- | ------: | --------: | -----: |
+| Rows examined |  50 432 |     1 476 | − 97 % |
+| Avg latency   |  124 ms |     72 ms | − 42 % |
+| P99 latency   |  380 ms |    180 ms | − 53 % |
+| TPS           | 812 r/s | 1 020 r/s | + 26 % |
+
+`using_index=true` and `using_index_condition=true` indicate both
+covering-index and ICP are now in effect. The buffer-pool hit rate rose
+to 97 %, confirming fewer random reads.
+
+### Takeaways
+
+1. **Covering index + proper column order = biggest single win** for
+   OLTP read latency.
+2. Always validate with `EXPLAIN JSON` + `optimizer_trace` to see why an
+   index was (not) chosen.
+3. After schema changes, run `ANALYZE TABLE` so the optimizer picks up
+   fresh statistics.
+4. Monitor buffer-pool metrics; a full scan can look like a memory
+   shortage when it’s actually a missing index.
+
+### Next Steps
+
+* Evaluate **range partitioning** by year on `created_time` once the
+  table exceeds 5 M rows.
+* Consider a Redis read-through cache for `/tasks/{id}` to cut latency
+  to sub-20 ms.
+* Enable `performance_schema.events_statements_history_long` for
+  continuous top-N query tracking.
+
+---
+
+## Week-3 Cheat Sheet 🗂️ (Algorithms · JVM · MySQL)
+
+### 1. Algorithms
+
+| Topic | Formula / Key Rule |
+|-------|--------------------|
+| DP 4-step | **State → Trans → Init → Order** |
+| 1-D compression | iterate `j ↓` to avoid reuse |
+| Kadane | `cur = max(a, cur+a)` |
+| LIS O(n log n) | `tails[lower_bound(x)] = x` |
+| Greedy proof | exchange later-ending interval |
+
+### 2. JVM GC
+
+| Item | Value / CLI |
+|------|-------------|
+| G1 IHOP | `-XX:InitiatingHeapOccupancyPercent=40` |
+| Pause target | `-XX:MaxGCPauseMillis=150` |
+| Heap sizing | `-Xms = -Xmx = 1g` |
+| Log flag (JDK17) | `-Xlog:gc*:file=gc.log:time` |
+| Max-pause check | watch **Mixed/Full** > 200 ms |
+
+### 3. MySQL
+
+| Concept | One-liner |
+|---------|-----------|
+| Covering index | `SELECT cols ⊆ index cols ⇒ no back-table` |
+| ICP | index condition filtered in storage engine |
+| Selectivity | `cardinality / table_rows ↑ ⇒ put left` |
+| Buffer-pool hit | `(read_requests - rnd_next) / read_requests` ≥ 95 % |
+| EXPLAIN rows | baseline 50 k → tuned < 2 k |
+
+---
+
+## Week-3 Engineering Digest
+
+*Algorithms ⋅ JVM GC ⋅ Database Tuning*
+
+### 1 · What I Set Out to Do
+
+The goal for this sprint was two-fold: **sharpen algorithmic muscle memory** (DP-family, backtracking, greedy) and **push the real-world “task-manager” service through a full performance loop**—measure, analyse, tune, validate. The stack covered JVM (G1 GC), MySQL /InnoDB and a thin Redis layer.
+
+### 2 · Highlights
+
+| Area                      | Milestone                                                                                                                                                           | Impact                                 |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- |
+| **Dynamic Programming**   | Implemented LIS with a binary-search “tails” array. Runtime dropped from 43 ms (O(n²)) to 2 ms (O(n log n)).                                                        | ↓ 95 % execution time                  |
+| **Backtracking + Greedy** | Introduced pruning (`break` + level-skip) in *Combination Sum*; search nodes cut by ≈ 50 %. Proved earliest-finish-time heuristic for interval scheduling (LC 435). | cleaner call tree & formal correctness |
+| **JVM GC**                | Raised heap to 1 GB, lowered **IHOP** to 40 %, added 20 % reserve. Max G1 pause fell from 350 ms to 140 ms; Full GCs disappeared in a 10 min, 500 QPS test.         | tail-latency ↓ 60 %                    |
+| **MySQL**                 | Added covering index *(created\_time, status, title)*; rows examined from 50 k → 1.5 k. P99 latency on `/tasks` shrank 53 %.                                        | TPS +26 %                              |
+| **Knowledge Base**        | Created *week3-cheatsheet.md* (2 pages) + detailed GC / SQL dashboards.                                                                                             | quick revision asset                   |
+
+### 3 · Key Challenges Encountered
+
+* **Bit-mask DP** still takes me > 30 minutes under interview pressure.
+* Balancing index width vs. write amplification—early attempt with *(status, title, created\_time)* looked “covering” but had poor selectivity and hurt inserts.
+* VisualVM sampling on WSL needed extra JMX flags; cost me an hour of trial-and-error.
+
+### 4 · What I Learned
+
+1. **Reverse iteration** is the invisible guard-rail in 0/1 knapsack: forget it and you double-count items.
+2. A single `break` in a sorted backtracking loop can save half the recursion tree—pruning is ROI--heavy.
+3. In G1, lowering IHOP is the fastest way to tame long pauses **without over-allocating memory**; heap first, fancy flags later.
+4. Always couple `EXPLAIN JSON` with `optimizer_trace`; the latter explains *why* an index was skipped.
+5. Performance work is a scientific loop—**measure → analyse → improve**—and only counts when numbers move.
+
+### 5 · Next Week (Week 4) Road-map
+
+* **English communication sprint**: record two mock interview videos and write daily 150-word tech briefs.
+* **Spring Cloud tracing**: integrate OpenTelemetry to visualise cross-service latency.
+* Revisit bit-mask DP; target < 20 min for 16-state problems.
+* Prepare three STAR-format stories (GC tuning, SQL optimisation, Redis cache) for behavioural interviews.
+
+> **Total code submitted:** 25 Java classes, 4 SQL migrations
+> **Average daily study time:** 6 h 25 min
+
+**Ship fast, learn faster—Week 3 closed. 🚀**
+
+---
