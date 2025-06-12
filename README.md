@@ -1,6 +1,7 @@
 # 📌 2025 Java 学习计划
 
 ## 🎯 总体目标
+
 系统复习与提升 Java 基础知识、算法能力以及英语综合技能，以顺利通过外企技术面试，达到中高级 Java 开发工程师或 Java 项目技术 Leader 的水平。
 
 ---
@@ -85,79 +86,56 @@
 
 ---
 
-## 📅 第二阶段（第5-8周）：进阶技术与项目实践
+## 📅 第二阶段（第5-8周）：Java Cloud-Native Sprint
 
-### 🔖 第5-6周：Spring Cloud 微服务架构进阶
+**主修 AWS + 副修 GCP (“Day-0” 基础 + 3-Day Bootcamp ➜ Week 5 – Week 8)**  
+*时段：2025-07-01 → 2025-08-25 — 目标：补齐 AWS 实战、云 SRE、Gen-AI 集成，并生成可量化简历亮点*
+---
 
-- 微服务进阶实践：服务治理、网关（Zuul）、熔断（Hystrix）
-- 微服务项目实战与Docker容器部署
-- 每周记录项目实施过程与问题解决方案
+## 📆 Timeline & Deliverables
+
+| 时段               | 云侧重       | 主题                                                                                        | 关键实操 & 交付物                                                                                                                                                                                                      |      |                     |
+| ---------------- | --------- | ----------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---- | ------------------- |
+| **Day-0 (½ d)**  | —         | *Docker & K8s refresher*                                                                  | Labs: Play-with-Docker & Kubernetes Basics module → `day0-notes.md` （常用命令＋概念） ([aws.amazon.com][1], [eksctl.io][2])                                                                                             |      |                     |
+| **Bootcamp 3 d** | AWS + GCP | Day 1 – VPC/LB/IAM 对照 · Day 2 – `eksctl` 建 EKS · Day 3 – Terraform 双 provider (EKS + GKE) | `eksctl-config.yaml` ([docs.aws.amazon.com][3]) · `main.tf` + S3 backend lock ([developer.hashicorp.com][4], [developer.hashicorp.com][5]) · 对照笔记                                                               |      |                     |
+| **Week 5**       | **AWS**   | 双 GitOps CI/CD                                                                            | ① CodePipeline Blue-Green→EKS 截图 ([aws.amazon.com][6], [aws.amazon.com][1]) ② GitHub Actions→Argo CD→GKE GIF ③ IAM IRSA/OIDC role json ([docs.aws.amazon.com][7]) ④ Trivy 扫描集成到 CodeBuild ([chaos-mesh.org][8]) |      |                     |
+| **Week 6**       | **AWS**   | K8s Deep-Dive + Helm + Chaos                                                              | Helm Chart (`charts/task-manager/`) · Chaos Mesh `pod-kill` + latency → MTTR < 3 min ([chaos-mesh.org][9], [chaos-mesh.org][8]) · HPA & PDB YAML                                                                |      |                     |
+| **Week 7a**      | **AWS**   | Observability & SRE                                                                       | ADOT sidecar → Trace to AMP + Grafana ([docs.aws.amazon.com][10], [docs.aws.amazon.com][11]) · `sample_limit` 降低成本 ([docs.aws.amazon.com][12]) · SLO 99.9 % → CloudWatch Composite Alert                        |      |                     |
+| **Week 7b**      | **GCP**   | Gen-AI PoC                                                                                | Spring AI + Vertex AI Gemini Pro demo · Redis/PGVector · Token budget monitor (Vertex pricing) ([cloud.google.com][13], [cloud.google.com][14])                                                                 |      |                     |
+| **Week 8**       | 混合云       | Mock Marathon & Résumé v2                                                                 | 两轮 90-min 全英 mock 录像 · `progress.png` 折线 (语速                                                                                                                                                                    | MTTR | CI 成功率) · 简历 v2 PDF |
 
 ---
 
-### 🔖 第7-8周：高级算法与性能调优实战、全面模拟面试
+## 🛡 Built-in Guard-rails
 
-- 高级算法专题训练（每日1道Leetcode Hard级别）
-- JVM性能高级调优、数据库性能优化深入实践
-- 每周全面英文技术面试模拟（含算法、Java核心知识、系统设计）
-- 记录与优化每次模拟面试表现，形成面试应对策略与总结
-
----
-
-## ⏰ 每日学习安排（约4小时）
-
-| 时间段 | 学习任务                            |
-|--------|-------------------------------------|
-| 上午   | Java知识复习（1小时）+ 算法练习（1小时） |
-| 下午   | 英语听力与口语练习（1小时）         |
-| 晚上   | 技术阅读与英文写作（1小时）         |
+1. **单集群多 Namespace**⇒省 EKS 控制层费用 ([docs.aws.amazon.com][3])
+2. **S3 backend + state lock** 防止 tf 冲突 ([developer.hashicorp.com][4], [developer.hashicorp.com][5])
+3. **Trivy** 镜像扫描在 CodeBuild 步骤 ([chaos-mesh.org][8])
+4. **IRSA/OIDC** 最小权限部署流水线 ([docs.aws.amazon.com][7])
+5. **Chaos Mesh privilege flag** 解决 EKS PSA 限制 ([chaos-mesh.org][9])
+6. **AMP `sample_limit`** 防止指标爆表 ([docs.aws.amazon.com][12])
+7. **Vertex AI Budget** 监控 token 花费 ([cloud.google.com][13])
+8. **Day-8 Retro** — `terraform destroy`, `eksctl delete` + 账单审计
 
 ---
 
-## 📌 每周核心任务一览
+## 🎯 KPI Targets
 
-- 每周完成5-7道 Leetcode Medium 难度题，挑战至少1道 Hard 题
-- 深入学习并掌握2-3个 Java 高级技术点或工具
-- 每周至少一次英文技术面试模拟，并持续优化表现
-- 每周撰写至少1篇英文技术博客或学习总结文章
+| 指标         | Boot | W5   | W6      | W7      | W8      |
+| ---------- | ---- | ---- | ------- | ------- | ------- |
+| GitOps 成功率 | —    | 90 % | 93 %    | 96 %    | 98 %    |
+| Chaos MTTR | —    | —    | < 3 min | < 2 min | < 1 min |
+| Trace 覆盖率  | —    | 40 % | 70 %    | 95 %    | 95 %    |
+| Mock 评分\*  | —    | 3.3  | 3.5     | 3.8     | 4.0     |
 
----
-
-## 📚 推荐学习资源
-
-**书籍：**
-- 《Java 编程思想》 (Thinking in Java)
-- 《Effective Java》
-- 《Java 并发编程实战》(Java Concurrency in Practice)
-- 《算法导论》 (Introduction to Algorithms)
-
-**在线资源：**
-- [Leetcode](https://leetcode.com)
-- [Spring官方文档](https://spring.io/docs)
-- [Oracle Java官方教程](https://docs.oracle.com/javase/tutorial)
-- [Maven官方指南](https://maven.apache.org/guides/getting-started)
-- [Git官方文档](https://git-scm.com/doc)
-
-**英语学习资源：**
-- [TechLead YouTube频道](https://www.youtube.com/c/TechLead)
-- [Software Engineering Daily](https://softwareengineeringdaily.com)
+\*5-point scale: Coding / Java / Design / Comms
 
 ---
 
-## 🚩 实施与反馈机制
+## ⏰ Daily Rhythm (≈ 4 h)
 
-- 每阶段开始前，提前将具体的每日学习计划发送给 ChatGPT，以获得更加详细的实施细节指导与练习建议。
-- 每周进行一次学习总结与回顾，及时发现学习中的问题并进行调整，以持续优化学习效果。
-
----
-
-## 🎯 预期学习成果
-
-- 系统全面地提升 Java 基础与框架实操能力
-- 显著增强算法解题与优化能力，顺利应对面试难度的算法题
-- 提升英语口语与技术表达能力，熟练应对外企技术面试
-- 自信应聘目标外企职位，顺利获得中高级 Java 工程师或技术 Leader 岗位
+| 上午 1 h   | 上午 1 h             | 下午 1 h                  | 晚上 1 h           |
+| -------- | ------------------ | ----------------------- | ---------------- |
+| 云/容器文档速读 | Hands-on Lab / IaC | **英语**：Shadow 或 STAR 练习 | 技术博客 / 日报 & push |
 
 ---
-
-🚀 **一起加油，稳步提升，早日实现目标！**
