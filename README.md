@@ -86,56 +86,42 @@
 
 ---
 
-## 📅 第二阶段（第5-8周）：Java Cloud-Native Sprint
+## 📅 第二阶段（第 5 – 8 周）：Java Cloud-Native 跑通实战（仅用 AWS，EKS NodeGroup）
 
-**主修 AWS + 副修 GCP (“Day-0” 基础 + 3-Day Bootcamp ➜ Week 5 – Week 8)**  
-*时段：2025-07-01 → 2025-08-25 — 目标：补齐 AWS 实战、云 SRE、Gen-AI 集成，并生成可量化简历亮点*
----
+> 目标：在 8 周内完成「Docker ➜ Kubernetes ➜ GitOps ➜ Chaos ➜ 观测 ➜ SRE SLO ➜ Bedrock AI Sidecar」全链路实践  
+> 结果交付：可截图/可量化的流水线、指标、故障自愈报告与新版简历亮点
 
-## 📆 Timeline & Deliverables
+| 时段 | 重点主题 & 关键实操 | 主要交付物 |
+|------|-------------------|-----------|
+| **Day-0（半天）** | **Docker & K8s 快速回忆**<br>• Play-with-Docker 实验：build / run / push<br>• Kubernetes Basics 模块 1-3：Deploy ➜ Expose ➜ Scale | `day0-notes.md`（常用命令 + 概念速记） |
+| **Bootcamp 3 天** | **云底座 + IaC**<br>Day 1：VPC / LB / IAM（AWS vs）<br>Day 2：`eksctl` 创建首个 **EKS Managed Node Group**（t3.small + Spot）<br>Day 3：Terraform 双 provider（EKS + 预留 GKE stub）+ S3 后端 & DynamoDB 锁 | `eksctl-config.yaml`<br>`main.tf` & `terraform.tfstate`<br>《云服务对照笔记》 |
+| **Week 5** | **双 GitOps CI/CD**<br>① CodeCommit → CodeBuild → ECR → **CodeDeploy 蓝绿 ➜ EKS(NodeGroup)**<br>② GitHub Actions → Docker Hub → **Argo CD**（部署到同集群另一 ns）<br>③ IRSA 最小权限 + **Trivy 镜像扫描** | CodePipeline & 蓝绿截图<br>Argo CD Sync GIF<br>IAM JSON + 扫描报告 |
+| **Week 6** | **Helm + HPA + Chaos 自愈**<br>• Helm Chart 打包 & 部署<br>• 设置 HPA + PDB<br>• Chaos Mesh `pod-kill / latency` 实验，生成 MTTR + P95 报告 | `charts/task-manager/`<br>Chaos 报告（MTTR < 3 min） |
+| **Week 7-a** | **可观测 & SRE**<br>• OpenTelemetry（ADOT Sidecar）→ Amazon Managed Prometheus + Grafana Cloud<br>• 使用 `sample_limit` 控费<br>• 定义 99.9 % SLO，CloudWatch 合成告警 | Trace GIF + Grafana Dash<br>SLO YAML & Post-mortem |
+| **Week 7-b** | **生成式 AI Sidecar（AWS Bedrock）**<br>• Spring AI + **Bedrock Titan**<br>• 向量检索：Redis Vector / PGVector<br>• Token Budget + Rate Limiter（成本护栏） | Chat-for-Admin 演示视频<br>《Bedrock FinOps 分析》 |
+| **Week 8** | **Mock Marathon & Résumé v2**<br>• Mock-1：故障注入 + SLO 深挖（英文）<br>• Mock-2：AI & 多云系统设计（英文）<br>• **Day-8 Cleanup**：`terraform destroy` + `eksctl delete cluster` + 账单审计 | 两段 90 min 录像 + 评分表<br>`progress.png`（语速 / filler / MTTR / CI 成功率曲线）<br>简历 v2 PDF |
 
-| 时段               | 云侧重       | 主题                                                                                        | 关键实操 & 交付物                                                                                                                                                                                                      |      |                     |
-| ---------------- | --------- | ----------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---- | ------------------- |
-| **Day-0 (½ d)**  | —         | *Docker & K8s refresher*                                                                  | Labs: Play-with-Docker & Kubernetes Basics module → `day0-notes.md` （常用命令＋概念） ([aws.amazon.com][1], [eksctl.io][2])                                                                                             |      |                     |
-| **Bootcamp 3 d** | AWS + GCP | Day 1 – VPC/LB/IAM 对照 · Day 2 – `eksctl` 建 EKS · Day 3 – Terraform 双 provider (EKS + GKE) | `eksctl-config.yaml` ([docs.aws.amazon.com][3]) · `main.tf` + S3 backend lock ([developer.hashicorp.com][4], [developer.hashicorp.com][5]) · 对照笔记                                                               |      |                     |
-| **Week 5**       | **AWS**   | 双 GitOps CI/CD                                                                            | ① CodePipeline Blue-Green→EKS 截图 ([aws.amazon.com][6], [aws.amazon.com][1]) ② GitHub Actions→Argo CD→GKE GIF ③ IAM IRSA/OIDC role json ([docs.aws.amazon.com][7]) ④ Trivy 扫描集成到 CodeBuild ([chaos-mesh.org][8]) |      |                     |
-| **Week 6**       | **AWS**   | K8s Deep-Dive + Helm + Chaos                                                              | Helm Chart (`charts/task-manager/`) · Chaos Mesh `pod-kill` + latency → MTTR < 3 min ([chaos-mesh.org][9], [chaos-mesh.org][8]) · HPA & PDB YAML                                                                |      |                     |
-| **Week 7a**      | **AWS**   | Observability & SRE                                                                       | ADOT sidecar → Trace to AMP + Grafana ([docs.aws.amazon.com][10], [docs.aws.amazon.com][11]) · `sample_limit` 降低成本 ([docs.aws.amazon.com][12]) · SLO 99.9 % → CloudWatch Composite Alert                        |      |                     |
-| **Week 7b**      | **GCP**   | Gen-AI PoC                                                                                | Spring AI + Vertex AI Gemini Pro demo · Redis/PGVector · Token budget monitor (Vertex pricing) ([cloud.google.com][13], [cloud.google.com][14])                                                                 |      |                     |
-| **Week 8**       | 混合云       | Mock Marathon & Résumé v2                                                                 | 两轮 90-min 全英 mock 录像 · `progress.png` 折线 (语速                                                                                                                                                                    | MTTR | CI 成功率) · 简历 v2 PDF |
+### 🎯 关键 KPI
 
----
+| 指标 | 目标 |
+|------|------|
+| GitOps 发布成功率 | ≥ 98 % |
+| Chaos MTTR | ≤ 1 min |
+| Trace 覆盖率 | ≥ 95 % |
+| Mock 综合评分（5 分制） | ≥ 4.0 |
 
-## 🛡 Built-in Guard-rails
+### 🛡 费用 & 安全护栏
 
-1. **单集群多 Namespace**⇒省 EKS 控制层费用 ([docs.aws.amazon.com][3])
-2. **S3 backend + state lock** 防止 tf 冲突 ([developer.hashicorp.com][4], [developer.hashicorp.com][5])
-3. **Trivy** 镜像扫描在 CodeBuild 步骤 ([chaos-mesh.org][8])
-4. **IRSA/OIDC** 最小权限部署流水线 ([docs.aws.amazon.com][7])
-5. **Chaos Mesh privilege flag** 解决 EKS PSA 限制 ([chaos-mesh.org][9])
-6. **AMP `sample_limit`** 防止指标爆表 ([docs.aws.amazon.com][12])
-7. **Vertex AI Budget** 监控 token 花费 ([cloud.google.com][13])
-8. **Day-8 Retro** — `terraform destroy`, `eksctl delete` + 账单审计
+* **单集群 + NodeGroup t3.small (Spot 混合)** —— 控制平面 ¥85/月  
+* **S3 Backend + DynamoDB lock** —— 防止 `terraform apply` 冲突  
+* **IRSA (OIDC)** —— CI/CD 免明文 Key  
+* **Trivy** —— 流水线镜像漏洞扫描  
+* **Chaos Daemon privileged=true** —— NodeGroup 无 Fargate 限制  
+* **AMP `sample_limit`** —— 防止高频 kubelet 指标爆表  
+* **AWS Budgets + Bedrock Token Monitor** —— 成本预警  
+* **Day-8 Retro** —— 删除集群 & 资源，导出账单
 
----
-
-## 🎯 KPI Targets
-
-| 指标         | Boot | W5   | W6      | W7      | W8      |
-| ---------- | ---- | ---- | ------- | ------- | ------- |
-| GitOps 成功率 | —    | 90 % | 93 %    | 96 %    | 98 %    |
-| Chaos MTTR | —    | —    | < 3 min | < 2 min | < 1 min |
-| Trace 覆盖率  | —    | 40 % | 70 %    | 95 %    | 95 %    |
-| Mock 评分\*  | —    | 3.3  | 3.5     | 3.8     | 4.0     |
-
-\*5-point scale: Coding / Java / Design / Comms
-
----
-
-## ⏰ Daily Rhythm (≈ 4 h)
-
-| 上午 1 h   | 上午 1 h             | 下午 1 h                  | 晚上 1 h           |
-| -------- | ------------------ | ----------------------- | ---------------- |
-| 云/容器文档速读 | Hands-on Lab / IaC | **英语**：Shadow 或 STAR 练习 | 技术博客 / 日报 & push |
+> **执行顺序：Day-0 → Bootcamp → Week 5-8**。  
+> 若后续想再补多云，可把 Terraform GKE stub 激活即可。整个阶段无需 Google Cloud 账号即可完成所有必需交付物与面试故事。
 
 ---
