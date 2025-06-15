@@ -86,42 +86,52 @@
 
 ---
 
-## 📅 第二阶段（第 5 – 8 周）：Java Cloud-Native 跑通实战（仅用 AWS，EKS NodeGroup）
+# 🚀 第二阶段 Java Cloud-Native Sprint（AWS 专版 · NodeGroup）
 
-> 目标：在 8 周内完成「Docker ➜ Kubernetes ➜ GitOps ➜ Chaos ➜ 观测 ➜ SRE SLO ➜ Bedrock AI Sidecar」全链路实践  
-> 结果交付：可截图/可量化的流水线、指标、故障自愈报告与新版简历亮点
+**周期**：2025-07-01 → 2025-08-25  
+**目标**：跑通 *Docker → EKS → GitOps → Chaos → Observability/SRE → Bedrock AI* 全链路；输出可量化的简历亮点  
+**预算护栏**：控制总账单 ≤ **¥ 1 500**（正常按需启停 ≈ ¥ 800；已含缓冲）
 
-| 时段 | 重点主题 & 关键实操 | 主要交付物 |
+## 📆 时间轴 & 核心交付物
+
+| 时段 | 核心主题 & 关键实操 | 主要交付物 |
 |------|-------------------|-----------|
-| **Day-0（半天）** | **Docker & K8s 快速回忆**<br>• Play-with-Docker 实验：build / run / push<br>• Kubernetes Basics 模块 1-3：Deploy ➜ Expose ➜ Scale | `day0-notes.md`（常用命令 + 概念速记） |
-| **Bootcamp 3 天** | **云底座 + IaC**<br>Day 1：VPC / LB / IAM（AWS vs）<br>Day 2：`eksctl` 创建首个 **EKS Managed Node Group**（t3.small + Spot）<br>Day 3：Terraform 双 provider（EKS + 预留 GKE stub）+ S3 后端 & DynamoDB 锁 | `eksctl-config.yaml`<br>`main.tf` & `terraform.tfstate`<br>《云服务对照笔记》 |
-| **Week 5** | **双 GitOps CI/CD**<br>① CodeCommit → CodeBuild → ECR → **CodeDeploy 蓝绿 ➜ EKS(NodeGroup)**<br>② GitHub Actions → Docker Hub → **Argo CD**（部署到同集群另一 ns）<br>③ IRSA 最小权限 + **Trivy 镜像扫描** | CodePipeline & 蓝绿截图<br>Argo CD Sync GIF<br>IAM JSON + 扫描报告 |
-| **Week 6** | **Helm + HPA + Chaos 自愈**<br>• Helm Chart 打包 & 部署<br>• 设置 HPA + PDB<br>• Chaos Mesh `pod-kill / latency` 实验，生成 MTTR + P95 报告 | `charts/task-manager/`<br>Chaos 报告（MTTR < 3 min） |
-| **Week 7-a** | **可观测 & SRE**<br>• OpenTelemetry（ADOT Sidecar）→ Amazon Managed Prometheus + Grafana Cloud<br>• 使用 `sample_limit` 控费<br>• 定义 99.9 % SLO，CloudWatch 合成告警 | Trace GIF + Grafana Dash<br>SLO YAML & Post-mortem |
-| **Week 7-b** | **生成式 AI Sidecar（AWS Bedrock）**<br>• Spring AI + **Bedrock Titan**<br>• 向量检索：Redis Vector / PGVector<br>• Token Budget + Rate Limiter（成本护栏） | Chat-for-Admin 演示视频<br>《Bedrock FinOps 分析》 |
-| **Week 8** | **Mock Marathon & Résumé v2**<br>• Mock-1：故障注入 + SLO 深挖（英文）<br>• Mock-2：AI & 多云系统设计（英文）<br>• **Day-8 Cleanup**：`terraform destroy` + `eksctl delete cluster` + 账单审计 | 两段 90 min 录像 + 评分表<br>`progress.png`（语速 / filler / MTTR / CI 成功率曲线）<br>简历 v2 PDF |
+| **Day-0 (½ d)** | **Docker & K8s Refresher**<br>· Play-with-Docker：`build / run / push`<br>· Kubernetes Basics 1-3：`kubectl create / expose / scale` | `day0-notes.md` |
+| **Bootcamp 3 d** | **云底座 + IaC**<br>**Day 1** VPC / ALB / IAM 对照（AWS）<br>**Day 2-AM** `eksctl` 创建 **EKS Managed NodeGroup** (Spot t3.small ×2 + OD t3.medium ×1)<br>**Day 2-PM** Terraform 导入 EKS；`backend "s3" + DynamoDB lock + AES256`<br>**Day 3** 声明式扩展：ECR、EFS、(预留 GKE stub) | `eksctl-config.yaml`<br>`main.tf` / `terraform.tfstate`<br>《云服务对照笔记》 |
+| **Week 5** | **双 GitOps CI/CD**<br>① CodeCommit → CodeBuild(+**Trivy**) → ECR → **CodeDeploy Blue-Green → EKS** (ALB 双 TargetGroup🟢/🔵，自动移除旧 TG)<br>② GitHub Actions → Docker Hub → **Argo CD** (ns `argo-demo`，OIDC-IRSA 最小权限) | 流水线 & 蓝/绿发布截图<br>Argo Sync GIF<br>IAM json + Trivy 扫描报告 |
+| **Week 6** | **Helm + HPA + Chaos 自愈**<br>· Helm Chart (`charts/task-manager/`)<br>· HPA + PDB + Cluster Autoscaler (Spot 中断容忍)<br>· Chaos Mesh `pod-kill / latency` → **MTTR ≤ 1 min** | Helm 包<br>Chaos 报告 (MTTR & P95) |
+| **Week 7-a** | **Observability & SRE**<br>· ADOT Sidecar → **Amazon Managed Prometheus** (采样 `sample_limit: 10000` + **metric_relabel** drop `kubelet_*`)<br>· Grafana Cloud Dash (Free 50 k MTS)<br>· 定义 99.9 % SLO + CloudWatch Composite Alert + Burn-Rate | Trace GIF + Grafana Dash<br>SLO YAML & Post-mortem |
+| **Week 7-b** | **生成式 AI Sidecar — Bedrock Titan**<br>· Spring AI + **Titan Text Express** (us-east-1)<br>· Redis Vector / PGVector<br>· CloudWatch + Budget (USD 80) 监控 Token 花费<br>· Spring Retry Exponential-Backoff 限流 | Demo 视频<br>《Bedrock FinOps.md》 |
+| **Week 8** | **Mock Marathon & Résumé v2**<br>· Mock-1：Chaos + SLO 深挖 (全英)<br>· Mock-2：AI & 多云系统设计 (全英)<br>· `progress.png`（语速 | filler | MTTR | CI 成功率）<br>· **Day-8 Cleanup** ：`codedeploy cleanup` → `terraform destroy` → `eksctl delete cluster` → 删除 ALB/TG、ECR、S3、DynamoDB、Budget | 两段 90 min 录像 + 评分表<br>`progress.png`<br>简历 v2 PDF |
 
-### 🎯 关键 KPI
+## 🎯 KPI & 简历映射
 
-| 指标 | 目标 |
+| 指标 | 目标 | 简历措辞示例 |
+|------|------|-------------|
+| GitOps 发布成功率 | ≥ 98 % | “双链路 GitOps 发布成功率 **98 %+**” |
+| Chaos 平均恢复 MTTR | ≤ 1 min | “注入 pod-kill 后平均恢复 **49 s** (业内基线 5 min)” |
+| Trace 覆盖率 | ≥ 95 % | “OpenTelemetry 链路覆盖 **95 %** API 请求” |
+| 英文 Mock 综合分 | ≥ 4.0 / 5 | “全英文系统设计 Mock 得分 **4.2 / 5**” |
+
+## 🛡 成本 & 安全护栏
+
+| 类别 | 策略 |
 |------|------|
-| GitOps 发布成功率 | ≥ 98 % |
-| Chaos MTTR | ≤ 1 min |
-| Trace 覆盖率 | ≥ 95 % |
-| Mock 综合评分（5 分制） | ≥ 4.0 |
+| **EKS 控制面** | 仅上课日开 6 h；其他时间 `eksctl scale nodegroup --nodes 0` |
+| **计算节点** | Spot t3.small ×2 + OD t3.medium ×1；Cluster Autoscaler |
+| **ALB/TG** | CodeDeploy 收尾脚本删除旧 TargetGroup 及 ALB |
+| **Prom 费用** | `sample_limit` + 过滤 `kubelet_*` 指标 (降 50 %) |
+| **Bedrock 费用** | Titan TPS 20 req/min；CloudWatch Budget 80 USD |
+| **安全** | IRSA、S3 AES256、DynamoDB lock、Trivy 扫描、Chaos privileged |
+| **Day-8 清理** | 全资源一键销毁 + 账单导出 |
 
-### 🛡 费用 & 安全护栏
+## 立即行动
 
-* **单集群 + NodeGroup t3.small (Spot 混合)** —— 控制平面 ¥85/月  
-* **S3 Backend + DynamoDB lock** —— 防止 `terraform apply` 冲突  
-* **IRSA (OIDC)** —— CI/CD 免明文 Key  
-* **Trivy** —— 流水线镜像漏洞扫描  
-* **Chaos Daemon privileged=true** —— NodeGroup 无 Fargate 限制  
-* **AMP `sample_limit`** —— 防止高频 kubelet 指标爆表  
-* **AWS Budgets + Bedrock Token Monitor** —— 成本预警  
-* **Day-8 Retro** —— 删除集群 & 资源，导出账单
+1. 完成 **Day-0** 实验并 push `day0-notes.md`  
+2. 运行 `eksctl create cluster --managed` (Spot+OD) 验证节点；启用 Cluster Autoscaler  
+3. 设置 CloudWatch - Billing Alarm & Budget (USD 80)  
+4. 开始 Bootcamp Day 1；如需脚本或 YAML 示例，随时告诉我！
 
-> **执行顺序：Day-0 → Bootcamp → Week 5-8**。  
-> 若后续想再补多云，可把 Terraform GKE stub 激活即可。整个阶段无需 Google Cloud 账号即可完成所有必需交付物与面试故事。
+> 全流程仅依赖 AWS 账户即可完成；后续若需多云演示，可启用 Terraform GKE provider 再走一遍 Helm / Argo 即可。
 
 ---
