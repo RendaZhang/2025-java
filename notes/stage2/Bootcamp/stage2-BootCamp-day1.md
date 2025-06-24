@@ -243,4 +243,156 @@ Gateway endpoint to S3
   ```
 * 因为现在还没集群，先记住命令；明天 `eksctl create cluster` 完成后执行即可。
 
+---
 
+## Terraform stub 初始化
+
+> **目标**：在 `infra/aws/` 目录放置 4 个基础文件，让明天直接 `terraform init && terraform plan` 即可导入现有 VPC、子网与 IAM 角色。
+> 本步骤只“写文件 + `terraform init`”，**暂不 `apply`**。
+
+### 目录结构
+
+```text
+your-repo/
+└─ infra/
+   └─ aws/
+      ├─ backend.tf
+      ├─ provider.tf
+      ├─ variables.tf
+      └─ terraform.tfvars
+```
+
+### `backend.tf` — 远端状态存储
+
+> 先手动创建一次，之后所有环境都能复用同一个桶 / 表。
+
+1. **创建 S3 Bucket**
+   - 进 **S3 Console → Create bucket**
+   - **Bucket name**：`phase2-tf-state-<your-uniq-suffix>`
+      * 名字全局唯一，用你 GitHub 用户名或日期后缀防止重名。
+   - **Region**：`ap-southeast-1`（与项目一致）
+   - **Block all public access**：保持默认（全部勾选✅）
+   - **Object Ownership**：`ACLs disabled` + `Bucket owner preferred`
+   - **Versioning**：**Enable**（这样可以回滚旧状态）
+   - 其他保持默认 ➜ **Create bucket**
+2. **创建 DynamoDB 表（用于锁）**
+   - 进 **DynamoDB Console → Tables → Create table**
+   - **Table name**：`tf-state-lock`
+   - **Partition key**：`LockID` (String)
+   - **Capacity mode**：`On-demand`（PAY\_PER\_REQUEST，省心省钱）
+   - 其他默认 ➜ **Create table**
+3. 把信息写进 backend.tf：
+   ```hcl
+   terraform {
+      backend "s3" {
+         bucket         = "phase2-tf-state-<your-uniq-suffix>"  # 你新建的桶名
+         key            = "eks/lab/terraform.tfstate" # 桶里的对象路径
+         region         = "ap-southeast-1"
+         dynamodb_table = "tf-state-lock"             # 刚建的锁表名
+         encrypt        = true
+      }
+   }
+   ```
+
+> 到此，S3 桶每月几毛钱，DynamoDB 锁表几分钱，成本几乎可忽略。
+> 
+> **注意**：
+> * `terraform init` 时若桶或表不存在，会直接报错，所以要先手动建好。
+> * 以后若想迁移到别的桶，可运行 `terraform init -migrate-state`。
+
+### `provider.tf`  — AWS Provider
+
+1. 检查 profile 是不是 default
+   - Terraform 调用 AWS Provider 的凭证链与 AWS CLI 完全一致。检查方法：
+      ```
+      aws configure list
+      ```
+   - 输出示例：
+      ```
+      Name           Value                  Type            Location
+      ----           -----                  ----            --------
+      profile        <not set>              None            None
+      access_key     ****************RTAH   container-role    
+      secret_key     ****************nBd4   container-role    
+      region         ap-southeast-1         env             ['AWS_REGION', 'AWS_DEFAULT_REGION']
+      ```
+   - 如果 Profile = <not set>，且你在 ~/.aws/credentials 里只配置了 [default]，那 Terraform 就会用它。
+   - 如果你在机器上有多个 profile（[default], [work], [prod]…），且想用一个非 default，可在 provider "aws" 里加一行 profile = "work"，或者临时导出 AWS_PROFILE=work。
+2. 把信息写进 provider.tf：
+   ```hcl
+   provider "aws" {
+      region              = var.region
+      # profile           = "default"      # 若本机用 named profile 可解注
+      default_tags = {
+         project = "phase2-sprint"
+      }
+   }
+   ```
+
+> default_tags 作用：为所有由此 provider 创建的 AWS 资源统一打标签；常见字段有 project, env, owner。
+
+### `variables.tf` — 输入变量
+```hcl
+variable "region" {
+  description = "AWS region"
+  type        = string
+}
+
+variable "vpc_id" {
+  description = "Existing VPC for EKS"
+  type        = string
+}
+
+variable "public_subnet_ids" {
+  description = "List of public subnet IDs"
+  type        = list(string)
+}
+
+variable "private_subnet_ids" {
+  description = "List of private subnet IDs"
+  type        = list(string)
+}
+
+variable "eks_admin_role_arn" {
+  description = "IAM role ARN with EKS admin permissions"
+  type        = string
+}
+```
+
+### `terraform.tfvars` — 具体值（按你环境填写）
+
+- region：右上角 Region 切换器（如 Asia Pacific (Singapore) ap-southeast-1）
+- vpc_id：VPC Console → Your VPCs → 复制 VPC ID (vpc-…)
+- public_subnet_ids：VPC Console → Subnets → 过滤 VPC → 复制两行 Subnet ID (subnet-…) 且 Auto-assign public IP = yes
+- private_subnet_ids: 同上，过滤 Name 包含 private；Auto-assign public IP = no
+- eks_admin_role_arn：IAM Console → Roles → 搜 eks-admin-role → 详情页顶部 ARN
+- 把信息写进 terraform.tfvars：
+   ```hcl
+   region              = "ap-southeast-1"
+
+   vpc_id              = "vpc-0e707170d90e574bb"
+
+   public_subnet_ids   = [
+   "subnet-xxxxxxxxxxxxxxxxx",  # 10.0.0.0/20
+   "subnet-yyyyyyyyyyyyyyyyy"   # 10.0.16.0/20
+   ]
+
+   private_subnet_ids  = [
+   "subnet-zzzzzzzzzzzzzzzzz",  # 10.0.128.0/20
+   "subnet-aaaaaaaaaaaaaaaaa"   # 10.0.144.0/20
+   ]
+
+   eks_admin_role_arn  = "arn:aws:iam::563149051155:role/eks-admin-role"
+   ```
+> **替换**四个 `subnet-*` 为你实际的 Subnet ID（在 Subnets 页面可见）。
+
+### 初始化并验证
+
+```bash
+cd infra/aws
+terraform init
+terraform init -reconfigure
+terraform plan
+```
+
+预期输出：**0 to add, 0 to change, 0 to destroy**（因为暂时只声明 provider & backend）。
