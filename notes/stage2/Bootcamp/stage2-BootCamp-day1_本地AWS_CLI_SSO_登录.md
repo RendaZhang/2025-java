@@ -11,11 +11,11 @@
 
 | 名称                         | 当前值                                      |
 | -------------------------- | ---------------------------------------- |
-| **SSO Start URL**          | `https://d-9667b5ee9c.awsapps.com/start` |
-| **SSO Region (Home)**      | `ap-southeast-1`                         |
+| **SSO Start URL**          | `https://d-9066388969.awsapps.com/start` |
+| **SSO Region (Home)**      | `us-east-1`                         |
 | **AWS Account ID**         | `563149051155`                           |
 | **Permission Set**         | `AdministratorAccess`                    |
-| **Terraform State Bucket** | `phase2-tf-state-renda-cloud-lab`        |
+| **Terraform State Bucket** | `phase2-tf-state-us-east-1`        |
 | **DynamoDB Lock Table**    | `tf-state-lock`                          |
 | **CLI Profile Name**       | `phase2-sso`                             |
 
@@ -26,7 +26,6 @@
 1. **Enable IAM Identity Center** ：AWS Console → *IAM Identity Center* → **Enable**。
 2. **新增 User** ：`你常用邮箱` → 自动收到初次登陆邮件。
 3. **创建 Permission Set** (建议 "Custom")：
-
    * 若实验期可直接用 `AdministratorAccess`，后期再细分为 S3 + DynamoDB + EKS 三条最小策略。
 4. **Assign User to Account** ：*AWS Accounts → Assign users* → 勾选账号 563149051155 + 所选 Permission Set。
 
@@ -63,9 +62,9 @@ export AWS_PROFILE=phase2-sso
 # backend.tf
 terraform {
   backend "s3" {
-    bucket      = "phase2-tf-state-renda-cloud-lab"
+    bucket      = "phase2-tf-state-us-east-1"
     key         = "eks/lab/terraform.tfstate"
-    region      = "ap-southeast-1"
+    region      = "us-east-1"
     profile     = "phase2-sso"
     lock_table  = "tf-state-lock"   # Terraform 1.7+ 写法 (旧版 dynamodb_table 亦可)
   }
