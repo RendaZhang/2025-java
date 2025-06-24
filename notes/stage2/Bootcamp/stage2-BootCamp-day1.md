@@ -145,6 +145,8 @@ Gateway endpoint to S3
    * 第一条应返回 **NAT Gateway 的公网 EIP**（或与 Public 实例不同的 IP）。
    * 第二条应 404/无数据（私网实例本身无公网 IP）。
 
+---
+
 ## 创建 & 验证 ALB
 
 ### 创建 Target Group
@@ -199,5 +201,46 @@ Gateway endpoint to S3
 2. DNS Name: alb-demo-1754203016.ap-southeast-1.elb.amazonaws.com
 3. 本地浏览器访问 `http://<DNS-name>`，应显示目录索引或 200 OK。
 
+---
+
+## IAM 角色设计与权限验证
+
+### 创建 `eks-admin-role`
+
+1. 打开 **IAM Console → Roles → Create role**。
+2. **Trusted entity** 选 **AWS service**，服务列表里搜索 **EKS** 并勾选 *EKS – Cluster*（这样角色可由控制面自动使用）。
+3. **Attach policies**：搜索并勾选
+   * **AmazonEKSClusterPolicy** 
+   * **AmazonEKSVPCResourceController** 
+4. **Role name** 填 `eks-admin-role`，描述写 “Phase-2 EKS admin for lab cluster”。
+5. **Create role**，记录返回页面顶部的 **Role ARN**。
+6. "EKSAdminRoleArn":"arn:aws:iam::563149051155:role/eks-admin-role"
+
+> *为什么只挂两条？*
+> 这两条托管策略已包含 EKS 控制面创建/标记节点 ENI、管理安全组等所需权限，是官方推荐的“起步组合”。
+
+### 使用 IAM Policy Simulator 验证最小权限
+
+1. 打开 **[https://policysim.aws.amazon.com/](https://policysim.aws.amazon.com/)** 左栏 **Roles** 选 `eks-admin-role`。
+2. 右侧 **Actions** 搜索 **`s3:ListBucket`**；Resource 选 **All resources** → **Run simulation**。
+   * 结果应显示 **“implicitDeny”**，证明当前角色对 S3 无权操作。
+3. IAM Policy Simulator 的 S3 相关的 Action 的测试结果全部显示："denied Implicitly denied (no matching statement)"
+
+> 最小权限原则要求“一开始默认拒绝，再按需加权”。
+
+### 追加 S3 只读策略并复测
+
+1. 回到 **Role 详情 → Add permissions → Attach policies**，搜索 **AmazonS3ReadOnlyAccess** ➜ Attach。
+2. 刷新 **Policy Simulator**，重复 **`s3:ListBucket`** 测试：现在应是 **“allowed”**。
+3. 再测试 **`s3:PutObject`**，仍应 **implicitDeny**。
+4. IAM Policy Simulator 的 S3 跟 Read 相关的 Action 测试结果为 “allowed”，其他 Action 测试结果为 “denied - implicitDeny”
+
+### 预告：OIDC Provider 关联
+
+* **IRSA** 需要在集群创建后，将 EKS 的 OIDC Issuer URL 与 IAM 创建信任关系：
+  ```bash
+  eksctl utils associate-iam-oidc-provider --cluster <cluster-name> --approve
+  ```
+* 因为现在还没集群，先记住命令；明天 `eksctl create cluster` 完成后执行即可。
 
 
