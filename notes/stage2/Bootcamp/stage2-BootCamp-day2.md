@@ -31,7 +31,6 @@ region      us-east-1             config-file    ~/.aws/config
 
 ### 快速 Service Quotas 自检
 
-
 #### 核心配额与正确的 QuotaCode
 
 | 资源类别            | Quota 名称 - 控制台显示                                         | ServiceCode            | **Quota Code**                         | 默认值    | 建议阈值     |
@@ -72,4 +71,46 @@ aws service-quotas list-service-quotas --service-code vpc \
 > * EC2 Spot 实例 ≥ 5
 > 
 > 如果配额低于建议值，暂时不必申请提升；EKS 默认所需 ENI ≈ 10 以内、Spot t3.small × 2 远低于限制──但提前确认可避免出乎意料的 “LimitExceeded” 报错。
+
+---
+
+## 生成 `eksctl-cluster.yaml`
+
+> 目标：用 **现成 VPC / 子网** ID 写出一份 `eksctl` 集群声明文件，包含：
+> - 控制面放在私网子网；
+> - 1 个 **Managed NodeGroup**：Spot *t3.small* × 2 + On-Demand *t3.medium* × 1；
+> - 启用 OIDC（后续 IRSA / Autoscaler 要用）。
+
+### 拿到 VPC & Subnet ID
+
+```bash
+# 进入 Terraform 目录
+cd infra/aws
+
+# 如果之前 destroy 过，请先 make start 或 terraform apply，保证 state 里有资源
+terraform init                # 若已 init 可跳过
+terraform apply -refresh-only # 让 state 同步最新真实资源（几秒完成）
+
+# 现在再取输出
+terraform output -raw vpc_id
+terraform output -json public_subnet_ids
+terraform output -json private_subnet_ids
+```
+
+> 如果显示 “Output … not found”，说明 根模块没有定义这些 outputs，这时候就需要在根 outputs.tf 中补上对应的输出。
+
+记下结果，下一步的 YAML 会用到：
+```bash
+private_subnet_ids = [
+  "subnet-0422bec13e7eec9e6",
+  "subnet-00630bdad3664ee18",
+]
+public_subnet_ids = [
+  "subnet-066a65e68e06df5db",
+  "subnet-08ca22e6d15635564",
+]
+vpc_id = "vpc-0b06ba5bfab99498b"
+```
+
+
 
