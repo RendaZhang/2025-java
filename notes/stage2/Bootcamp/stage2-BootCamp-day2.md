@@ -112,5 +112,204 @@ public_subnet_ids = [
 vpc_id = "vpc-0b06ba5bfab99498b"
 ```
 
+### 创建文件 `eksctl-cluster.yaml`
+
+#### 全 Spot 实例配置
+
+放在仓库根 `scripts/` 或临时目录——内容示例（请按你的真实 ID 替换）：
+
+```yaml
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: dev
+  region: us-east-1
+  version: "1.30"
+
+vpc:
+  id: "vpc-0b06ba5bfab99498b"
+  subnets:
+    private:
+      us-east-1a: { id: "subnet-0422bec13e7eec9e6" }
+      us-east-1b: { id: "subnet-00630bdad3664ee18" }
+    public:
+      us-east-1a: { id: "subnet-066a65e68e06df5db" }
+      us-east-1b: { id: "subnet-08ca22e6d15635564" }
+
+iam:
+  # 为后续 IRSA / Autoscaler 打基础
+  withOIDC: true
+  # 指向手动建的 Role，最少权限：AmazonEKSClusterPolicy + AmazonEKSVPCResourceController
+  serviceRoleARN: "arn:aws:iam::563149051155:role/eks-admin-role"
+
+managedNodeGroups:
+  - name: ng-mixed
+    minSize: 0
+    desiredCapacity: 3
+    maxSize: 6
+    # 3 × Spot (Random: t3.small or t3.medium)
+    instanceTypes: ["t3.small","t3.medium"]
+    spot: true
+    privateNetworking: true
+    labels: { role: "worker" }
+    tags:
+      project: phase2-sprint
+    updateConfig:
+      maxUnavailable: 1
+    # 可选：限制 Spot 最高价（按需 70%）
+    # spotMaxPrice: "0.026"
+    subnets:
+      - "subnet-0422bec13e7eec9e6"
+      - "subnet-00630bdad3664ee18"
+
+```
+
+#### 混合 Spot + OD 实例配置
+
+如果要实现 `2×Spot (t3.small) + 1×OD (t3.medium)` 的精确控制，必须使用 `instancesDistribution` 配置：
+```yaml
+managedNodeGroups:
+  - name: ng-mixed
+    minSize: 0
+    desiredCapacity: 3
+    maxSize: 6
+    # 关键配置：混合实例策略
+    instancesDistribution:
+      instanceTypes: ["t3.small", "t3.medium"] # 把需要的按需类型放第一位
+      onDemandBaseCapacity: 1     # 保证至少1个按需实例
+      onDemandPercentageAboveBaseCapacity: 0  # 其余100%使用Spot
+      spotInstancePools: 2        # 使用2种Spot实例类型
+    privateNetworking: true
+    labels: { role: "worker" }
+    tags: { project: phase2-sprint }
+    updateConfig: { maxUnavailable: 1 }
+    subnets:
+      - "subnet-0422bec13e7eec9e6"
+      - "subnet-00630bdad3664ee18"
+```
+
+**要点**
+
+* 控制面默认落在 **Private Subnet**（EKS 会自动选取）。
+* `withOIDC: true` 之后，后续 **Cluster Autoscaler / IRSA** 可直接关联 IAM Policy。
+* `desiredCapacity` = 3，但 Cluster Autoscaler 安装后可自动缩放。
+* 容量验证命令：`kubectl get nodes -L node.kubernetes.io/instance-type,eks.amazonaws.com/capacityType`。
+* `onDemandBaseCapacity: 1`：强制创建1个按需实例，EKS 会优先使用列表中的第一个实例类型（`t3.small`）。
+
+---
+
+## `eksctl create cluster` 并等待 CloudFormation 完成
+
+> 目标：把你刚写好的 `infra/eksctl/eksctl-cluster.yaml` 真正跑起来，拉起控制面与 3 台节点，并生成 `cluster-info.txt` 备档。整个流程通常 12 – 18 分钟。
+
+### 确保凭证 & 区域
+
+```bash
+# 如果刚打开新终端，先刷新 SSO
+aws sso login --profile phase2-sso
+
+export AWS_PROFILE=phase2-sso
+export AWS_REGION=us-east-1
+```
+
+### 安装 eksctl
+
+安装前置依赖：`aws` 和 `kubectl`。
+
+AWS 官方建议只用 GitHub Release 中的原生二进制，避免第三方源版本滞后或带私补丁。
+
+```bash
+cd /tmp
+# 一行脚本拉最新稳定版（会自动解析你的架构）
+curl -L -o eksctl.tar.gz   https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz
+# 解压并移动
+tar xz -C /tmp -f eksctl.tar.gz
+sudo mv /tmp/eksctl /usr/local/bin/
+# 检查
+eksctl version
+```
+
+### 创建集群
+
+在仓库根（或任何目录）执行：
+
+```bash
+eksctl create cluster -f infra/eksctl/eksctl-cluster.yaml \
+  --profile "$AWS_PROFILE" --kubeconfig ~/.kube/config  \
+  --verbose 3                  # 可选：更详细日志
+```
+
+**你会看到：**
+
+1. eksctl 先创建 **CloudFormation Stack** `eksctl-dev-cluster`
+   1. 
+2. 下载 IAM OIDC provider & VPC configs
+3. 创建 **EKS 控制面**（\~10 min）
+4. 创建 **Managed NodeGroup**（\~3 min）
+5. 写入 `~/.kube/config` 并测试 `kubectl` 连接
+
+
+### 观察进度（可选）
+
+```bash
+# 实时看 Stack 事件
+aws cloudformation describe-stack-events --stack-name eksctl-dev-cluster \
+  --query 'StackEvents[0:5].[ResourceStatus,ResourceType,LogicalResourceId]' \
+  --output table --profile $AWS_PROFILE --region $AWS_REGION --no-paginate
+# 输出示例：
+-------------------------------------------------------------------------------------------
+|                                   DescribeStackEvents                                   |
++--------------------+----------------------------------+---------------------------------+
+|  CREATE_COMPLETE   |  AWS::CloudFormation::Stack      |  eksctl-dev-cluster             |
+|  CREATE_COMPLETE   |  AWS::EC2::SecurityGroupIngress  |  IngressDefaultClusterToNodeSG  |
+|  CREATE_COMPLETE   |  AWS::EC2::SecurityGroupIngress  |  IngressNodeToDefaultClusterSG  |
+|  CREATE_IN_PROGRESS|  AWS::EC2::SecurityGroupIngress  |  IngressNodeToDefaultClusterSG  |
+|  CREATE_IN_PROGRESS|  AWS::EC2::SecurityGroupIngress  |  IngressDefaultClusterToNodeSG  |
++--------------------+----------------------------------+---------------------------------+
+```
+
+### 集群验证
+
+当 eksctl 打印 `kubectl get nodes --watch` 时，等待出现 **3 Ready**：
+
+```bash
+# 使用 AWS CLI 验证
+aws eks describe-cluster --name dev --region us-east-1 --profile phase2-sso
+# 使用 AWS 检查节点组
+aws eks list-nodegroups --cluster-name dev --region us-east-1 --profile phase2-sso
+# 使用 kubectl 检查
+kubectl get nodes -o wide
+# 检查节点组成
+kubectl get nodes -L node.kubernetes.io/instance-type,eks.amazonaws.com/capacityType
+# 确认组件健康
+kubectl get cs
+# 检查 OIDC 是否最终启用
+# 应返回类似：https://oidc.eks.us-east-1.amazonaws.com/id/E0204AE78E971608F5B7BDCE0379F55F
+aws eks describe-cluster --name dev --query "cluster.identity.oidc.issuer" --output text --profile phase2-sso
+# 检查所有资源
+# 当创建 EKS 集群时，会创建服务角色（如 `eks-admin-role`）
+# IAM 更改可能需要时间全局传播（通常几秒到几分钟）
+# `eksctl get` 命令需要调用 STS 获取当前身份，如果 IAM 角色未完全生效，会报错。
+eksctl get cluster --region us-east-1 --profile phase2-sso
+eksctl get cluster --name dev --region us-east-1 --profile phase2-sso
+eksctl get nodegroup --cluster dev --region us-east-1 --profile phase2-sso
+```
+
+如果想验证服务负载：
+
+```bash
+# 投放一个示例 Pod
+kubectl run nginx --image=nginx -n default --restart=Never
+kubectl expose pod nginx --port 80 --type ClusterIP
+# 测试完毕后进行清理
+kubectl delete service nginx
+kubectl delete pod nginx
+# 检查 Pod
+kubectl get pods
+# 检查 Service
+kubectl get services
+```
+
 
 
