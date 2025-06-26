@@ -311,5 +311,56 @@ kubectl get pods
 kubectl get services
 ```
 
+---
+
+## 开启控制面日志 (API & Authenticator)
+
+> 目标：把 **API** 与 **Authenticator** 两类日志接入 CloudWatch，方便后续 SRE 排障与成本分析。完成后应在 CloudWatch > Log groups 看到 `/aws/eks/dev/cluster` 下的 `api` 与 `authenticator` 子流。
+
+### 启用日志
+
+```bash
+# 在项目根或任意目录执行
+eksctl utils update-cluster-logging --cluster dev --region us-east-1 --enable-types api,authenticator --profile phase2-sso --approve
+```
+
+* eksctl 会生成一个 CloudFormation Stack `eksctl-dev-cluster-logging`，过程 < 2 min。
+* 成功后 CLI 显示 `updated cluster logging`.
+
+### 验证日志配置 & CloudWatch LogGroup
+
+```bash
+aws eks describe-cluster --name dev --profile phase2-sso --region us-east-1 --query "cluster.logging.clusterLogging[?enabled].types" --output table
+```
+
+应看到：
+```bash
+--------------------------
+|     DescribeCluster    |
++------+-----------------+
+|  api |  authenticator  |
++------+-----------------+
+```
+
+```bash
+aws logs describe-log-groups --profile phase2-sso --region us-east-1 --log-group-name-prefix "/aws/eks/dev/cluster" --query 'logGroups[].logGroupName' --output text
+```
+
+应看到：
+
+```
+/aws/eks/dev/cluster
+```
+
+进入 AWS Console ➜ CloudWatch ➜ Logs ➜ Log groups ➜ 该组里面应出现
+`api`、`authenticator` 流（稍等 1–2 min 有首批条目）。
+
+```bash
+## Log streams: 
+authenticator-9db45ef355ac2c7f857a5994e1931f3b 2025-06-26 15:06:10 (UTC)
+authenticator-46f5034735ad5a31785c0e0af6ace8e0 2025-06-26 15:06:10 (UTC)
+kube-apiserver-46f5034735ad5a31785c0e0af6ace8e0 2025-06-26 15:04:45 (UTC)
+kube-apiserver-9db45ef355ac2c7f857a5994e1931f3b 2025-06-26 15:03:17 (UTC)
+```
 
 
