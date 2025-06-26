@@ -363,4 +363,224 @@ kube-apiserver-46f5034735ad5a31785c0e0af6ace8e0 2025-06-26 15:04:45 (UTC)
 kube-apiserver-9db45ef355ac2c7f857a5994e1931f3b 2025-06-26 15:03:17 (UTC)
 ```
 
+---
 
+## 安装 Cluster Autoscaler - IRSA 版
+
+> **目标**
+>
+> 1. 给集群绑定 OIDC Provider（若 eksctl 创建时已自动启用，可跳过脚本确认）。
+> 2. 为 Autoscaler 创建 **专属 ServiceAccount + IAM 角色**（最小权限）。
+> 3. 使用 Helm 安装 Cluster Autoscaler，并验证节点能按负载自动伸缩。
+
+### 检查 / 关联 OIDC Provider
+
+```bash
+# 检查当前 EKS 集群是否已启用 OIDC
+eksctl utils associate-iam-oidc-provider --cluster dev --region us-east-1 --profile phase2-sso --approve=false
+# 输出如果类似下面这样，就说明 已存在 OIDC：
+2025-06-26 23:32:45 [ℹ]  IAM Open ID Connect provider is already associated with cluster "dev" in "us-east-1"
+
+# 通过 AWS CLI 检查 IAM OIDC Provider 是否已存在
+aws eks describe-cluster --name dev --region us-east-1 --profile phase2-sso --query "cluster.identity.oidc.issuer" --output text
+# 返回一串类似如下的 URL 说明 EKS 已经绑定了 OIDC Provider
+https://oidc.eks.us-east-1.amazonaws.com/id/E0204AE78E971608F5B7BDCE0379F55F
+
+# 如未看到 OIDC ARN，则关联：
+eksctl utils associate-iam-oidc-provider --cluster dev --region us-east-1 --approve --profile phase2-sso
+```
+
+> 命令完成后，再次执行 `describe-cluster` 确认 OIDC ARN 存在。
+
+### 创建 IAM Policy & Role（IRSA）
+
+IRSA: IAM roles for service accounts
+
+#### 下载官方最小策略
+
+```bash
+cat > autoscaler-iam-policy.json <<'EOF'
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "autoscaling:DescribeAutoScalingGroups",
+        "autoscaling:DescribeAutoScalingInstances",
+        "autoscaling:DescribeLaunchConfigurations",
+        "autoscaling:DescribeTags",
+        "autoscaling:SetDesiredCapacity",
+        "autoscaling:TerminateInstanceInAutoScalingGroup",
+        "ec2:DescribeLaunchTemplateVersions"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+EOF
+```
+
+#### 创建 IAM Policy
+
+```bash
+POLICY_ARN=$(aws iam create-policy --policy-name "EKSClusterAutoscalerPolicy" --policy-document file://autoscaler-iam-policy.json --query 'Policy.Arn' --output text --profile phase2-sso)
+# 检查
+echo $POLICY_ARN
+# 输出
+arn:aws:iam::563149051155:policy/EKSClusterAutoscalerPolicy
+```
+
+#### 创建具有信任策略的 IAM Role
+
+```bash
+ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text --profile phase2-sso)
+# 检查
+echo $ACCOUNT_ID
+# 输出
+563149051155
+
+cat > trust-policy.json <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Principal": { "Federated": "arn:aws:iam::$ACCOUNT_ID:oidc-provider/$(aws eks describe-cluster --name dev --region us-east-1 --profile phase2-sso --query 'cluster.identity.oidc.issuer' --output text | sed -e "s|https://||")" },
+    "Action": "sts:AssumeRoleWithWebIdentity",
+    "Condition": { "StringEquals": { "$(aws eks describe-cluster --name dev --region us-east-1 --profile phase2-sso --query 'cluster.identity.oidc.issuer' --output text | sed -e "s|https://||"):sub": "system:serviceaccount:kube-system:cluster-autoscaler" } }
+  }]
+}
+EOF
+
+ROLE_ARN=$(aws iam create-role --role-name eks-cluster-autoscaler --assume-role-policy-document file://trust-policy.json --query 'Role.Arn' --output text --profile phase2-sso)
+# 检查
+echo $ROLE_ARN
+# 输出
+arn:aws:iam::563149051155:role/eks-cluster-autoscaler
+
+aws iam attach-role-policy --role-name eks-cluster-autoscaler --policy-arn "$POLICY_ARN" --profile phase2-sso
+```
+
+> 记下 **`ROLE_ARN`**，稍后 Helm Chart 需要用到。
+>
+> `ROLE_ARN` = `arn:aws:iam::563149051155:role/eks-cluster-autoscaler`
+
+### 安装 Cluster Autoscaler（Helm）
+
+```bash
+# 下载官方安装脚本 & 安装
+curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+# 检查
+helm version
+
+# 添加 repo & 安装 chart
+# 预期输出："autoscaler" has been added to your repositories
+helm repo add autoscaler https://kubernetes.github.io/autoscaler
+# 更新
+helm repo update
+
+# 用 Helm 安装或升级一个名叫 cluster-autoscaler 的 Kubernetes 服务（具体 chart 来自 autoscaler 仓库），部署到 kube-system 命名空间，并传入了一堆自定义参数。
+helm upgrade --install cluster-autoscaler autoscaler/cluster-autoscaler -n kube-system --create-namespace \
+  --set awsRegion=us-east-1 \
+  --set autoDiscovery.clusterName=dev \
+  --set rbac.serviceAccount.create=true \
+  --set rbac.serviceAccount.name=cluster-autoscaler \
+  --set extraArgs.balance-similar-node-groups=true \
+  --set extraArgs.skip-nodes-with-system-pods=false \
+  --set rbac.serviceAccount.annotations."eks\\.amazonaws\\.com/role-arn"="arn:aws:iam::563149051155:role/eks-cluster-autoscaler" \
+  --set image.tag=v1.30.0 # Replace 1.30 with your k8s server version
+
+# To verify that cluster-autoscaler has started, run:
+kubectl --namespace=kube-system get pods -l "app.kubernetes.io/name=aws-cluster-autoscaler,app.kubernetes.io/instance=cluster-autoscaler"
+
+# 检查 serviceAccountName 名字是否一致
+# 预期输出是 cluster-autoscaler
+kubectl -n kube-system get pod -l app.kubernetes.io/name=aws-cluster-autoscaler -o jsonpath="{.items[0].spec.serviceAccountName}"
+
+# 如果 Helm 部署失败，重新部署后，需要执行以下命令删除旧 Pod，让 Deployment 拉新配置
+kubectl -n kube-system delete pod -l app.kubernetes.io/name=aws-cluster-autoscaler
+
+```
+
+> Chart 会自动创建 `Deployment` + `ServiceAccount` 并注入 IRSA Annotation。
+
+### 验证 Autoscaler 工作
+
+#### 确认 Pod Ready
+
+```bash
+# 检查 POD 是否 READY
+kubectl -n kube-system get pod -l app.kubernetes.io/name=aws-cluster-autoscaler
+# 日志里应看到 Scale up/down，没有再用 NodeInstanceRole
+kubectl -n kube-system logs -l app.kubernetes.io/name=aws-cluster-autoscaler --tail=30
+# 检查是否成功 Rollout
+kubectl -n kube-system rollout status deployment/cluster-autoscaler-aws-cluster-autoscaler
+# 查看动态日志
+kubectl -n kube-system logs -f deployment/cluster-autoscaler-aws-cluster-autoscaler | grep -i "autoscaler"
+```
+
+#### 触发扩容 / 缩容
+
+```bash
+###############################################################################
+# 1) 创建一个基本 Deployment（先不上资源请求）
+###############################################################################
+kubectl create deployment cpu-hog --image=busybox \
+  -- /bin/sh -c "while true; do :; done"
+# 解释：BusyBox 里用死循环吃 CPU，先生成 1 个副本
+
+###############################################################################
+# 2) 给 Deployment 加上 CPU Request
+###############################################################################
+kubectl set resources deployment cpu-hog \
+  --requests=cpu=400m
+# 解释：要求 0.4 vCPU，等会儿我们会把副本数调到 20，保证触发扩容
+
+###############################################################################
+# 3) 放大副本，制造 8 vCPU 的瞬时需求
+###############################################################################
+kubectl scale deployment cpu-hog --replicas=20
+
+###############################################################################
+# 4) 观察节点 & Pod 调度（开两个终端窗口更直观）
+###############################################################################
+# 4-a 查看节点规模变化
+kubectl get nodes -w
+# 4-b 查看 Pod 状态
+kubectl get pods -l app=cpu-hog -w
+# 4-c 看 Cluster Autoscaler 日志（确认它在决策）
+kubectl -n kube-system logs -l app.kubernetes.io/name=aws-cluster-autoscaler -f --tail=20
+
+# ⏱️ 等 5-10 分钟：你应当看到
+#   · Autoscaler 日志出现 “Scale up” 字样
+#   · 新 EC2 节点加入 Ready
+#   · cpu-hog 的 Pod 从 Pending 变 Running
+
+###############################################################################
+# 5) 测试缩容：删除 Deployment，观察节点回收
+###############################################################################
+kubectl delete deployment cpu-hog
+
+# 同样用 `kubectl get nodes -w` + Autoscaler 日志
+# 大约 10-20 分钟后会看到 Scale-down，并自动终止空闲节点
+###############################################################################
+```
+
+> 看到 Autoscaler 日志中 `scale up` 和稍后 `scale down`，以及 Node 数量随之变化，即验证成功。
+
+---
+
+## 把集群资源导入 Terraform
+
+> **目标**
+>
+> 1. 把刚创建好的 **EKS Cluster、OIDC Provider、Managed NodeGroup、IAM 角色** 等资源全部纳入 `infra/aws` 的 Terraform 状态；
+> 2. 运行 `terraform plan` 显示 **“No changes”**，证明无漂移；
+> 3. 把导入脚本 & 日志存档到仓库（`terraform-import.log`）。
+
+### 确保本地 Terraform 后端指向 **us-east-1**
+
+```bash
+cd infra/aws
+terraform init   # 若刚才切换终端，先刷新 SSO 再 init
+```
