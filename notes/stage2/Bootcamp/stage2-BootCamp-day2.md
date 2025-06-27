@@ -399,6 +399,7 @@ IRSA: IAM roles for service accounts
 #### 下载官方最小策略
 
 ```bash
+# 建议从官网下载然后代替下面的部分
 cat > autoscaler-iam-policy.json <<'EOF'
 {
   "Version": "2012-10-17",
@@ -493,9 +494,14 @@ helm upgrade --install cluster-autoscaler autoscaler/cluster-autoscaler -n kube-
 # To verify that cluster-autoscaler has started, run:
 kubectl --namespace=kube-system get pods -l "app.kubernetes.io/name=aws-cluster-autoscaler,app.kubernetes.io/instance=cluster-autoscaler"
 
+# 找出 Pod 正在用哪个 ServiceAccount
 # 检查 serviceAccountName 名字是否一致
 # 预期输出是 cluster-autoscaler
 kubectl -n kube-system get pod -l app.kubernetes.io/name=aws-cluster-autoscaler -o jsonpath="{.items[0].spec.serviceAccountName}"
+# 看这个 ServiceAccount 有没有 annotation（关键是 role-arn）
+kubectl -n kube-system get sa cluster-autoscaler -o yaml | grep role-arn
+# 再看 Deployment 里是不是指定了正确的 serviceAccount
+kubectl -n kube-system get deploy cluster-autoscaler-aws-cluster-autoscaler -o jsonpath="{.spec.template.spec.serviceAccountName}{'\n'}"
 
 # 如果 Helm 部署失败，重新部署后，需要执行以下命令删除旧 Pod，让 Deployment 拉新配置
 kubectl -n kube-system delete pod -l app.kubernetes.io/name=aws-cluster-autoscaler
@@ -584,3 +590,113 @@ kubectl delete deployment cpu-hog
 cd infra/aws
 terraform init   # 若刚才切换终端，先刷新 SSO 再 init
 ```
+
+### 为 **EKS 模块** 准备最小 stub
+
+如果你还没创建 `modules/eks/`，先放一个 **占位文件**（确保 root `main.tf` 里已有 `module "eks"` 调用）：
+
+```hcl
+# modules/eks/main.tf
+resource "aws_eks_cluster" "this" {}
+
+resource "aws_eks_node_group" "ng" {}
+
+resource "aws_iam_openid_connect_provider" "oidc" {}
+```
+
+> 这里只需要最小资源块，属性稍后通过 `terraform import` 自动写入 state；后面再补完整配置。
+
+### 获取必要资源 ID / ARN
+
+```bash
+export CLUSTER_NAME=dev
+export REGION=us-east-1
+export NG_NAME=$(aws eks list-nodegroups --cluster-name $CLUSTER_NAME --region $REGION \
+               --query 'nodegroups[0]' --output text --profile phase2-sso)
+
+# OIDC Provider ARN
+export OIDC_ARN=$(aws eks describe-cluster --name $CLUSTER_NAME --region $REGION \
+                 --query 'cluster.identity.oidc.issuer' --output text \
+                 --profile phase2-sso | sed -e "s|https://||" | \
+                 xargs -I {} echo arn:aws:iam::$(aws sts get-caller-identity \
+                 --query Account --output text --profile phase2-sso):oidc-provider/{})
+
+# 前面创建的 IAM POLICY ARN。
+# 注意：因为这个 POLICY 是手动创建，属于 Customer managed 类型，需要使用完整的 ARN 拼接进去；如果是 AWS managed 就可以直接使用 POLICY 名字。
+export POLICY_ARN="arn:aws:iam::563149051155:policy/EKSClusterAutoscalerPolicy"
+```
+
+### 执行 import（建议脚本化）
+
+```bash
+# cluster
+terraform import 'module.eks.aws_eks_cluster.this[0]' $CLUSTER_NAME
+
+# nodegroup
+terraform import 'module.eks.aws_eks_node_group.ng[0]' ${CLUSTER_NAME}:${NG_NAME}
+
+# OIDC provider
+terraform import 'module.eks.aws_iam_openid_connect_provider.oidc[0]' "$OIDC_ARN"
+
+# 导入 IAM Role 本体
+terraform import module.irsa.aws_iam_role.eks_cluster_autoscaler eks-cluster-autoscaler
+
+# 导入 IAM Role 上的 Inline Policy
+terraform import module.irsa.aws_iam_role_policy_attachment.cluster_autoscaler_attach "eks-cluster-autoscaler/$POLICY_ARN"
+```
+
+> **提示**
+>
+> * 路径一定要与模块文件中的资源地址保持一致 (`module.eks.aws_eks_cluster.this`)。
+> * 每条命令成功后会将真实属性写进 `terraform.tfstate`。
+
+将上述命令保存成 `scripts/tf-import.sh`，执行时输出重定向到日志：
+
+```bash
+bash scripts/tf-import.sh | tee terraform-import.log
+```
+
+### 验证计划无漂移 Drift
+
+```bash
+# 检查 Terraform State（AWS S3 桶）是否成功导入了 EKS 资源：
+terraform state list | grep module.eks
+# 预期输出：
+module.eks.aws_eks_cluster.this[0]
+module.eks.aws_eks_node_group.ng[0]
+module.eks.aws_iam_openid_connect_provider.oidc[0]
+# 同样的，检查 IRSA
+terraform state list | grep module.irsa
+# 预期输出：
+module.irsa.aws_iam_role.eks_cluster_autoscaler
+module.irsa.aws_iam_role_policy_attachment.cluster_autoscaler_attach
+
+# 如果想删掉导入的 eks 模块资源，然后重新导入，可以执行：
+terraform state rm module.eks
+# 删除 autoscaler_irsa 模块资源：
+terraform state rm module.irsa
+# 然后需要重新导入相关资源
+terraform import 'module.eks.aws_eks_cluster.this[0]' $CLUSTER_NAME
+terraform import 'module.eks.aws_eks_node_group.ng[0]' ${CLUSTER_NAME}:${NG_NAME}
+terraform import 'module.eks.aws_iam_openid_connect_provider.oidc[0]' "$OIDC_ARN"
+terraform import module.irsa.aws_iam_role.eks_cluster_autoscaler eks-cluster-autoscaler
+terraform import module.irsa.aws_iam_role_policy_attachment.cluster_autoscaler_attach "eks-cluster-autoscaler/$POLICY_ARN"
+
+# 对比本地 HCL 文件 和 Terraform State 是否有差异：
+terraform plan \
+  -var="region=us-east-1" \
+  -var="create_nat=true" \
+  -var="create_alb=true" \
+  -var="create_eks=true"
+
+# 如果发现有差异，则根据提示，修改本地的 HCL 文件
+# 修改完后，执行格式整理命令：
+terraform fmt -recursive
+# 重新验证确保没有差异：
+terraform plan
+# 如果还有差异，需要重新再来一遍修改
+# 预期输出：
+No changes. Infrastructure is up-to-date.
+```
+
+
