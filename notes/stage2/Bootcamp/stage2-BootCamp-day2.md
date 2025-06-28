@@ -699,4 +699,104 @@ terraform plan
 No changes. Infrastructure is up-to-date.
 ```
 
+---
 
+## 设定 Budget 告警 & Spot Interruption 通知
+
+> **目标**
+>
+> 1. 建立一个 **月度成本预算**：上限 650 CNY（≈ 88 USD），达到 80 % 时邮件提醒；
+> 2. 创建 **Spot Interruption SNS Topic**，并让所有节点组在抢占前 2 min 发送通知；
+> 3. 保存截图/命令输出，稍后写进 `day2-summary.md`。
+
+### 创建 SNS Topic & 订阅
+
+SNS - Simple Notification Service
+
+```bash
+# 1. 创建 Topic
+aws sns create-topic --name spot-interruption-topic \
+  --profile phase2-sso --region us-east-1 \
+  --output text --query 'TopicArn'
+# Topic ARN:
+# arn:aws:sns:us-east-1:563149051155:spot-interruption-topic
+
+# 2. 记录返回的 TopicArn
+export SPOT_TOPIC_ARN=arn:aws:sns:us-east-1:563149051155:spot-interruption-topic
+
+# 3. 订阅你的邮箱
+aws sns subscribe --topic-arn $SPOT_TOPIC_ARN \
+  --protocol email --notification-endpoint rendazhang@qq.com \
+  --profile phase2-sso --region us-east-1
+```
+
+> 打开邮箱确认订阅（AWS 会发送一封“Subscription Confirmation”邮件，点 **Confirm**）。
+
+```bash
+# Your subscription's id is: 
+arn:aws:sns:us-east-1:563149051155:spot-interruption-topic:ef45fadb-ec28-472e-9566-22690f023491
+```
+
+### 给 NodeGroup 绑定 Spot 通知
+
+eksctl 自动创建的 NodeGroup 已启用 Spot，可通过 **Auto Scaling Group** 控制台设置。
+
+更快做法，CLI 针对 ASG 添加 SNS：
+
+```bash
+# 获取 ASG 名
+# ASG Name: eks-ng-mixed-06cbd626-fb1e-1822-6cce-e64473f7c8ae
+ASG_NAME=$(aws autoscaling describe-auto-scaling-groups \
+  --region us-east-1 --profile phase2-sso \
+  --query 'AutoScalingGroups[?starts_with(AutoScalingGroupName, `eks-ng-mixed`)].AutoScalingGroupName' \
+  --output text)
+
+# 绑定 SNS 通知
+aws autoscaling put-notification-configuration \
+  --auto-scaling-group-name "$ASG_NAME" \
+  --topic-arn "$SPOT_TOPIC_ARN" \
+  --notification-types "autoscaling:EC2_INSTANCE_TERMINATE" \
+  --profile phase2-sso --region us-east-1
+# 接着会收到一个绑定成功的通知邮件
+```
+
+此后 Spot 实例被抢占 / 节点缩容时，你会收到 SNS 邮件并可在后续自动化脚本中处理。
+
+### 创建月度成本预算（650 CNY）
+
+> AWS Budgets 只能用美元，650 CNY ≈ 88 USD（汇率 ≈ 7.4）。如果要更精确，可改成 90 USD。
+
+```bash
+aws budgets create-budget --account-id $(aws sts get-caller-identity --query Account --output text --profile phase2-sso) \
+  --budget '{
+      "BudgetName": "Phase2-Monthly-Budget",
+      "BudgetLimit": { "Amount": "88", "Unit": "USD" },
+      "TimeUnit": "MONTHLY",
+      "BudgetType": "COST"
+  }' \
+  --notifications-with-subscribers '[
+    {
+      "Notification": {
+        "NotificationType": "ACTUAL",
+        "ComparisonOperator": "GREATER_THAN",
+        "Threshold": 80,
+        "ThresholdType": "PERCENTAGE"
+      },
+      "Subscribers": [
+        { "SubscriptionType": "EMAIL", "Address": "rendazhang@qq.com" }
+      ]
+    }
+  ]' \
+  --profile phase2-sso --region us-east-1
+```
+
+> **注意**：Budgets 属于全局区域，但 CLI 仍需带 `--region us-east-1`（任一 AWS 商业区即可）。
+
+### 验证
+
+1. **SNS**
+   * Console ➜ SNS ➜ Topics ➜ `spot-interruption-topic` ➜ **Subscriptions**：Status = *Confirmed*。
+2. **Budget**
+   * Console ➜ AWS Budgets → `Phase2-Monthly-Budget`：阈值 88 USD，通知渠道 *Email* 显示 ✓。
+
+---
