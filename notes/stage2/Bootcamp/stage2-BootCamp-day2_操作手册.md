@@ -1,4 +1,4 @@
-# Java 云原生 BootCamp Day 2 操作总结
+# Java 云原生 BootCamp Day 2 操作手册
 
 **最后更新：** 2025 年 6 月 28 日
 
