@@ -10,7 +10,7 @@ import java.util.concurrent.TimeUnit;
 public class CustomThreadPoolMain {
 
     public static void main(String[] args) {
-        ThreadPoolExecutor executor = new ThreadPoolExecutor(
+        try (ThreadPoolExecutor executor = new ThreadPoolExecutor(
                 2, // Core Pool size
                 4, // Maximum Pool Size
                 60, // Keep-alive time for non-core threads
@@ -18,10 +18,11 @@ public class CustomThreadPoolMain {
                 new ArrayBlockingQueue<>(10), // Bounded tasks queue (max waiting tasks)
                 Executors.defaultThreadFactory(),
                 new ThreadPoolExecutor.AbortPolicy() // rejection policy (throws exception)
-        );
-        for (int i = 0; i < 10; i++) {
-            executor.submit(new RendaRunnable(i));
+        )) {
+            for (int i = 0; i < 10; i++) {
+                executor.submit(new RendaRunnable(i));
+            }
+            executor.shutdown();
         }
-        executor.shutdown();
     }
 }

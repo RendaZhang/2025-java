@@ -1,10 +1,5 @@
 package com.renda.leetcode;
 
-import java.util.Arrays;
-import java.util.List;
-
-import static com.renda.leetcode.util.TreeUtils.buildTree;
-
 public class Main {
 
     public static void main(String[] args) {

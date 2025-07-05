@@ -4,7 +4,6 @@ import com.renda.taskmanager.dto.CategoryDto;
 import com.renda.taskmanager.dto.TaskRequestDto;
 import com.renda.taskmanager.dto.TaskResponseDto;
 import com.renda.taskmanager.entity.TaskStatus;
-import com.renda.taskmanager.repository.TaskRepository;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,9 +25,6 @@ class TaskServiceTests {
 
     @Autowired
     private CategoryService categoryService;
-
-    @Autowired
-    private TaskRepository taskRepository;
 
     @Autowired
     private CacheManager cacheManager;

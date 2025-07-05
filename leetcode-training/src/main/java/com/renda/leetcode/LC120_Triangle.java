@@ -1,6 +1,5 @@
 package com.renda.leetcode;
 
-import java.util.Arrays;
 import java.util.List;
 
 public class LC120_Triangle {
