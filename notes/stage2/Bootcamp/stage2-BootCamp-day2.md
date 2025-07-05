@@ -489,7 +489,7 @@ helm upgrade --install cluster-autoscaler autoscaler/cluster-autoscaler -n kube-
   --set extraArgs.balance-similar-node-groups=true \
   --set extraArgs.skip-nodes-with-system-pods=false \
   --set rbac.serviceAccount.annotations."eks\\.amazonaws\\.com/role-arn"="arn:aws:iam::563149051155:role/eks-cluster-autoscaler" \
-  --set image.tag=v1.30.0 # Replace 1.30 with your k8s server version
+  --set image.tag=v1.33.0 # Replace with your k8s server version
 
 # To verify that cluster-autoscaler has started, run:
 kubectl --namespace=kube-system get pods -l "app.kubernetes.io/name=aws-cluster-autoscaler,app.kubernetes.io/instance=cluster-autoscaler"
