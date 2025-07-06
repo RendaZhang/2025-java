@@ -22,8 +22,8 @@
 
 ## 1 · 背景与目标
 
-* EKS 控制面 \$0.10 / h、NAT GW \$0.045 / h、ALB \$0.031 / h，若 24×7 跑满约 \$260/mo。
-* 通过 **晚间关 NAT+ALB+EKS**、清空 Spot 节点，把日费压到 \$0.01（只剩存储）。
+* EKS 控制面 $0.10 / h、NAT GW $0.045 / h、ALB $0.031 / h，若 24×7 跑满约 $260/mo。
+* 通过 **晚间关 NAT+ALB+EKS**、清空 Spot 节点，把日费压到 $0.01（只剩存储）。
 * 仍需保持**固定入口**，便于 CI/CD、演示、监控连贯。
 
 ---
@@ -103,15 +103,15 @@ curl -I http://lab.rendazhang.com
 
 | 资源                  | 开机        | 关机   | 备注            |
 | ------------------- | --------- | ---- | ------------- |
-| EKS Control Plane   | \$2.4/d   | 0    | stop-hard 时删除 |
-| NAT Gateway         | \$1.08/d  | 0    | 每晚销毁          |
-| ALB                 | \$0.74/d  | 0    | 每晚销毁          |
-| Hosted-zone         | \$0.50/mo | same | 长留            |
+| EKS Control Plane   | $2.4/d   | 0    | stop-hard 时删除 |
+| NAT Gateway         | $1.08/d  | 0    | 每晚销毁          |
+| ALB                 | $0.74/d  | 0    | 每晚销毁          |
+| Hosted-zone         | $0.50/mo | same | 长留            |
 | S3 State + DynamoDB | ¢级        | same | 长留            |
 
 **AWS Budget 建议**
 
-* 5 USD (月) 警戒（Free Tier)
+* 5 USD (月) 警戒（Free Tier）
 * 80 USD (月) Soft Cap：超额发邮件 + SNS
 
 ---
