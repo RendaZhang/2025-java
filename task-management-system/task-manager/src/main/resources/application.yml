@@ -1,3 +1,4 @@
+---
 server:
   port: 8080
 
@@ -10,17 +11,19 @@ spring:
     hikari:
       maximum-pool-size: 10
       minimum-idle: 2
-    url: jdbc:mysql://localhost:3306/task_db?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    url: |
+      jdbc:mysql://localhost:3306/task_db?
+      useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
     username: root
     password: password
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
-      ddl-auto: update # Automatically update table structure
-    show-sql: true # show SQL statements
+      ddl-auto: update     # Automatically update table structure
+    show-sql: true         # show SQL statements
     properties:
       hibernate:
-        format_sql: true # format SQL statements
+        format_sql: true   # format SQL statements
   cache:
     type: redis
   data:

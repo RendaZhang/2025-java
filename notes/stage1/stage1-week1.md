@@ -1,6 +1,6 @@
 # Week 1 - Java Basic Review
 
----
+______________________________________________________________________
 
 ## Day 1 — Java Fundamentals & OOP Quick Refresh
 
@@ -11,17 +11,17 @@
 | **Primitive** | `byte`, `short`, `int`, `long`, `float`, `double`, `char`, `boolean` | Actual value | No `null`, fixed size |
 | **Reference** | Objects, Arrays, `String`, etc. | Memory address (reference) | Can be `null`; point to heap objects |
 
-* **Implicit / Widening Conversion**
+- **Implicit / Widening Conversion**
   ```java
   int x = 10;
   double y = x;        // int → double
   ```
-* **Explicit / Narrowing Conversion (Casting)**
+- **Explicit / Narrowing Conversion (Casting)**
   ```java
   double d = 9.8;
   int n = (int) d;     // 9  (fraction truncated)
   ```
-* **Wrapper Classes**: `Integer`, `Double`, `Boolean`, …  
+- **Wrapper Classes**: `Integer`, `Double`, `Boolean`, …
   *Enable use of primitives in collections & provide utility methods.*
   ```java
   Integer obj = 128;        // autoboxing
@@ -30,7 +30,7 @@
 
 ### 2. Control Structures
 
-* **Conditionals**
+- **Conditionals**
   ```java
   if (score >= 60) { ... } else { ... }
   switch (day) {
@@ -38,7 +38,7 @@
       default     -> ...
   }
   ```
-* **Loops**
+- **Loops**
   *`for`, `while`, `do-while`;* control execution with `break` (exit loop) and `continue` (skip iteration).
 
 ### 3. Classes & Objects
@@ -71,6 +71,7 @@ class Student {
     }
 }
 ```
+
 *Hide internal state (`private`) and expose controlled access via getters/setters.*
 
 ### 5. Inheritance & Method Overriding
@@ -120,60 +121,63 @@ class Circle extends Shape { ... }
 class Bird implements Flyable { ... }
 ```
 
----
+______________________________________________________________________
 
 ### Common Pitfalls to Watch
 
 1. **`NullPointerException`**: Dereferencing a reference not yet initialized (`null`).
-2. **Forgot `break` in `switch`**: Leads to fall-through.
-3. **Infinite Loops**: Loop condition never becomes `false`.
-4. **Using `==` with objects**: Compares references, not values. Use `equals()`.
-5. **Accidental Overload Instead of Override**: Add `@Override` to catch signature mismatches.
+1. **Forgot `break` in `switch`**: Leads to fall-through.
+1. **Infinite Loops**: Loop condition never becomes `false`.
+1. **Using `==` with objects**: Compares references, not values. Use `equals()`.
+1. **Accidental Overload Instead of Override**: Add `@Override` to catch signature mismatches.
 
----
+______________________________________________________________________
 
 ### Quick Interview Flash Cards
 
-* **Autoboxing**: Java auto-converts between primitives and wrappers (`int` ↔ `Integer`).
-* **`final` vs `finally` vs `finalize()`**
-    * `final`: constant or non-overridable.
-    * `finally`: always runs after `try/catch`.
-    * `finalize()`: legacy GC callback—avoid relying on it.
-* **Polymorphism Benefits**: Code to interfaces → easier extension & testing.
+- **Autoboxing**: Java auto-converts between primitives and wrappers (`int` ↔ `Integer`).
+- **`final` vs `finally` vs `finalize()`**
+  - `final`: constant or non-overridable.
+  - `finally`: always runs after `try/catch`.
+  - `finalize()`: legacy GC callback—avoid relying on it.
+- **Polymorphism Benefits**: Code to interfaces → easier extension & testing.
 
----
+______________________________________________________________________
 
 ## Day 2 - Technical Recap – Java Collections & Exception Handling
 
----
+______________________________________________________________________
 
-### 1  Java Collections Framework
+### 1 Java Collections Framework
 
 | Interface | Key Implementations | Ordering | Duplicate Rules | Typical Use-Cases |
 |-----------|--------------------|-----------|-----------------|-------------------|
-| **List**  | `ArrayList`, `LinkedList`, `Vector/Stack`, `CopyOnWriteArrayList` | Maintains insertion order | Allows duplicates (incl. multiple `null`s) | Ordered sequences, random access (`ArrayList`), queue/stack (`LinkedList`) |
-| **Set**   | `HashSet`, `LinkedHashSet`, `TreeSet` | HashSet → no order<br>LinkedHashSet → insertion order<br>TreeSet → natural / comparator order | No duplicates (at most one `null` in HashSet / LinkedHashSet; `null` disallowed in TreeSet) | De-duplication, membership tests, ordered sets |
-| **Map**   | `HashMap`, `LinkedHashMap`, `TreeMap`, `ConcurrentHashMap` | HashMap → no order<br>LinkedHashMap → insertion / access order<br>TreeMap → key order | Keys unique (one `null` in HashMap/LinkedHashMap); values may repeat | Key-value lookup, caches (LRU with LinkedHashMap), ordered dictionaries |
+| **List** | `ArrayList`, `LinkedList`, `Vector/Stack`, `CopyOnWriteArrayList` | Maintains insertion order | Allows duplicates (incl. multiple `null`s) | Ordered sequences, random access (`ArrayList`), queue/stack (`LinkedList`) |
+| **Set** | `HashSet`, `LinkedHashSet`, `TreeSet` | HashSet → no order<br>LinkedHashSet → insertion order<br>TreeSet → natural / comparator order | No duplicates (at most one `null` in HashSet / LinkedHashSet; `null` disallowed in TreeSet) | De-duplication, membership tests, ordered sets |
+| **Map** | `HashMap`, `LinkedHashMap`, `TreeMap`, `ConcurrentHashMap` | HashMap → no order<br>LinkedHashMap → insertion / access order<br>TreeMap → key order | Keys unique (one `null` in HashMap/LinkedHashMap); values may repeat | Key-value lookup, caches (LRU with LinkedHashMap), ordered dictionaries |
 
 #### Fast Reminders
 
-* **ArrayList vs LinkedList**
-    * Random read O(1) vs O(n)
-    * Mid-list insert/remove O(n) vs O(1) (after locating node)
+- **ArrayList vs LinkedList**
 
-* **HashSet / HashMap**
-    * Backed by hash table; avg `add/get/remove` ≈ O(1).
-    * Counts on good `hashCode()` / `equals()`.
+  - Random read O(1) vs O(n)
+  - Mid-list insert/remove O(n) vs O(1) (after locating node)
 
-* **TreeSet / TreeMap**
-    * Red-black tree; operations O(log n).
-    * Disallow `null` keys/values when ordering can’t be established.
+- **HashSet / HashMap**
 
-* **Map Traversal** → prefer `entrySet()` or `forEach((k,v) -> …)` to avoid double look-ups.
+  - Backed by hash table; avg `add/get/remove` ≈ O(1).
+  - Counts on good `hashCode()` / `equals()`.
 
----
+- **TreeSet / TreeMap**
 
-### 2  Java Exception Model
+  - Red-black tree; operations O(log n).
+  - Disallow `null` keys/values when ordering can’t be established.
+
+- **Map Traversal** → prefer `entrySet()` or `forEach((k,v) -> …)` to avoid double look-ups.
+
+______________________________________________________________________
+
+### 2 Java Exception Model
 
 | Category | Base Class | Compile-time Enforcement | Typical Examples |
 |----------|------------|--------------------------|------------------|
@@ -193,8 +197,8 @@ try {
 }
 ```
 
-* `throw new MyException("msg");` // actively launch
-* `void m() throws IOException { … }` // promise to caller
+- `throw new MyException("msg");` // actively launch
+- `void m() throws IOException { … }` // promise to caller
 
 #### Custom Exceptions
 
@@ -206,28 +210,30 @@ public class AgeOutOfRangeException extends RuntimeException {
 
 Choose **extends `Exception`** when you want callers *forced* to handle; **extends `RuntimeException`** when the error is programmer-side and optional to catch.
 
----
+______________________________________________________________________
 
-### 3  Interview Nuggets
+### 3 Interview Nuggets
 
-1. **Why `ArrayList` is fast for random access?**  
+1. **Why `ArrayList` is fast for random access?**
    Continuous memory → index math `base + i`.
 
-2. **How does `HashMap` handle collisions?**  
+1. **How does `HashMap` handle collisions?**
    JDK 8+: bucket starts as linked list, converts to red-black tree when > 8 elements & table ≥ 64.
 
-3. **Fail-Fast vs Fail-Safe Iterators?**  
-   *Fail-Fast* (`ArrayList`, `HashMap`) → `ConcurrentModificationException`.  
+1. **Fail-Fast vs Fail-Safe Iterators?**
+   *Fail-Fast* (`ArrayList`, `HashMap`) → `ConcurrentModificationException`.
    *Fail-Safe* (`CopyOnWriteArrayList`, `ConcurrentHashMap`) works on snapshot / structural copy.
 
-4. **Try-with-Resources** (Java 7+) auto-closes `Closeable` / `AutoCloseable`:
+1. **Try-with-Resources** (Java 7+) auto-closes `Closeable` / `AutoCloseable`:
+
    ```java
    try (BufferedReader br = new BufferedReader(new FileReader(p))) {
        return br.readLine();
    }
    ```
 
-5. **Best Practice** – never swallow exceptions:
+1. **Best Practice** – never swallow exceptions:
+
    ```java
    catch (Exception e) {
        log.error("failed", e);
@@ -235,9 +241,9 @@ Choose **extends `Exception`** when you want callers *forced* to handle; **exten
    }
    ```
 
----
+______________________________________________________________________
 
-### 4  Quick Cheatsheet
+### 4 Quick Cheatsheet
 
 ```text
 Collection API    → add, remove, contains, size, clear
@@ -250,13 +256,14 @@ finally           → always executes (except System.exit)
 throw / throws    → throw = inside method, throws = method signature
 ```
 
----
+______________________________________________________________________
 
-## Day 3  – Java Multithreading Basics
+## Day 3 – Java Multithreading Basics
 
----
+______________________________________________________________________
 
 ### 🎯 Learning Goals
+
 | Area | What we covered | Why it matters in interviews |
 |------|-----------------|------------------------------|
 | **Thread creation** | `Thread` inheritance, `Runnable`, `Callable` + `Future` | Classic “How many ways to create a thread? Pros/cons?” |
@@ -265,9 +272,9 @@ throw / throws    → throw = inside method, throws = method signature
 | **Race conditions & atomicity** | Built an unsafe counter, then fixed it with `synchronized`, `ReentrantLock`, `AtomicInteger` | Demonstrates problem->diagnosis->solution thinking |
 | **Lock-free approach** | CAS & `AtomicInteger` | Often appears as “What is CAS? When prefer atomic classes over locks?” |
 
----
+______________________________________________________________________
 
-### 1  Thread Creation Patterns
+### 1 Thread Creation Patterns
 
 ```java
 // ① extends Thread
@@ -289,12 +296,12 @@ System.out.println(f.get());
 pool.shutdown();
 ```
 
-**Why `Runnable` / `Callable` > `Thread`?**  
+**Why `Runnable` / `Callable` > `Thread`?**
 *Avoids single-inheritance limit, decouples task from execution mechanics, plays nicely with thread pools.*
 
----
+______________________________________________________________________
 
-### 2  Executor Framework Highlights
+### 2 Executor Framework Highlights
 
 | Factory | Threads created | Typical use |
 |---------|-----------------|-------------|
@@ -314,9 +321,9 @@ ThreadPoolExecutor custom = new ThreadPoolExecutor(
 );
 ```
 
----
+______________________________________________________________________
 
-### 3  Synchronization Techniques
+### 3 Synchronization Techniques
 
 | Technique | Code sketch | Pros | Cons |
 |-----------|-------------|------|------|
@@ -324,9 +331,9 @@ ThreadPoolExecutor custom = new ThreadPoolExecutor(
 | `ReentrantLock` | `lock.lock(); try{...} finally{lock.unlock();}` | `tryLock`, timeouts, interruptible | Manual unlock, more boilerplate |
 | Atomic variable | `counter.incrementAndGet()` | Lock-free, high throughput under low contention | Only for single-variable invariants |
 
----
+______________________________________________________________________
 
-### 4  Race-Condition Demo & Fixes
+### 4 Race-Condition Demo & Fixes
 
 ```text
 UnsafeCounter (no sync)  ➜  Final = 70 k  (< 100 k)
@@ -335,41 +342,41 @@ SafeCounterLock          ➜  Final = 100 k
 SafeCounterAtomic        ➜  Final = 100 k
 ```
 
-**Key takeaway:** `count++` = read ➜ add 1 ➜ write (three steps).  
+**Key takeaway:** `count++` = read ➜ add 1 ➜ write (three steps).
 Without mutual exclusion, two threads can interleave between read/write.
 
----
+______________________________________________________________________
 
-### 5  CAS in a Nutshell
+### 5 CAS in a Nutshell
 
 1. Read current value
-2. Compute new value
-3. **Compare-And-Swap** – if memory still holds old value, write new; otherwise retry  
+1. Compute new value
+1. **Compare-And-Swap** – if memory still holds old value, write new; otherwise retry
    *CPU provides CAS as an atomic instruction (`cmpxchg`, etc.) → forms basis of `java.util.concurrent.atomic.*`.*
 
----
+______________________________________________________________________
 
-### 6  Interview Cheat Sheet
+### 6 Interview Cheat Sheet
 
-* **Q:** *How many ways to start a thread in Java?*  
+- **Q:** *How many ways to start a thread in Java?*
   **A:** 3 core: extend `Thread`; implement `Runnable` (plus `Thread`); implement `Callable` + submit to `ExecutorService` (gives `Future`).
 
-* **Q:** *Why thread pools?*  
+- **Q:** *Why thread pools?*
   **A:** Reuse worker threads → lower creation cost, cap max concurrency, centralised lifecycle & queue.
 
-* **Q:** *Difference between `synchronized` and `Lock`?*  
+- **Q:** *Difference between `synchronized` and `Lock`?*
   | `synchronized` | `ReentrantLock` |
   |----------------|-----------------|
   | implicit lock per object | explicit object |
   | cannot timeout/interrupt | `tryLock`, timed lock |
   | auto-release | must `unlock()` |
 
-* **Q:** *When would you choose `AtomicInteger`?*  
+- **Q:** *When would you choose `AtomicInteger`?*
   **A:** Updating a single counter/flag at very high frequency where lock overhead hurts, and invariants are limited to that variable.
 
----
+______________________________________________________________________
 
-### 7  Further Practice
+### 7 Further Practice
 
 | LeetCode ID | Title | Concept |
 |-------------|-------|---------|
@@ -377,17 +384,17 @@ Without mutual exclusion, two threads can interleave between read/write.
 | 1116 | Print Zero, Even, Odd | multi-thread coordination |
 | 1195 | FizzBuzz Multithreaded | condition ordering |
 
----
+______________________________________________________________________
 
 ### 📌 Daily Takeaways
 
 1. **Always identify shared state first**; decide if you need lock, atomic, or nothing.
-2. **ExecutorService > new Thread()** – unifies task submission & scaling.
-3. Pick the **lightest** tool that satisfies correctness:  
+1. **ExecutorService > new Thread()** – unifies task submission & scaling.
+1. Pick the **lightest** tool that satisfies correctness:
    `Atomic` < `synchronized` < `Lock` < higher-level constructs (`BlockingQueue`, `CompletableFuture`, etc.).
-4. Measure under realistic load – contention changes the best choice.
+1. Measure under realistic load – contention changes the best choice.
 
----
+______________________________________________________________________
 
 ### 💡 Next Steps
 
@@ -395,16 +402,16 @@ Without mutual exclusion, two threads can interleave between read/write.
 - Explore high-level synchronizers (`CountDownLatch`, `CyclicBarrier`, `Semaphore`).
 - Review JVM memory model & `volatile` semantics for visibility guarantees.
 
----
-
+______________________________________________________________________
 
 ## Day 4 - Tooling Review & Hands-on Practice
 
----
+______________________________________________________________________
 
 ### ✅ Module 1 – Git Version Control
 
 #### 🌱 Core Ideas
+
 | Term | Purpose |
 |------|---------|
 | **Working Directory** | Your editable project files |
@@ -413,86 +420,97 @@ Without mutual exclusion, two threads can interleave between read/write.
 | **Remote Repository** | Gitee repo for team collaboration |
 
 #### 🔧 Must-Know Commands
+
 ```bash
-git init / add / commit  
-git status / log --oneline  
-git branch / switch / merge  
-git stash / stash pop  
-git rebase <branch>  
+git init / add / commit
+git status / log --oneline
+git branch / switch / merge
+git stash / stash pop
+git rebase <branch>
 git push / pull
 ```
 
 #### 🧪 Achievements
+
 - Initialized a local repo and linked it to **private Gitee repo** via SSH.
 - Practiced branching, merging, conflict resolution.
 - Mastered `stash` for shelving work and `rebase` for tidy history.
 
----
+______________________________________________________________________
 
 ### ✅ Module 2 – Maven Build Tool
 
 #### 🌱 Key Concepts
+
 - **`pom.xml`** = project “recipe” (dependencies, plugins, build rules).
 - **Lifecycle**: `validate → compile → test → package → install → deploy`.
 - **Repositories**: Central, Local (`~/.m2`), Private.
 - **Dependency tree** + conflict resolution via `<exclusions>`.
 
 #### 🔧 Essential Commands
+
 ```bash
-mvn compile | test | package | install  
+mvn compile | test | package | install
 mvn dependency:tree
 ```
 
 #### 🧪 Achievements
+
 - Generated a Maven project (`maven-demo`) & produced a `.jar`.
 - Added **Guava** dependency; wrote sample code.
 - Simulated version clash with Hadoop → fixed using `exclusions`.
 
----
+______________________________________________________________________
 
 ### ✅ Module 3 – MySQL Ops & Optimization
 
 #### 🌱 Highlights
+
 - DDL / DML / JOIN fundamentals.
 - **Indexes** = accelerate lookup; watch for functions / type cast that kill them.
 - **EXPLAIN**: check `type`, `key`, `rows`, `Extra`.
 - Slow-query log = performance radar.
 
 #### 🔧 Sample Commands
+
 ```sql
 CREATE INDEX idx_email ON users(email);
 EXPLAIN SELECT * FROM users WHERE email='alice@example.com';
 ```
 
 #### 🧪 Achievements
+
 - Ran MySQL in **Docker + WSL** with volume persistence.
 - Built `users` & `orders` tables; executed CRUD + JOIN.
 - Observed index hit vs. miss with `EXPLAIN`.
 
----
+______________________________________________________________________
 
 ### ✅ Module 4 – IntelliJ IDEA Productivity
 
 #### 🌱 Killer Shortcuts (Windows/Linux)
+
 | Action | Keys |
 |--------|------|
 | Find Class/File | `Ctrl+N / Ctrl+Shift+N` |
-| Global Search   | `Ctrl+Shift+F` |
+| Global Search | `Ctrl+Shift+F` |
 | Auto-import Fix | `Alt+Enter` |
-| Reformat Code   | `Ctrl+Alt+L` |
-| Rename          | `Shift+F6` |
-| Debug Step      | `F7 / F8 / F9` |
+| Reformat Code | `Ctrl+Alt+L` |
+| Rename | `Shift+F6` |
+| Debug Step | `F7 / F8 / F9` |
 
 #### 🧪 Achievements
+
 - Navigated, refactored, formatted via shortcuts.
 - Integrated Git panel for commit & push.
 - Debugged `calculateSum()` with breakpoints, conditional break, variable edit.
 
----
+______________________________________________________________________
 
 ### ✅ Module 5 – Docker Basics & Java Containerization
 
 #### 🌱 Key Notions
+
 | Term | Meaning |
 |------|---------|
 | **Image** | Read-only template |
@@ -501,6 +519,7 @@ EXPLAIN SELECT * FROM users WHERE email='alice@example.com';
 | **Port Mapping** | `-p host:container` |
 
 #### 🔧 Essential Commands
+
 ```bash
 docker pull nginx
 docker run -d -p 8080:80 nginx
@@ -510,15 +529,17 @@ docker ps / stop / rm / rmi
 ```
 
 #### 🧪 Achievements
+
 - Launched **Nginx** container on port 8080.
 - Wrote Dockerfile, built image for Spring-Boot JAR, and ran it on 8081.
 
----
+______________________________________________________________________
 
 ### 🏁 One-Sentence Takeaway
+
 > **Today you didn’t just learn tools—you assembled a production-grade workflow ready for real-world Java projects.**
 
----
+______________________________________________________________________
 
 ### 🔜 Next-Step Roadmap
 
@@ -530,8 +551,8 @@ docker ps / stop / rm / rmi
 | Algorithms | LeetCode medium daily practice |
 | English | Tech résumé & interview Q&A in English |
 
----
+______________________________________________________________________
 
 **Keep coding, keep shipping.** 🚀
 
----
+______________________________________________________________________

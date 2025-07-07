@@ -4,27 +4,32 @@
 
 系统复习与提升 Java 基础知识、算法能力以及英语综合技能，以顺利通过外企技术面试，达到中高级 Java 开发工程师或 Java 项目技术 Leader 的水平。
 
----
+______________________________________________________________________
 
 ## 📅 第一阶段（第1-4周）：基础复习与技能提升
 
 ### 🔖 第1周：Java基础、开发工具与算法快速复习
 
 #### ☑️ Java基础（共3天）
+
 - **Day1: Java语法与OOP**
+
   - 数据类型、控制结构（条件语句、循环）
   - 面向对象基础（封装、继承、多态）
 
 - **Day2: 集合框架与异常处理**
+
   - 集合框架（List, Set, Map）
   - 异常机制（try-catch、throws、自定义异常）
 
 - **Day3: Java多线程基础**
+
   - 线程创建（Thread、Runnable、Callable）
   - 线程池使用（ExecutorService）
   - 线程同步（synchronized、Lock）与线程安全（竞态条件、原子操作）
 
 #### ☑️ 开发工具（共1天）
+
 - Git（版本控制与分支管理）
 - Maven（项目构建与依赖管理）
 - MySQL（基本操作与优化技巧）
@@ -32,13 +37,15 @@
 - Docker（容器化基础使用）
 
 #### ☑️ 算法基础（贯穿全周）
+
 - 每日完成1-2道 Leetcode Medium 算法题目练习（数据结构与基础算法）
 
 #### ☑️ 英语听力与口语（贯穿全周）
+
 - 每天收听30分钟英文技术播客或视频（如TechLead）
 - 每天英文口语复述算法题或技术知识点，锻炼表达能力
 
----
+______________________________________________________________________
 
 ### 🔖 第2周：Spring 框架、数据库与缓存复习
 
@@ -57,7 +64,7 @@
 - **Day7: 周总结与项目优化**
   - 项目代码整合与文档编写
 
----
+______________________________________________________________________
 
 ### 🔖 第3周：算法强化与性能优化初步
 
@@ -71,7 +78,7 @@
 | **Day 6** | MySQL 高级优化 & 索引深度 | - 覆盖索引、下推谓词<br>- Buffer Pool 命中率<br>- EXPLAIN JSON / optimizer_trace | 优化前后 EXPLAIN + `mysql-adv-day6.md` |
 | **Day 7** | 周整合 & 输出 | - 知识库 & Cheat Sheet<br>- Pull Request：GC/Index 参数合并<br>- 英文周报 ≥ 200 词 + 5 min 算法讲解视频 | `week3-cheatsheet.md` + `week3-report-en.md` + `week4-plan-draft.md` |
 
----
+______________________________________________________________________
 
 ### 🔖 第4周：英语能力提升与面试准备
 
@@ -84,12 +91,12 @@
 - **Day6-Day7: 面试总结与准备强化**
   - 总结本周面试经验与不足，制定针对性改进措施
 
----
+______________________________________________________________________
 
 # 🚀 第二阶段 Java Cloud-Native Sprint（AWS 专版 · NodeGroup）
 
-**周期**：2025-07-01 → 2025-08-25  
-**目标**：跑通 *Docker → EKS → GitOps → Chaos → Observability/SRE → Bedrock AI* 全链路；输出可量化的简历亮点  
+**周期**：2025-07-01 → 2025-08-25
+**目标**：跑通 *Docker → EKS → GitOps → Chaos → Observability/SRE → Bedrock AI* 全链路；输出可量化的简历亮点
 **预算护栏**：控制总账单 ≤ **¥ 1 500**（正常按需启停 ≈ ¥ 800；已含缓冲）
 
 ## 📆 时间轴 & 核心交付物
@@ -127,11 +134,26 @@
 
 ## 立即行动
 
-1. 完成 **Day-0** 实验并 push `day0-notes.md`  
-2. 运行 `eksctl create cluster --managed` (Spot+OD) 验证节点；启用 Cluster Autoscaler  
-3. 设置 CloudWatch - Billing Alarm & Budget (USD 80)  
-4. 开始 Bootcamp Day 1；如需脚本或 YAML 示例，随时告诉我！
+1. 完成 **Day-0** 实验并 push `day0-notes.md`
+1. 运行 `eksctl create cluster --managed` (Spot+OD) 验证节点；启用 Cluster Autoscaler
+1. 设置 CloudWatch - Billing Alarm & Budget (USD 80)
+1. 开始 Bootcamp Day 1；如需脚本或 YAML 示例，随时告诉我！
 
 > 全流程仅依赖 AWS 账户即可完成；后续若需多云演示，可启用 Terraform GKE provider 再走一遍 Helm / Argo 即可。
 
----
+______________________________________________________________________
+
+## 🤝 贡献指南 (Contributing Guide)
+
+1. Fork 并克隆此仓库。
+1. 安装依赖并设置 pre-commit：
+   ```bash
+   pip install -r requirements-dev.txt
+   pre-commit install
+   ```
+1. 每次提交前，钩子会自动运行。你也可以手动触发：
+   ```bash
+   pre-commit run --all-files
+   ```
+
+> ✅ 所有提交必须通过 pre-commit 检查，CI 会阻止不符合规范的 PR。

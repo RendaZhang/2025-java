@@ -36,3 +36,7 @@ Thumbs.db
 # Log files
 *.log
 
+# Python specific
+__pycache__/
+*.pyc
+.venv/

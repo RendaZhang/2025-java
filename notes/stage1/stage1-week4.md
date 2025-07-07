@@ -1,6 +1,6 @@
 # Week 3: Algorithm Enhancement and Preliminary Performance Optimization
 
----
+______________________________________________________________________
 
 ## 📘 Daily Learning Journal – Day 4 (Technical English & Speaking)
 
@@ -28,4 +28,4 @@ This structured day helped me internalize technical vocabulary through annotatio
 
 Tomorrow I plan to refine my elevator pitch delivery, tackle a more challenging LeetCode problem, and expand my glossary with 50 additional terms to deepen my technical vocabulary pool.
 
----
+______________________________________________________________________

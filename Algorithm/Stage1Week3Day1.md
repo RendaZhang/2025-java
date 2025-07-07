@@ -1,14 +1,15 @@
 # Stage1 - Week3 - Day 1: Dynamic Programming
 
----
+______________________________________________________________________
 
 ## Fibonacci - LC 509
 
-### Time: 
+### Time:
 
 Thinking 2min26s, Coding 2min3s, Debugging 10min49s.
 
-### Code: 
+### Code:
+
 ```java
 // Time: O(N), Space: O(1)
 class Solution {
@@ -27,19 +28,19 @@ class Solution {
 }
 ```
 
-### Result: 
+### Result:
 
-Accepted 
+Accepted
 
 31 / 31 testcases passed
 
 Runtime: 0ms, Beats 100%; Memory: 40.22MB, Beats 80.55%
 
----
+______________________________________________________________________
 
 ## Climbing Stairs - LC 70
 
-### Time: 
+### Time:
 
 Thinking 9min0s, Coding 2min30s, Debugging 0min10s.
 
@@ -70,7 +71,7 @@ Accepted
 
 Runtime: 0ms, Beats 100%; Memory: 40.38MB, Beats 65.51%
 
---- 
+______________________________________________________________________
 
 ## Memoized Recursion
 
@@ -112,7 +113,7 @@ class Solution {
 }
 ```
 
----
+______________________________________________________________________
 
 ## Compare & Reflect
 
@@ -122,10 +123,10 @@ A:
 Yes, the transition equations of the two problems are essentially identical: f(n) = f(n-1) + f(n-2);
 The reason LeetCode includes both is to guide you from "specific scenarios" to "abstract patterns";
 LC 70 leans more toward "path counting problems," helping you understand DP applications;
-LC 509 leans more toward "mathematical induction problems," suitable for introducing optimization techniques 
+LC 509 leans more toward "mathematical induction problems," suitable for introducing optimization techniques
 (e.g., matrix exponentiation, Binet’s formula).
 
----
+______________________________________________________________________
 
 ## LC 416 “Partition Equal Subset Sum”
 
@@ -215,11 +216,11 @@ class Solution {
 
 ### Complexity Comparison Summary
 
-| Method Type         | Time Complexity      | Space Complexity        | Characteristics                         |
+| Method Type | Time Complexity | Space Complexity | Characteristics |
 |---------------------|----------------------|-------------------------|-----------------------------------------|
-| DFS + Memoization   | `O(n × target)`      | `O(n × target)`         | Easy to understand, risk of TLE, stack overflow risk |
-| 2D DP               | `O(n × target)`      | `O(n × target)`         | Clear and intuitive, high space usage   |
-| 1D DP (Compressed)  | `O(n × target)`      | `O(target)`            | Most recommended, memory efficient     |
+| DFS + Memoization | `O(n × target)` | `O(n × target)` | Easy to understand, risk of TLE, stack overflow risk |
+| 2D DP | `O(n × target)` | `O(n × target)` | Clear and intuitive, high space usage |
+| 1D DP (Compressed) | `O(n × target)` | `O(target)` | Most recommended, memory efficient |
 
 ✅ Recommendations
 
@@ -227,7 +228,7 @@ class Solution {
 - **For interviews or practical submissions**: Directly use the **1D DP compressed version**.
 - **For small data debugging or brute-force validation**: Start with **Memoized DFS**.
 
----
+______________________________________________________________________
 
 ## LC 62 “Unique Paths”
 
@@ -298,7 +299,7 @@ Thinking 11min22s, Coding 15min50s, Debugging 7min9s.
 
 #### Complexity
 
-Time O(m*n), Space O(n)
+Time O(m\*n), Space O(n)
 
 #### Code
 
@@ -323,7 +324,7 @@ class Solution {
 }
 ```
 
----
+______________________________________________________________________
 
 ## LC 1143 “Longest Common Subsequence”
 
@@ -403,6 +404,7 @@ f[0][0...n] = 0  // Initialize the first row (i=0) to 0
 ```
 
 Traversal order:
+
 ```pseudo
 for (i = 1 ... m)
   for (j = 1 ... n)
@@ -410,7 +412,7 @@ for (i = 1 ... m)
 
 #### Complexity
 
-Time O(m*n), Space O(n)
+Time O(m\*n), Space O(n)
 
 #### Code
 
@@ -436,4 +438,4 @@ class Solution {
 }
 ```
 
----
+______________________________________________________________________

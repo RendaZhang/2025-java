@@ -1,6 +1,6 @@
 # Stage1 - Week3 - Day 3: Backtracking & Greedy Algorithms
 
----
+______________________________________________________________________
 
 ## LC 77 - Combinations
 
@@ -35,24 +35,24 @@ class Solution {
 
 ### ⏱ Time Complexity: `O(C(n, k) * k)`
 
-* `C(n, k)` is the number of combinations, i.e., `n! / (k! * (n - k)!)`;
-* Each combination requires traversing `k` times to construct the `ArrayList`;
-* Therefore, the overall time complexity is `O(C(n, k) * k)`.
+- `C(n, k)` is the number of combinations, i.e., `n! / (k! * (n - k)!)`;
+- Each combination requires traversing `k` times to construct the `ArrayList`;
+- Therefore, the overall time complexity is `O(C(n, k) * k)`.
 
 ### 🗂 Space Complexity: `O(k)`
 
-* The maximum depth of the recursion stack is `k`, which is the depth of the path;
-* Additionally, we use `curr` to temporarily store the path;
-* The overall space complexity is `O(k)`, excluding the storage for the returned results.
+- The maximum depth of the recursion stack is `k`, which is the depth of the path;
+- Additionally, we use `curr` to temporarily store the path;
+- The overall space complexity is `O(k)`, excluding the storage for the returned results.
 
 ### 🔁 Number of Recursive Calls
 
 The number of recursive calls is equal to the total number of combinations:
 
-* For `n = 5`, `k = 3`:
+- For `n = 5`, `k = 3`:
 
-    * The total number of combinations is: `5! / (3! * 2!) = 10`
-    * The number of recursive calls is `10`.
+  - The total number of combinations is: `5! / (3! * 2!) = 10`
+  - The number of recursive calls is `10`.
 
 In general, it’s `C(n, k)`.
 
@@ -70,7 +70,7 @@ Recursive path:
 [4] → end
 ```
 
----
+______________________________________________________________________
 
 ## LC 46 - Permutations
 
@@ -78,21 +78,21 @@ Recursive path:
 
 #### 🌟 Core Idea
 
-* Use a `boolean[] used` array to mark which elements have been selected for the current path.
-* Traverse each unused element and add it to the current path.
-* Restore the state during backtracking.
+- Use a `boolean[] used` array to mark which elements have been selected for the current path.
+- Traverse each unused element and add it to the current path.
+- Restore the state during backtracking.
 
 #### ⏱ **Time Complexity**
 
-* Each recursion traverses unused elements, and there are `n!` total permutations.
-* Each recursion involves traversing `n` elements → Time complexity is **O(n × n!)**.
+- Each recursion traverses unused elements, and there are `n!` total permutations.
+- Each recursion involves traversing `n` elements → Time complexity is **O(n × n!)**.
 
 #### 🗂 **Space Complexity**
 
-* Mainly from the recursion stack depth: `O(n)`.
-* `boolean[] used` occupies `O(n)`.
-* The combination path `curr` also occupies `O(n)`.
-* **Total space complexity**: `O(n + n + n) = O(n)` (excluding result storage).
+- Mainly from the recursion stack depth: `O(n)`.
+- `boolean[] used` occupies `O(n)`.
+- The combination path `curr` also occupies `O(n)`.
+- **Total space complexity**: `O(n + n + n) = O(n)` (excluding result storage).
 
 #### Code
 
@@ -124,28 +124,28 @@ class Solution {
 
 #### 🔄 **Number of Recursive Calls**
 
-* The number of recursive calls for permutations is `n!`, as each level selects the next element.
-* For example, if `n = 4`:
-    * `4! = 24` recursive calls.
+- The number of recursive calls for permutations is `n!`, as each level selects the next element.
+- For example, if `n = 4`:
+  - `4! = 24` recursive calls.
 
 ### ✅ **Swap Version**
 
 #### 🌟 Core Idea
 
-* Avoid using `boolean[] used` by swapping elements within the array.
-* Maintain the permutation order during recursion:
-    * Use the current `start` position as an anchor.
-    * Swap `i` with `start`, and restore after recursion.
+- Avoid using `boolean[] used` by swapping elements within the array.
+- Maintain the permutation order during recursion:
+  - Use the current `start` position as an anchor.
+  - Swap `i` with `start`, and restore after recursion.
 
 #### ⏱ **Time Complexity**
 
-* Similarly, there are `n!` permutations, and each recursion involves swapping and backtracking → **O(n × n!)**.
+- Similarly, there are `n!` permutations, and each recursion involves swapping and backtracking → **O(n × n!)**.
 
 #### 🗂 **Space Complexity**
 
-* **Recursion stack**: `O(n)`.
-* No `boolean[]`, **saving O(n) space**.
-* **Total space complexity**: `O(n)`.
+- **Recursion stack**: `O(n)`.
+- No `boolean[]`, **saving O(n) space**.
+- **Total space complexity**: `O(n)`.
 
 #### Code
 
@@ -188,32 +188,30 @@ class Solution {
 
 #### 🔄 **Number of Recursive Calls**
 
-* Same as the Visited Array Version, `n!` calls.
-* For `n = 4`: `4! = 24` recursive calls.
-
+- Same as the Visited Array Version, `n!` calls.
+- For `n = 4`: `4! = 24` recursive calls.
 
 ### 🧐 **Comparison Summary**
 
-| Approach            | Time Complexity | Space Complexity | Recursive Calls | Memory Usage | Readability |
+| Approach | Time Complexity | Space Complexity | Recursive Calls | Memory Usage | Readability |
 | ------------------- | --------------- | ---------------- | ---------------- | ------------ | ----------- |
-| **Visited Array**   | `O(n × n!)`     | `O(n)`           | `n!`             | **Higher**   | More intuitive |
-| **Swap Version**    | `O(n × n!)`     | `O(n)`           | `n!`             | **Lower**    | Harder to understand |
+| **Visited Array** | `O(n × n!)` | `O(n)` | `n!` | **Higher** | More intuitive |
+| **Swap Version** | `O(n × n!)` | `O(n)` | `n!` | **Lower** | Harder to understand |
 
 ### 🏷 **Visited Array vs Swap Version**
 
-| Comparison Point | **Visited Array**                | **Swap Version**               |
+| Comparison Point | **Visited Array** | **Swap Version** |
 | ---------------- | -------------------------------- | ------------------------------ |
-| Memory Usage     | Higher, requires extra `boolean[]` | Lower, uses swapping to track state |
-| Readability      | Very intuitive, `used[]` shows selected state | Slightly harder, swapping represents "selected state" |
-| Modifies Input   | Does not modify the input array    | Modifies the input array but restores it after recursion |
-| Extensibility    | Easier to extend to permutations with duplicates | Requires additional handling for duplicates |
-| Pruning Efficiency | Can add `if` pruning              | Manual handling for duplicate elements |
+| Memory Usage | Higher, requires extra `boolean[]` | Lower, uses swapping to track state |
+| Readability | Very intuitive, `used[]` shows selected state | Slightly harder, swapping represents "selected state" |
+| Modifies Input | Does not modify the input array | Modifies the input array but restores it after recursion |
+| Extensibility | Easier to extend to permutations with duplicates | Requires additional handling for duplicates |
+| Pruning Efficiency | Can add `if` pruning | Manual handling for duplicate elements |
 
+- If only calculating `n!` permutations, I recommend the **Swap Version** for better space efficiency.
+- If extending to **Permutations II** (with duplicate elements), the **Visited Array** is better for adding duplicate-handling logic.
 
-* If only calculating `n!` permutations, I recommend the **Swap Version** for better space efficiency.
-* If extending to **Permutations II** (with duplicate elements), the **Visited Array** is better for adding duplicate-handling logic.
-
----
+______________________________________________________________________
 
 ## LC 39 - Combination Sum
 
@@ -247,19 +245,19 @@ class Solution {
 
 #### 🌟 **Algorithm Idea**
 
-* Use **Depth-First Search (DFS)** for recursive solving.
-* Each number can be reused, so the current index remains unchanged during recursive calls.
-* When the sum equals the target value, add the current combination to the result.
-* If the sum exceeds the target value, return immediately.
+- Use **Depth-First Search (DFS)** for recursive solving.
+- Each number can be reused, so the current index remains unchanged during recursive calls.
+- When the sum equals the target value, add the current combination to the result.
+- If the sum exceeds the target value, return immediately.
 
 #### ⏱ **Time Complexity**
 
-* **Worst case**: Generate all possible combinations, similar to the **unbounded knapsack problem**:
-  * **Time complexity**: `O(2^t * k)`
-    * `t` is the target value, `k` is the length of the combination.
-    * Exponential, as each number can be selected repeatedly.
-* **Space complexity**: `O(target / min(candidates))`
-  * The maximum recursion depth is `target / min(candidates)`.
+- **Worst case**: Generate all possible combinations, similar to the **unbounded knapsack problem**:
+  - **Time complexity**: `O(2^t * k)`
+    - `t` is the target value, `k` is the length of the combination.
+    - Exponential, as each number can be selected repeatedly.
+- **Space complexity**: `O(target / min(candidates))`
+  - The maximum recursion depth is `target / min(candidates)`.
 
 #### 📊 **Pruning Effect Statistics**
 
@@ -285,10 +283,10 @@ Pruning effectiveness = (1 - (8 / 16)) * 100% = 50%
 
 #### ✅ **Comparison: Before Pruning vs After Pruning**
 
-| Version      | Node Count (cntBefore) | Node Count After Pruning (cntAfter) | Pruning Effectiveness |
+| Version | Node Count (cntBefore) | Node Count After Pruning (cntAfter) | Pruning Effectiveness |
 | ------------ | ---------------------- | ----------------------------------- | --------------------- |
-| No Pruning   | 16                     | 16                                  | 0%                    |
-| With Pruning | 16                     | 8                                   | 50%                   |
+| No Pruning | 16 | 16 | 0% |
+| With Pruning | 16 | 8 | 50% |
 
 ### 💻 DP Version
 
@@ -321,44 +319,47 @@ class Solution {
 
 ### Problem Classification:
 
-* This is an **unbounded knapsack problem**, where the same element can be repeatedly selected to achieve the target sum `target`.
-* It is a combination problem, so the order does not matter. For example, `[2, 2, 3]` and `[3, 2, 2]` are considered the same solution.
+- This is an **unbounded knapsack problem**, where the same element can be repeatedly selected to achieve the target sum `target`.
+- It is a combination problem, so the order does not matter. For example, `[2, 2, 3]` and `[3, 2, 2]` are considered the same solution.
 
 ### State Definition:
 
-* `dp[i]` represents **all combinations with a sum of `i`**.
-* Since it records all combinations, `dp[i]` is a `List<List<Integer>>` rather than a single number.
+- `dp[i]` represents **all combinations with a sum of `i`**.
+- Since it records all combinations, `dp[i]` is a `List<List<Integer>>` rather than a single number.
 
 ### State Transition:
 
-* Iterate through all `candidates` and all `j`, updating each `dp[j]`:
+- Iterate through all `candidates` and all `j`, updating each `dp[j]`:
 
   ```text
   dp[j] = dp[j] + dp[j - candidates[i]] + candidates[i]
   ```
-* If `dp[j - candidates[i]]` is non-empty, it means we can **append the current element** to all these combinations to achieve `j`.
+
+- If `dp[j - candidates[i]]` is non-empty, it means we can **append the current element** to all these combinations to achieve `j`.
 
 ### Initialization:
 
-* `dp[0] = [[]]`, meaning there is an empty combination when the sum is 0 (this is the recursive base case).
+- `dp[0] = [[]]`, meaning there is an empty combination when the sum is 0 (this is the recursive base case).
 
 #### 🔍 **Time Complexity Analysis**
 
-* **Time complexity**: `O(n * target * k)`
-  * `n` is the number of `candidates`;
-  * `target` is the target value;
-  * `k` is the average length of intermediate combinations;
-  * In the worst case, each subset may generate new subsets.
+- **Time complexity**: `O(n * target * k)`
 
-* **Space complexity**: `O(target * m)`
-  * `m` is the average size of combinations, and `dp[i]` records all valid combinations.
+  - `n` is the number of `candidates`;
+  - `target` is the target value;
+  - `k` is the average length of intermediate combinations;
+  - In the worst case, each subset may generate new subsets.
+
+- **Space complexity**: `O(target * m)`
+
+  - `m` is the average size of combinations, and `dp[i]` records all valid combinations.
 
 #### ✅ **DFS vs DP Comparison**
 
-| Comparison Item | DFS Backtracking         | DP Unbounded Knapsack      |
+| Comparison Item | DFS Backtracking | DP Unbounded Knapsack |
 | --------------- | ----------------------- | -------------------------- |
-| **Time Complexity** | Exponential: `O(2^n * k)` | `O(n * target * k)`        |
-| **Space Complexity** | Recursion depth + extra arrays | `O(target * k)`            |
+| **Time Complexity** | Exponential: `O(2^n * k)` | `O(n * target * k)` |
+| **Space Complexity** | Recursion depth + extra arrays | `O(target * k)` |
 | **Duplication Handling** | Naturally avoids duplicates in recursion tree | Ensures no duplicates through traversal order |
 | **Pruning Efficiency** | Requires manual implementation | Naturally prunes (no state conflicts) |
 | **Parallelism** | Poor (depth-first single path) | High (each state is computed independently) |
@@ -367,11 +368,11 @@ class Solution {
 
 #### 🎯 **When to Use DFS vs DP?**
 
-* If you only need to find one combination or output all paths, `DFS` is more intuitive.
-* If you want to count the number of combinations or optimize complexity, `DP` is a better choice.
-* If the problem constraints involve a large `target` (e.g., 10^4 level), `DP` is more efficient.
+- If you only need to find one combination or output all paths, `DFS` is more intuitive.
+- If you want to count the number of combinations or optimize complexity, `DP` is a better choice.
+- If the problem constraints involve a large `target` (e.g., 10^4 level), `DP` is more efficient.
 
----
+______________________________________________________________________
 
 ## LC 435 - Non-overlapping Intervals
 
@@ -404,21 +405,21 @@ In the sorted intervals, **selecting the interval with the earliest end time** e
 
 1. **Exchange Argument**
 
-  * Suppose at a certain step, we do not choose the interval with the earliest end time but instead choose one with a later end time.
-  * Since it ends later, it occupies more time, reducing the number of available intervals afterward.
-  * If we swap it with the interval that ends the earliest, the available space afterward will not decrease and may even increase.
-  * This proves that **choosing the earliest ending interval** is not worse than any other choice.
+- Suppose at a certain step, we do not choose the interval with the earliest end time but instead choose one with a later end time.
+- Since it ends later, it occupies more time, reducing the number of available intervals afterward.
+- If we swap it with the interval that ends the earliest, the available space afterward will not decrease and may even increase.
+- This proves that **choosing the earliest ending interval** is not worse than any other choice.
 
 2. **Contradiction Argument**
 
-  * Assume there exists an optimal solution that does not choose the interval with the earliest end time.
-  * Replacing it with the interval that ends the earliest does not reduce the total number of intervals that can be accommodated and may even increase it.
-  * This contradicts the assumption of "optimality," so choosing the earliest ending interval is the optimal local strategy.
+- Assume there exists an optimal solution that does not choose the interval with the earliest end time.
+- Replacing it with the interval that ends the earliest does not reduce the total number of intervals that can be accommodated and may even increase it.
+- This contradicts the assumption of "optimality," so choosing the earliest ending interval is the optimal local strategy.
 
 ### ✅ **Time Complexity**
 
-* **Sorting**: `O(n log n)`
-* **Traversal and Comparison**: `O(n)`
+- **Sorting**: `O(n log n)`
+- **Traversal and Comparison**: `O(n)`
 
 **Total Complexity**: `O(n log n)`
 
@@ -426,21 +427,21 @@ In the sorted intervals, **selecting the interval with the earliest end time** e
 
 ### ✅ **Space Complexity**
 
-* Space complexity of sorting: `O(log n)` (stack space used by JDK's optimized TimSort)
-* Additional variables: `max`, `result` → `O(1)`
+- Space complexity of sorting: `O(log n)` (stack space used by JDK's optimized TimSort)
+- Additional variables: `max`, `result` → `O(1)`
 
 **Total Space Complexity**: `O(log n)`
 
 ### ✅ **Summary**
 
-| Item               | Content                              |
+| Item | Content |
 | ------------------ | ------------------------------------ |
 | **Local Optimal Strategy** | Select the interval with the earliest end time to ensure more space for subsequent intervals |
-| **Proof of Correctness**  | Exchange Argument + Contradiction Argument: Choosing the earliest end is not worse than others |
-| **Time Complexity**        | `O(n log n)` (sorting + traversal)   |
-| **Space Complexity**       | `O(log n)` (stack space for sorting) |
+| **Proof of Correctness** | Exchange Argument + Contradiction Argument: Choosing the earliest end is not worse than others |
+| **Time Complexity** | `O(n log n)` (sorting + traversal) |
+| **Space Complexity** | `O(log n)` (stack space for sorting) |
 
----
+______________________________________________________________________
 
 ## LC 452 - Minimum Number of Arrows to Burst Balloons
 
@@ -466,4 +467,4 @@ class Solution {
 }
 ```
 
----
+______________________________________________________________________

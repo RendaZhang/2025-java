@@ -1,11 +1,10 @@
 # Bootcamp Day 2 · EKS 集群落地 + Terraform 绑定（NodeGroup 版）
 
----
+______________________________________________________________________
 
 ## 环境预检
 
 > 目标：确定你当前 WSL 终端已经登录 `phase2-sso`，Region 设为 **us-east-1**，并确认 VPC/EC2 相关配额充足，避免后续集群创建中途失败。
-
 
 ### 检查 AWS CLI 登录状态 & 默认 Region
 
@@ -33,15 +32,15 @@ region      us-east-1             config-file    ~/.aws/config
 
 #### 核心配额与正确的 QuotaCode
 
-| 资源类别            | Quota 名称 - 控制台显示                                         | ServiceCode            | **Quota Code**                         | 默认值    | 建议阈值     |
+| 资源类别 | Quota 名称 - 控制台显示 | ServiceCode | **Quota Code** | 默认值 | 建议阈值 |
 | --------------- | -------------------------------------------------------- | ---------------------- | ------------------------------------- | ------ | -------- |
-| ENI 数量          | Network interfaces per Region                            | `vpc`                  | **L-DF5E4CA3** | 5 000  | ≥ 5 000  |
-| VPC 数量          | VPCs per Region                                          | `vpc`                  | L-F678F1CE     | 5      | 5 (默认即可) |
-| SG / ENI        | Security groups per network interface                    | `vpc`                  | L-2AFB9258            | 5      | 5–10     |
-| **vCPU (按需)**   | Running On-Demand Standard (A,C,D,H,I,M,R,T,Z) instances | `ec2`                  | **L-1216C47A** | 5 vCPU | ≥ 20     |
-| **vCPU (Spot)** | All Standard (A,C,D,H,I,M,R,T,Z) Spot Instance Requests  | `ec2`                  | **L-34B43A08**   | 5 vCPU | ≥ 20     |
-| ALB 数量          | Application Load Balancers per Region                    | `elasticloadbalancing` | L-53DA6B97  | 50     | 5 (足够)   |
-| EIP 数量          | Elastic IPs (EC2-VPC)                                    | `ec2`                  | L-0263D0A3   | 5      | 5        |
+| ENI 数量 | Network interfaces per Region | `vpc` | **L-DF5E4CA3** | 5 000 | ≥ 5 000 |
+| VPC 数量 | VPCs per Region | `vpc` | L-F678F1CE | 5 | 5 (默认即可) |
+| SG / ENI | Security groups per network interface | `vpc` | L-2AFB9258 | 5 | 5–10 |
+| **vCPU (按需)** | Running On-Demand Standard (A,C,D,H,I,M,R,T,Z) instances | `ec2` | **L-1216C47A** | 5 vCPU | ≥ 20 |
+| **vCPU (Spot)** | All Standard (A,C,D,H,I,M,R,T,Z) Spot Instance Requests | `ec2` | **L-34B43A08** | 5 vCPU | ≥ 20 |
+| ALB 数量 | Application Load Balancers per Region | `elasticloadbalancing` | L-53DA6B97 | 50 | 5 (足够) |
+| EIP 数量 | Elastic IPs (EC2-VPC) | `ec2` | L-0263D0A3 | 5 | 5 |
 
 #### CLI 快速查询与脚本示例
 
@@ -62,21 +61,22 @@ aws service-quotas list-service-quotas --service-code vpc \
 ```
 
 - 如果命令返回 “No such quota”，先去 Console → Service Quotas 页面搜索同名配额，记下
-它显示的代码，再回 CLI。
+  它显示的代码，再回 CLI。
 - 新账号找不到 Spot 相关代码？先在 Console “Request quota increase”——即使不提升也会同步出代码。
 
 #### **目标值建议**
 
-> * VPC ENI 每区 ≥ 250
-> * EC2 Spot 实例 ≥ 5
-> 
+> - VPC ENI 每区 ≥ 250
+> - EC2 Spot 实例 ≥ 5
+>
 > 如果配额低于建议值，暂时不必申请提升；EKS 默认所需 ENI ≈ 10 以内、Spot t3.small × 2 远低于限制──但提前确认可避免出乎意料的 “LimitExceeded” 报错。
 
----
+______________________________________________________________________
 
 ## 生成 `eksctl-cluster.yaml`
 
 > 目标：用 **现成 VPC / 子网** ID 写出一份 `eksctl` 集群声明文件，包含：
+>
 > - 控制面放在私网子网；
 > - 1 个 **Managed NodeGroup**：Spot *t3.small* × 2 + On-Demand *t3.medium* × 1；
 > - 启用 OIDC（后续 IRSA / Autoscaler 要用）。
@@ -100,6 +100,7 @@ terraform output -json private_subnet_ids
 > 如果显示 “Output … not found”，说明 根模块没有定义这些 outputs，这时候就需要在根 outputs.tf 中补上对应的输出。
 
 记下结果，下一步的 YAML 会用到：
+
 ```bash
 private_subnet_ids = [
   "subnet-0422bec13e7eec9e6",
@@ -168,6 +169,7 @@ managedNodeGroups:
 #### 混合 Spot + OD 实例配置
 
 如果要实现 `2×Spot (t3.small) + 1×OD (t3.medium)` 的精确控制，必须使用 `instancesDistribution` 配置：
+
 ```yaml
 managedNodeGroups:
   - name: ng-mixed
@@ -191,13 +193,13 @@ managedNodeGroups:
 
 **要点**
 
-* 控制面默认落在 **Private Subnet**（EKS 会自动选取）。
-* `withOIDC: true` 之后，后续 **Cluster Autoscaler / IRSA** 可直接关联 IAM Policy。
-* `desiredCapacity` = 3，但 Cluster Autoscaler 安装后可自动缩放。
-* 容量验证命令：`kubectl get nodes -L node.kubernetes.io/instance-type,eks.amazonaws.com/capacityType`。
-* `onDemandBaseCapacity: 1`：强制创建1个按需实例，EKS 会优先使用列表中的第一个实例类型（`t3.small`）。
+- 控制面默认落在 **Private Subnet**（EKS 会自动选取）。
+- `withOIDC: true` 之后，后续 **Cluster Autoscaler / IRSA** 可直接关联 IAM Policy。
+- `desiredCapacity` = 3，但 Cluster Autoscaler 安装后可自动缩放。
+- 容量验证命令：`kubectl get nodes -L node.kubernetes.io/instance-type,eks.amazonaws.com/capacityType`。
+- `onDemandBaseCapacity: 1`：强制创建1个按需实例，EKS 会优先使用列表中的第一个实例类型（`t3.small`）。
 
----
+______________________________________________________________________
 
 ## `eksctl create cluster` 并等待 CloudFormation 完成
 
@@ -243,12 +245,11 @@ eksctl create cluster -f infra/eksctl/eksctl-cluster.yaml \
 **你会看到：**
 
 1. eksctl 先创建 **CloudFormation Stack** `eksctl-dev-cluster`
-   1. 
-2. 下载 IAM OIDC provider & VPC configs
-3. 创建 **EKS 控制面**（\~10 min）
-4. 创建 **Managed NodeGroup**（\~3 min）
-5. 写入 `~/.kube/config` 并测试 `kubectl` 连接
-
+   1\.
+1. 下载 IAM OIDC provider & VPC configs
+1. 创建 **EKS 控制面**（~10 min）
+1. 创建 **Managed NodeGroup**（~3 min）
+1. 写入 `~/.kube/config` 并测试 `kubectl` 连接
 
 ### 观察进度（可选）
 
@@ -311,7 +312,7 @@ kubectl get pods
 kubectl get services
 ```
 
----
+______________________________________________________________________
 
 ## 开启控制面日志 (API & Authenticator)
 
@@ -324,8 +325,8 @@ kubectl get services
 eksctl utils update-cluster-logging --cluster dev --region us-east-1 --enable-types api,authenticator --profile phase2-sso --approve
 ```
 
-* eksctl 会生成一个 CloudFormation Stack `eksctl-dev-cluster-logging`，过程 < 2 min。
-* 成功后 CLI 显示 `updated cluster logging`.
+- eksctl 会生成一个 CloudFormation Stack `eksctl-dev-cluster-logging`，过程 < 2 min。
+- 成功后 CLI 显示 `updated cluster logging`.
 
 ### 验证日志配置 & CloudWatch LogGroup
 
@@ -334,6 +335,7 @@ aws eks describe-cluster --name dev --profile phase2-sso --region us-east-1 --qu
 ```
 
 应看到：
+
 ```bash
 --------------------------
 |     DescribeCluster    |
@@ -356,22 +358,22 @@ aws logs describe-log-groups --profile phase2-sso --region us-east-1 --log-group
 `api`、`authenticator` 流（稍等 1–2 min 有首批条目）。
 
 ```bash
-## Log streams: 
+## Log streams:
 authenticator-9db45ef355ac2c7f857a5994e1931f3b 2025-06-26 15:06:10 (UTC)
 authenticator-46f5034735ad5a31785c0e0af6ace8e0 2025-06-26 15:06:10 (UTC)
 kube-apiserver-46f5034735ad5a31785c0e0af6ace8e0 2025-06-26 15:04:45 (UTC)
 kube-apiserver-9db45ef355ac2c7f857a5994e1931f3b 2025-06-26 15:03:17 (UTC)
 ```
 
----
+______________________________________________________________________
 
 ## 安装 Cluster Autoscaler - IRSA 版
 
 > **目标**
 >
 > 1. 给集群绑定 OIDC Provider（若 eksctl 创建时已自动启用，可跳过脚本确认）。
-> 2. 为 Autoscaler 创建 **专属 ServiceAccount + IAM 角色**（最小权限）。
-> 3. 使用 Helm 安装 Cluster Autoscaler，并验证节点能按负载自动伸缩。
+> 1. 为 Autoscaler 创建 **专属 ServiceAccount + IAM 角色**（最小权限）。
+> 1. 使用 Helm 安装 Cluster Autoscaler，并验证节点能按负载自动伸缩。
 
 ### 检查 / 关联 OIDC Provider
 
@@ -574,15 +576,15 @@ kubectl delete deployment cpu-hog
 
 > 看到 Autoscaler 日志中 `scale up` 和稍后 `scale down`，以及 Node 数量随之变化，即验证成功。
 
----
+______________________________________________________________________
 
 ## 把集群资源导入 Terraform
 
 > **目标**
 >
 > 1. 把刚创建好的 **EKS Cluster、OIDC Provider、Managed NodeGroup、IAM 角色** 等资源全部纳入 `infra/aws` 的 Terraform 状态；
-> 2. 运行 `terraform plan` 显示 **“No changes”**，证明无漂移；
-> 3. 把导入脚本 & 日志存档到仓库（`terraform-import.log`）。
+> 1. 运行 `terraform plan` 显示 **“No changes”**，证明无漂移；
+> 1. 把导入脚本 & 日志存档到仓库（`terraform-import.log`）。
 
 ### 确保本地 Terraform 后端指向 **us-east-1**
 
@@ -647,8 +649,8 @@ terraform import module.irsa.aws_iam_role_policy_attachment.cluster_autoscaler_a
 
 > **提示**
 >
-> * 路径一定要与模块文件中的资源地址保持一致 (`module.eks.aws_eks_cluster.this`)。
-> * 每条命令成功后会将真实属性写进 `terraform.tfstate`。
+> - 路径一定要与模块文件中的资源地址保持一致 (`module.eks.aws_eks_cluster.this`)。
+> - 每条命令成功后会将真实属性写进 `terraform.tfstate`。
 
 将上述命令保存成 `scripts/tf-import.sh`，执行时输出重定向到日志：
 
@@ -699,15 +701,15 @@ terraform plan
 No changes. Infrastructure is up-to-date.
 ```
 
----
+______________________________________________________________________
 
 ## 设定 Budget 告警 & Spot Interruption 通知
 
 > **目标**
 >
 > 1. 建立一个 **月度成本预算**：上限 650 CNY（≈ 88 USD），达到 80 % 时邮件提醒；
-> 2. 创建 **Spot Interruption SNS Topic**，并让所有节点组在抢占前 2 min 发送通知；
-> 3. 保存截图/命令输出，稍后写进 `day2-summary.md`。
+> 1. 创建 **Spot Interruption SNS Topic**，并让所有节点组在抢占前 2 min 发送通知；
+> 1. 保存截图/命令输出，稍后写进 `day2-summary.md`。
 
 ### 创建 SNS Topic & 订阅
 
@@ -733,7 +735,7 @@ aws sns subscribe --topic-arn $SPOT_TOPIC_ARN \
 > 打开邮箱确认订阅（AWS 会发送一封“Subscription Confirmation”邮件，点 **Confirm**）。
 
 ```bash
-# Your subscription's id is: 
+# Your subscription's id is:
 arn:aws:sns:us-east-1:563149051155:spot-interruption-topic:ef45fadb-ec28-472e-9566-22690f023491
 ```
 
@@ -795,8 +797,8 @@ aws budgets create-budget --account-id $(aws sts get-caller-identity --query Acc
 ### 验证
 
 1. **SNS**
-   * Console ➜ SNS ➜ Topics ➜ `spot-interruption-topic` ➜ **Subscriptions**：Status = *Confirmed*。
-2. **Budget**
-   * Console ➜ AWS Budgets → `Phase2-Monthly-Budget`：阈值 88 USD，通知渠道 *Email* 显示 ✓。
+   - Console ➜ SNS ➜ Topics ➜ `spot-interruption-topic` ➜ **Subscriptions**：Status = *Confirmed*。
+1. **Budget**
+   - Console ➜ AWS Budgets → `Phase2-Monthly-Budget`：阈值 88 USD，通知渠道 *Email* 显示 ✓。
 
----
+______________________________________________________________________

@@ -1,10 +1,10 @@
 # Stage1 - Week3 - Day 2: Dynamic Programming Advanced
 
----
+______________________________________________________________________
 
 ## LC 300 - Longest Increasing Subsequence
 
-###  O(n²) DP
+### O(n²) DP
 
 Thinking 4min55s, Coding 7min13s, Debugging 5min34s.
 
@@ -58,7 +58,7 @@ class Solution {
 }
 ```
 
----
+______________________________________________________________________
 
 ## LC 53 - Maximum Subarray (Kadane’s Algorithm)
 
@@ -67,6 +67,7 @@ Thinking 5min58s, Coding 8min0s, Debugging 0min58s.
 ### 1️⃣ State Machine Diagram
 
 - **State Definitions**:
+
   - `cur`: Maximum subarray sum ending at `nums[i]`
   - `best`: Global maximum subarray sum so far
 
@@ -77,7 +78,7 @@ cur  →  max(nums[i], cur + nums[i])
 best →  max(best, cur)
 ```
 
-* **State Transition Diagram (ASCII)**:
+- **State Transition Diagram (ASCII)**:
 
 ```
         +------------+
@@ -109,17 +110,17 @@ class Solution {
 
 ### 3️⃣ DP Evolution Table (Example Input: `[-2,1,-3,4,-1,2,1,-5,4]`)
 
-| i | x  | cur               | best           |
+| i | x | cur | best |
 | - | -- | ----------------- | -------------- |
-| 0 | -2 | -2                | -2             |
-| 1 | 1  | max(1, -2+1) = 1  | max(-2, 1) = 1 |
+| 0 | -2 | -2 | -2 |
+| 1 | 1 | max(1, -2+1) = 1 | max(-2, 1) = 1 |
 | 2 | -3 | max(-3, 1-3) = -2 | max(1, -2) = 1 |
-| 3 | 4  | max(4, -2+4) = 4  | max(1, 4) = 4  |
-| 4 | -1 | max(-1, 4-1) = 3  | max(4, 3) = 4  |
-| 5 | 2  | max(2, 3+2) = 5   | max(4, 5) = 5  |
-| 6 | 1  | max(1, 5+1) = 6   | max(5, 6) = 6  |
-| 7 | -5 | max(-5, 6-5) = 1  | max(6, 1) = 6  |
-| 8 | 4  | max(4, 1+4) = 5   | max(6, 5) = 6  |
+| 3 | 4 | max(4, -2+4) = 4 | max(1, 4) = 4 |
+| 4 | -1 | max(-1, 4-1) = 3 | max(4, 3) = 4 |
+| 5 | 2 | max(2, 3+2) = 5 | max(4, 5) = 5 |
+| 6 | 1 | max(1, 5+1) = 6 | max(5, 6) = 6 |
+| 7 | -5 | max(-5, 6-5) = 1 | max(6, 1) = 6 |
+| 8 | 4 | max(4, 1+4) = 5 | max(6, 5) = 6 |
 
 ✔️ Final Answer: 6
 
@@ -139,15 +140,15 @@ Time Complexity: `O(n² * m)`, Space Complexity: O(m)
 
 ✅ If you want to extend the solution to output the start and end indices `(start, end)` of the subarray, you can add two index variables:
 
-* When `cur = nums[i]`, update `start = i`;
-* When updating `best`, also record `end = i`.
+- When `cur = nums[i]`, update `start = i`;
+- When updating `best`, also record `end = i`.
 
----
+______________________________________________________________________
 
 ## 🧠 LC 1039 - Minimum Score Triangulation of Polygon
 
-**Algorithm Type**: Interval DP  
-**Time Complexity**: O(n³)  
+**Algorithm Type**: Interval DP
+**Time Complexity**: O(n³)
 **Space Complexity**: O(n²)
 
 ```java
@@ -155,7 +156,7 @@ class Solution {
     public int minScoreTriangulation(int[] values) {
         int n = values.length;
         int[][] dp = new int[n][n];
-             
+
         for (int j = 2; j < n; j++) {
             for (int i = j - 2; i >= 0; i--) {
                 dp[i][j] = Integer.MAX_VALUE;
@@ -175,12 +176,12 @@ class Solution {
 
 Minimum Triangulation Score: `13` ✅
 
----
+______________________________________________________________________
 
 ## 🧠 LC 1312 - Minimum Insertion Steps to Make a String Palindrome
 
-**Algorithm Type**: Interval DP  
-**Time Complexity**: O(n²)  
+**Algorithm Type**: Interval DP
+**Time Complexity**: O(n²)
 **Space Complexity**: O(n²)
 
 ```java
@@ -207,29 +208,29 @@ class Solution {
 
 Output: `0` (Already a palindrome) ✅
 
----
+______________________________________________________________________
 
 ## 🧮 Additional: DP Table Structure Explanation
 
 Taking LC 1312 as an example, for the string `"abcba"`, the `dp[i][j]` table is constructed as follows:
 
-| i \ j | 0 | 1 | 2 | 3 | 4 |
+| i \\ j | 0 | 1 | 2 | 3 | 4 |
 | ----- | - | - | - | - | - |
-| 0     | 0 | 1 | 2 | 1 | 0 |
-| 1     |   | 0 | 1 | 0 | 1 |
-| 2     |   |   | 0 | 1 | 2 |
-| 3     |   |   |   | 0 | 1 |
-| 4     |   |   |   |   | 0 |
+| 0 | 0 | 1 | 2 | 1 | 0 |
+| 1 | | 0 | 1 | 0 | 1 |
+| 2 | | | 0 | 1 | 2 |
+| 3 | | | | 0 | 1 |
+| 4 | | | | | 0 |
 
 Each cell represents the minimum number of insertions required to make `s[i..j]` a palindrome.
 
----
+______________________________________________________________________
 
 ## LC 698 Partition to K Equal Sum Subsets
 
 Thinking mins, Coding mins, Debugging mins.
 
-### **Algorithm Type**: 
+### **Algorithm Type**:
 
 Backtracking (DFS with Pruning) + Greedy Preprocessing (Sorting)
 
@@ -243,7 +244,7 @@ Each element can either be used or not → 2ⁿ states
 
 Pruning (bucketSum > target & sorting) greatly reduces branches in practice
 
-### **Space Complexity**: 
+### **Space Complexity**:
 
 O(n + k)
 
@@ -255,10 +256,10 @@ No extra DP cache used in this version
 
 ### **Code Review Tips**:
 
-* When `bucketSum == target`, recursively move to the next bucket to avoid redundant searches from the beginning;
-* `if (bucketSum == 0) break;` is a clever **same-level pruning** technique;
-* `Arrays.sort(nums)` is a key optimization, ensuring larger numbers are placed first to prune invalid paths early;
-* Although the time complexity is exponential, **it performs stably under the constraint of `n ≤ 16`**.
+- When `bucketSum == target`, recursively move to the next bucket to avoid redundant searches from the beginning;
+- `if (bucketSum == 0) break;` is a clever **same-level pruning** technique;
+- `Arrays.sort(nums)` is a key optimization, ensuring larger numbers are placed first to prune invalid paths early;
+- Although the time complexity is exponential, **it performs stably under the constraint of `n ≤ 16`**.
 
 ### Code:
 
@@ -300,40 +301,43 @@ class Solution {
 }
 ```
 
----
+______________________________________________________________________
 
 ## LC 464 Can I Win
 
 Fantastic! Below is the complete algorithm record for **LC 464 - Can I Win**, including thinking and implementation details, time and space complexity analysis, and more:
 
----
+______________________________________________________________________
 
 ## LC 464 - Can I Win
 
-### **Algorithm Type**:  
+### **Algorithm Type**:
+
 🎲 **Minimax + Memoized DFS + State Compression** (Bitmask Approach)
 
-### **Time Complexity**:  
+### **Time Complexity**:
+
 **O(2ⁿ × n)**
 
-* There are at most `2ⁿ` states (each number is either chosen or not).
-* For each state, enumerate `n` possible next numbers.
+- There are at most `2ⁿ` states (each number is either chosen or not).
+- For each state, enumerate `n` possible next numbers.
 
 > The actual complexity is much smaller than `2ⁿ` because many states are pruned early (e.g., winning immediately upon selection).
 
-### **Space Complexity**:  
+### **Space Complexity**:
+
 **O(2ⁿ + n)**
 
-* Memoization table `memo[2^n]` space.
-* Recursion call stack depth up to `n` (i.e., a total of `n` numbers can be chosen).
-* Additional `boolean[] used` and `int[] pow2`, both O(n).
+- Memoization table `memo[2^n]` space.
+- Recursion call stack depth up to `n` (i.e., a total of `n` numbers can be chosen).
+- Additional `boolean[] used` and `int[] pow2`, both O(n).
 
 ### ✅ Key Points Explained
 
-| Element          | Description                                                                 |
+| Element | Description |
 | ---------------- | --------------------------------------------------------------------------- |
-| **Pruning 1**    | If `desiredTotal <= 0`, win immediately (initial condition).                 |
-| **Pruning 2**    | If `1+2+…+maxChoosable < desiredTotal`, even selecting all numbers will lose.|
+| **Pruning 1** | If `desiredTotal <= 0`, win immediately (initial condition). |
+| **Pruning 2** | If `1+2+…+maxChoosable < desiredTotal`, even selecting all numbers will lose.|
 | **State Representation** | Use `int mask` to represent which numbers are currently chosen (up to 20 bits). |
 | **Memoization Table** | `Boolean[] memo = new Boolean[2^(max+1)]` records whether the current state is a winning position for the first player. |
 | **Search Logic** | The current player enumerates a number `i`. If `i >= remain`, win immediately; otherwise, pass the problem to the opponent recursively. |
@@ -410,28 +414,30 @@ Your code is very well-structured, and the use of `pow2[i]` instead of `(1 << (i
 
 For further space optimization, you can:
 
-* Replace `pow2[i]` with `1 << (i-1)`;
-* Use `memo = new Boolean[1 << max]` to avoid wasting space on unused states;
-* Replace `used[]` with a dynamically generated mask instead of a separate array.
+- Replace `pow2[i]` with `1 << (i-1)`;
+- Use `memo = new Boolean[1 << max]` to avoid wasting space on unused states;
+- Replace `used[]` with a dynamically generated mask instead of a separate array.
 
----
+______________________________________________________________________
 
 ## LC 354 Russian Doll Envelopes
 
-
 ### **Algorithm Type**:
+
 📦 **2D to 1D Transformation + Longest Increasing Subsequence (LIS) + Binary Search Optimization**
 
 ### **Time Complexity**:
+
 **O(n × log n)**
 
-* Sorting takes O(n × log n).
-* LIS with binary search maintains the `tails` array, each operation takes O(log n), performed n times → O(n × log n).
+- Sorting takes O(n × log n).
+- LIS with binary search maintains the `tails` array, each operation takes O(log n), performed n times → O(n × log n).
 
 ### **Space Complexity**:
+
 **O(n)**
 
-* The `tails` array is used to record the smallest possible tail elements of all increasing subsequences.
+- The `tails` array is used to record the smallest possible tail elements of all increasing subsequences.
 
 ## 🧠 Key Insights:
 
@@ -442,23 +448,23 @@ Since both dimensions (width `w` and height `h`) need to satisfy the increasing 
 ### 🚩 2. Special Sorting Technique (Core Trick ⚠️):
 
 ```java
-Arrays.sort(envelopes, (a, b) -> 
+Arrays.sort(envelopes, (a, b) ->
     a[0] == b[0] ? Integer.compare(b[1], a[1]) : Integer.compare(a[0], b[0]));
 ```
 
-| Sorting Logic                     | Purpose                                   |
+| Sorting Logic | Purpose |
 | ---------------------------------- | ----------------------------------------- |
-| Sort by `width` in ascending order  | Ensures that later envelopes are "at least not smaller". |
+| Sort by `width` in ascending order | Ensures that later envelopes are "at least not smaller". |
 | If `width` is equal, sort by `height` in descending order | Prevents misjudgment of nesting for `[w, h1], [w, h2]` (which cannot be nested). |
 
 This reduces the problem to 1D, allowing us to apply LIS only on the **`height`** dimension.
 
 ### 🚩 3. Binary Search-Optimized LIS (Explanation of `tails`)
 
-* `tails[i]` represents the smallest possible tail element of all increasing subsequences of length `i+1`.
-* Each `height` is inserted into the `tails` array using binary search.
-* If an old value can be replaced, replace it (to maintain the optimal tail); otherwise, append it.
-* The length of `tails` at the end is the maximum number of nested envelopes.
+- `tails[i]` represents the smallest possible tail element of all increasing subsequences of length `i+1`.
+- Each `height` is inserted into the `tails` array using binary search.
+- If an old value can be replaced, replace it (to maintain the optimal tail); otherwise, append it.
+- The length of `tails` at the end is the maximum number of nested envelopes.
 
 ### ✨ Example
 
@@ -494,4 +500,4 @@ class Solution {
 }
 ```
 
----
+______________________________________________________________________
