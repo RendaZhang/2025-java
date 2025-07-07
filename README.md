@@ -1,3 +1,27 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+- [📌 2025 Java 学习计划](#-2025-java-%E5%AD%A6%E4%B9%A0%E8%AE%A1%E5%88%92)
+  - [🎯 总体目标](#-%E6%80%BB%E4%BD%93%E7%9B%AE%E6%A0%87)
+  - [📅 第一阶段（第1-4周）：基础复习与技能提升](#-%E7%AC%AC%E4%B8%80%E9%98%B6%E6%AE%B5%E7%AC%AC1-4%E5%91%A8%E5%9F%BA%E7%A1%80%E5%A4%8D%E4%B9%A0%E4%B8%8E%E6%8A%80%E8%83%BD%E6%8F%90%E5%8D%87)
+    - [🔖 第1周：Java基础、开发工具与算法快速复习](#-%E7%AC%AC1%E5%91%A8java%E5%9F%BA%E7%A1%80%E5%BC%80%E5%8F%91%E5%B7%A5%E5%85%B7%E4%B8%8E%E7%AE%97%E6%B3%95%E5%BF%AB%E9%80%9F%E5%A4%8D%E4%B9%A0)
+      - [☑️ Java基础（共3天）](#-java%E5%9F%BA%E7%A1%80%E5%85%B13%E5%A4%A9)
+      - [☑️ 开发工具（共1天）](#-%E5%BC%80%E5%8F%91%E5%B7%A5%E5%85%B7%E5%85%B11%E5%A4%A9)
+      - [☑️ 算法基础（贯穿全周）](#-%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80%E8%B4%AF%E7%A9%BF%E5%85%A8%E5%91%A8)
+      - [☑️ 英语听力与口语（贯穿全周）](#-%E8%8B%B1%E8%AF%AD%E5%90%AC%E5%8A%9B%E4%B8%8E%E5%8F%A3%E8%AF%AD%E8%B4%AF%E7%A9%BF%E5%85%A8%E5%91%A8)
+    - [🔖 第2周：Spring 框架、数据库与缓存复习](#-%E7%AC%AC2%E5%91%A8spring-%E6%A1%86%E6%9E%B6%E6%95%B0%E6%8D%AE%E5%BA%93%E4%B8%8E%E7%BC%93%E5%AD%98%E5%A4%8D%E4%B9%A0)
+    - [🔖 第3周：算法强化与性能优化初步](#-%E7%AC%AC3%E5%91%A8%E7%AE%97%E6%B3%95%E5%BC%BA%E5%8C%96%E4%B8%8E%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96%E5%88%9D%E6%AD%A5)
+    - [🔖 第4周：英语能力提升与面试准备](#-%E7%AC%AC4%E5%91%A8%E8%8B%B1%E8%AF%AD%E8%83%BD%E5%8A%9B%E6%8F%90%E5%8D%87%E4%B8%8E%E9%9D%A2%E8%AF%95%E5%87%86%E5%A4%87)
+- [🚀 第二阶段 Java Cloud-Native Sprint（AWS 专版 · NodeGroup）](#-%E7%AC%AC%E4%BA%8C%E9%98%B6%E6%AE%B5-java-cloud-native-sprintaws-%E4%B8%93%E7%89%88-%C2%B7-nodegroup)
+  - [📆 时间轴 & 核心交付物](#-%E6%97%B6%E9%97%B4%E8%BD%B4--%E6%A0%B8%E5%BF%83%E4%BA%A4%E4%BB%98%E7%89%A9)
+  - [🎯 KPI & 简历映射](#-kpi--%E7%AE%80%E5%8E%86%E6%98%A0%E5%B0%84)
+  - [🛡 成本 & 安全护栏](#-%E6%88%90%E6%9C%AC--%E5%AE%89%E5%85%A8%E6%8A%A4%E6%A0%8F)
+  - [立即行动](#%E7%AB%8B%E5%8D%B3%E8%A1%8C%E5%8A%A8)
+  - [🤝 贡献指南 (Contributing Guide)](#-%E8%B4%A1%E7%8C%AE%E6%8C%87%E5%8D%97-contributing-guide)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # 📌 2025 Java 学习计划
 
 ## 🎯 总体目标
