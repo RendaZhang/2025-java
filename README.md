@@ -12,12 +12,11 @@
       - [☑️ 英语听力与口语（贯穿全周）](#-%E8%8B%B1%E8%AF%AD%E5%90%AC%E5%8A%9B%E4%B8%8E%E5%8F%A3%E8%AF%AD%E8%B4%AF%E7%A9%BF%E5%85%A8%E5%91%A8)
     - [🔖 第2周：Spring 框架、数据库与缓存复习](#-%E7%AC%AC2%E5%91%A8spring-%E6%A1%86%E6%9E%B6%E6%95%B0%E6%8D%AE%E5%BA%93%E4%B8%8E%E7%BC%93%E5%AD%98%E5%A4%8D%E4%B9%A0)
     - [🔖 第3周：算法强化与性能优化初步](#-%E7%AC%AC3%E5%91%A8%E7%AE%97%E6%B3%95%E5%BC%BA%E5%8C%96%E4%B8%8E%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96%E5%88%9D%E6%AD%A5)
-    - [🔖 第4周：英语能力提升与面试准备](#-%E7%AC%AC4%E5%91%A8%E8%8B%B1%E8%AF%AD%E8%83%BD%E5%8A%9B%E6%8F%90%E5%8D%87%E4%B8%8E%E9%9D%A2%E8%AF%95%E5%87%86%E5%A4%87)
+    - [🔖 第 4 周：英语能力提升与面试准备](#-%E7%AC%AC-4-%E5%91%A8%E8%8B%B1%E8%AF%AD%E8%83%BD%E5%8A%9B%E6%8F%90%E5%8D%87%E4%B8%8E%E9%9D%A2%E8%AF%95%E5%87%86%E5%A4%87)
 - [🚀 第二阶段 Java Cloud-Native Sprint（AWS 专版 · NodeGroup）](#-%E7%AC%AC%E4%BA%8C%E9%98%B6%E6%AE%B5-java-cloud-native-sprintaws-%E4%B8%93%E7%89%88-%C2%B7-nodegroup)
-  - [📆 时间轴 & 核心交付物](#-%E6%97%B6%E9%97%B4%E8%BD%B4--%E6%A0%B8%E5%BF%83%E4%BA%A4%E4%BB%98%E7%89%A9)
-  - [🎯 KPI & 简历映射](#-kpi--%E7%AE%80%E5%8E%86%E6%98%A0%E5%B0%84)
-  - [🛡 成本 & 安全护栏](#-%E6%88%90%E6%9C%AC--%E5%AE%89%E5%85%A8%E6%8A%A4%E6%A0%8F)
-  - [立即行动](#%E7%AB%8B%E5%8D%B3%E8%A1%8C%E5%8A%A8)
+    - [📌 快速导航（进度链接）](#-%E5%BF%AB%E9%80%9F%E5%AF%BC%E8%88%AA%E8%BF%9B%E5%BA%A6%E9%93%BE%E6%8E%A5)
+    - [🛡 执行护栏（全阶段通用）](#-%E6%89%A7%E8%A1%8C%E6%8A%A4%E6%A0%8F%E5%85%A8%E9%98%B6%E6%AE%B5%E9%80%9A%E7%94%A8)
+    - [🧭 每日执行模板（避免低效 debug）](#-%E6%AF%8F%E6%97%A5%E6%89%A7%E8%A1%8C%E6%A8%A1%E6%9D%BF%E9%81%BF%E5%85%8D%E4%BD%8E%E6%95%88-debug)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -101,9 +100,9 @@ ______________________________________________________________________
 | **Day 6** | MySQL 高级优化 & 索引深度 | - 覆盖索引、下推谓词<br>- Buffer Pool 命中率<br>- EXPLAIN JSON / optimizer_trace | 优化前后 EXPLAIN + `mysql-adv-day6.md` |
 | **Day 7** | 周整合 & 输出 | - 知识库 & Cheat Sheet<br>- Pull Request：GC/Index 参数合并<br>- 英文周报 ≥ 200 词 + 5 min 算法讲解视频 | `week3-cheatsheet.md` + `week3-report-en.md` + `week4-plan-draft.md` |
 
-______________________________________________________________________
+---
 
-### 🔖 第4周：英语能力提升与面试准备
+### 🔖 第 4 周：英语能力提升与面试准备
 
 - **Day1-Day3: 技术英文阅读与写作**
   - 阅读英文技术文章或书籍（如《Effective Java》）
@@ -114,52 +113,40 @@ ______________________________________________________________________
 - **Day6-Day7: 面试总结与准备强化**
   - 总结本周面试经验与不足，制定针对性改进措施
 
-______________________________________________________________________
+---
 
 # 🚀 第二阶段 Java Cloud-Native Sprint（AWS 专版 · NodeGroup）
 
-**周期**：2025-07-01 → 2025-08-25
-**目标**：跑通 *Docker → EKS → GitOps → Chaos → Observability/SRE → Bedrock AI* 全链路；输出可量化的简历亮点
-**预算护栏**：控制总账单 ≤ **¥ 1 500**（正常按需启停 ≈ ¥ 800；已含缓冲）
+> **执行声明（2025-Stage2 · AWS 专版）**
+> - **当前进度**：Bootcamp **Day-0 ~ Day-2 已完成**（一键重建 / 一键销毁 已验证；Route53 保留 ≈ $0.5/月）。
+> - **目标导向**：以**外企 Java 云原生面试**为导向，优先“可讲清楚 + 可演示 + 可量化”，避免陷入低收益 debug。
+> - **成本/生命周期原则**：
+>   1) 用时开、用完关：**busy=重建，idle=销毁**；
+>   2) **单集群多命名空间**，避免多控制面；
+>   3) 任何新增资源须满足“**Day-8 一键清理**”。
+> - **计划组成**：Week5（微服务上云）→ Week6（观测+韧性）→ Week7（CI/CD+DevOps）→ Week8（Mock+简历）。
+> - **产物要求**：每个模块最少 3 个“可截图/可量化”产物 + 一段面试 STAR 故事。
 
-## 📆 时间轴 & 核心交付物
+### 📌 快速导航（进度链接）
+- Bootcamp 笔记与操作：`stage2-BootCamp-day0.md` / `stage2-BootCamp-day1*.md` / `stage2-BootCamp-day2*.md`
+- 一键重建/销毁脚本：`infra/`（Terraform + 脚本）
+- 学习笔记（Google Drive/2025）：按模块对应 Week 5~8
 
-| 时段 | 核心主题 & 关键实操 | 主要交付物 |
-|------|-------------------|-----------|
-| **Day-0 (½ d)** | **Docker & K8s Refresher**<br>· Play-with-Docker：`build / run / push`<br>· Kubernetes Basics 1-3：`kubectl create / expose / scale` | `day0-notes.md` |
-| **Bootcamp 3 d** | **云底座 + IaC**<br>**Day 1** VPC / ALB / IAM 对照（AWS）<br>**Day 2-AM** `eksctl` 创建 **EKS Managed NodeGroup** (Spot t3.small ×2 + OD t3.medium ×1)<br>**Day 2-PM** Terraform 导入 EKS；`backend "s3" + DynamoDB lock + AES256`<br>**Day 3** 声明式扩展：ECR、EFS、(预留 GKE stub) | `eksctl-config.yaml`<br>`main.tf` / `terraform.tfstate`<br>《云服务对照笔记》 |
-| **Week 5** | **双 GitOps CI/CD**<br>① CodeCommit → CodeBuild(+**Trivy**) → ECR → **CodeDeploy Blue-Green → EKS** (ALB 双 TargetGroup🟢/🔵，自动移除旧 TG)<br>② GitHub Actions → Docker Hub → **Argo CD** (ns `argo-demo`，OIDC-IRSA 最小权限) | 流水线 & 蓝/绿发布截图<br>Argo Sync GIF<br>IAM json + Trivy 扫描报告 |
-| **Week 6** | **Helm + HPA + Chaos 自愈**<br>· Helm Chart (`charts/task-manager/`)<br>· HPA + PDB + Cluster Autoscaler (Spot 中断容忍)<br>· Chaos Mesh `pod-kill / latency` → **MTTR ≤ 1 min** | Helm 包<br>Chaos 报告 (MTTR & P95) |
-| **Week 7-a** | **Observability & SRE**<br>· ADOT Sidecar → **Amazon Managed Prometheus** (采样 `sample_limit: 10000` + **metric_relabel** drop `kubelet_*`)<br>· Grafana Cloud Dash (Free 50 k MTS)<br>· 定义 99.9 % SLO + CloudWatch Composite Alert + Burn-Rate | Trace GIF + Grafana Dash<br>SLO YAML & Post-mortem |
-| **Week 7-b** | **生成式 AI Sidecar — Bedrock Titan**<br>· Spring AI + **Titan Text Express** (us-east-1)<br>· Redis Vector / PGVector<br>· CloudWatch + Budget (USD 80) 监控 Token 花费<br>· Spring Retry Exponential-Backoff 限流 | Demo 视频<br>《Bedrock FinOps.md》 |
-| **Week 8** | **Mock Marathon & Résumé v2**<br>· Mock-1：Chaos + SLO 深挖 (全英)<br>· Mock-2：AI & 多云系统设计 (全英)<br>· `progress.png`（语速 | filler | MTTR | CI 成功率）<br>· **Day-8 Cleanup** ：`codedeploy cleanup` → `terraform destroy` → `eksctl delete cluster` → 删除 ALB/TG、ECR、S3、DynamoDB、Budget | 两段 90 min 录像 + 评分表<br>`progress.png`<br>简历 v2 PDF |
+### 🛡 执行护栏（全阶段通用）
+- **预算**：总账单 ≤ ¥1,500；常规按需启停 ≈ ¥800（已含缓冲）。
+- **计费控制**：EKS 控制面仅上课日开 6h；节点 `t3.small` Spot 混合，夜间 `scale-down-to-0`。
+- **安全**：IRSA/OIDC 最小权限，Terraform `backend s3 + dynamodb lock + AES256`，流水线 Trivy 扫描。
+- **可观测**：Prom 采样 `sample_limit` 并过滤 `kubelet_*`；CloudWatch Budget（\$80）与告警已开启。
+- **清理**：ALB/TG、ECR、S3、DynamoDB、Budget、EKS 全纳入 `cleanup.sh`。
 
-## 🎯 KPI & 简历映射
+### 🧭 每日执行模板（避免低效 debug）
+1) **30min 理论速读**：当天主题的 3–5 个必知点（写入 `notes/YYMMDD.md`）。
+2) **90min 关键实操**：只做“面试可讲”的最小闭环（可截图、可复现）。
+3) **20min 量化留痕**：把 1–2 个指标/截图落进 README（如 GitOps 成功率、MTTR、Trace 覆盖）。
+4) **20min STAR 记录**：一句话补全场景/决策/结果（面试素材）。
+5) **Git 提交**：代码、YAML、笔记一并提交；空闲即执行 `destroy`。
 
-| 指标 | 目标 | 简历措辞示例 |
-|------|------|-------------|
-| GitOps 发布成功率 | ≥ 98 % | “双链路 GitOps 发布成功率 **98 %+**” |
-| Chaos 平均恢复 MTTR | ≤ 1 min | “注入 pod-kill 后平均恢复 **49 s** (业内基线 5 min)” |
-| Trace 覆盖率 | ≥ 95 % | “OpenTelemetry 链路覆盖 **95 %** API 请求” |
-| 英文 Mock 综合分 | ≥ 4.0 / 5 | “全英文系统设计 Mock 得分 **4.2 / 5**” |
+> **下一步**：进入 **Week 5 – Cloud-Native 微服务上云（EKS）** 的可执行清单（按“Day 1 → Day 5”逐日拆分、每步附命令与预期截图/指标），并与现有一键重建/销毁保持兼容。
 
-## 🛡 成本 & 安全护栏
-
-| 类别 | 策略 |
-|------|------|
-| **EKS 控制面** | 仅上课日开 6 h；其他时间 `eksctl scale nodegroup --nodes 0` |
-| **计算节点** | Spot t3.small ×2 + OD t3.medium ×1；Cluster Autoscaler |
-| **ALB/TG** | CodeDeploy 收尾脚本删除旧 TargetGroup 及 ALB |
-| **Prom 费用** | `sample_limit` + 过滤 `kubelet_*` 指标 (降 50 %) |
-| **Bedrock 费用** | Titan TPS 20 req/min；CloudWatch Budget 80 USD |
-| **安全** | IRSA、S3 AES256、DynamoDB lock、Trivy 扫描、Chaos privileged |
-| **Day-8 清理** | 全资源一键销毁 + 账单导出 |
-
-## 立即行动
-
-1. 完成 **Day-0** 实验并 push `day0-notes.md`
-1. 运行 `eksctl create cluster --managed` (Spot+OD) 验证节点；启用 Cluster Autoscaler
-1. 设置 CloudWatch - Billing Alarm & Budget (USD 80)
-1. 开始 Bootcamp Day 1；如需脚本或 YAML 示例，随时告诉我！
 
 > 全流程仅依赖 AWS 账户即可完成；后续若需多云演示，可启用 Terraform GKE provider 再走一遍 Helm / Argo 即可。
