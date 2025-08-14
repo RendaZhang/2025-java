@@ -13,7 +13,7 @@
     - [🔖 第 2 周：Spring 框架、数据库与缓存复习](#-%E7%AC%AC-2-%E5%91%A8spring-%E6%A1%86%E6%9E%B6%E6%95%B0%E6%8D%AE%E5%BA%93%E4%B8%8E%E7%BC%93%E5%AD%98%E5%A4%8D%E4%B9%A0)
     - [🔖 第 3 周：算法强化与性能优化初步](#-%E7%AC%AC-3-%E5%91%A8%E7%AE%97%E6%B3%95%E5%BC%BA%E5%8C%96%E4%B8%8E%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96%E5%88%9D%E6%AD%A5)
     - [🔖 第 4 周：英语能力提升与面试准备](#-%E7%AC%AC-4-%E5%91%A8%E8%8B%B1%E8%AF%AD%E8%83%BD%E5%8A%9B%E6%8F%90%E5%8D%87%E4%B8%8E%E9%9D%A2%E8%AF%95%E5%87%86%E5%A4%87)
-- [🚀 第二阶段 Java Cloud-Native Sprint（AWS 专版 · NodeGroup）](#-%E7%AC%AC%E4%BA%8C%E9%98%B6%E6%AE%B5-java-cloud-native-sprintaws-%E4%B8%93%E7%89%88-%C2%B7-nodegroup)
+  - [🚀 第二阶段 Java Cloud-Native Sprint（AWS 专版 · NodeGroup）](#-%E7%AC%AC%E4%BA%8C%E9%98%B6%E6%AE%B5-java-cloud-native-sprintaws-%E4%B8%93%E7%89%88-%C2%B7-nodegroup)
     - [📌 快速导航（进度链接）](#-%E5%BF%AB%E9%80%9F%E5%AF%BC%E8%88%AA%E8%BF%9B%E5%BA%A6%E9%93%BE%E6%8E%A5)
     - [🛡 执行护栏（全阶段通用）](#-%E6%89%A7%E8%A1%8C%E6%8A%A4%E6%A0%8F%E5%85%A8%E9%98%B6%E6%AE%B5%E9%80%9A%E7%94%A8)
     - [🧭 每日执行模板（避免低效 debug）](#-%E6%AF%8F%E6%97%A5%E6%89%A7%E8%A1%8C%E6%A8%A1%E6%9D%BF%E9%81%BF%E5%85%8D%E4%BD%8E%E6%95%88-debug)
@@ -35,17 +35,14 @@
 #### ☑️ Java 基础（共 3 天）
 
 - **Day1: Java 语法与 OOP**
-
   - 数据类型、控制结构（条件语句、循环）
   - 面向对象基础（封装、继承、多态）
 
 - **Day2: 集合框架与异常处理**
-
   - 集合框架（List, Set, Map）
   - 异常机制（try-catch、throws、自定义异常）
 
 - **Day3: Java 多线程基础**
-
   - 线程创建（Thread、Runnable、Callable）
   - 线程池使用（ExecutorService）
   - 线程同步（synchronized、Lock）与线程安全（竞态条件、原子操作）
@@ -67,8 +64,6 @@
 - 每天收听 30 分钟英文技术播客或视频（如 TechLead）
 - 每天英文口语复述算法题或技术知识点，锻炼表达能力
 
----
-
 ### 🔖 第 2 周：Spring 框架、数据库与缓存复习
 
 - **Day1: Spring 核心**
@@ -86,8 +81,6 @@
 - **Day7: 周总结与项目优化**
   - 项目代码整合与文档编写
 
----
-
 ### 🔖 第 3 周：算法强化与性能优化初步
 
 | 天次 | 学习主题 | 关键要点 | 主要产出 |
@@ -99,8 +92,6 @@
 | **Day 5** | JVM 性能调优实战 | - 压测 ► 诊断 ► 调参 ► 复测闭环<br>- 参数：堆大小、MaxGCPauseMillis、IHOP | baseline / tuned 报表 + `jvm-tune-report.md` |
 | **Day 6** | MySQL 高级优化 & 索引深度 | - 覆盖索引、下推谓词<br>- Buffer Pool 命中率<br>- EXPLAIN JSON / optimizer_trace | 优化前后 EXPLAIN + `mysql-adv-day6.md` |
 | **Day 7** | 周整合 & 输出 | - 知识库 & Cheat Sheet<br>- Pull Request：GC/Index 参数合并<br>- 英文周报 ≥ 200 词 + 5 min 算法讲解视频 | `week3-cheatsheet.md` + `week3-report-en.md` + `week4-plan-draft.md` |
-
----
 
 ### 🔖 第 4 周：英语能力提升与面试准备
 
@@ -115,7 +106,7 @@
 
 ---
 
-# 🚀 第二阶段 Java Cloud-Native Sprint（AWS 专版 · NodeGroup）
+## 🚀 第二阶段 Java Cloud-Native Sprint（AWS 专版 · NodeGroup）
 
 > **执行声明（2025-Stage2 · AWS 专版）**
 > - **当前进度**：Bootcamp **Day-0 ~ Day-2 已完成**（一键重建 / 一键销毁 已验证；Route53 保留 ≈ $0.5/月）。
