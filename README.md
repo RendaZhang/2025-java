@@ -1215,4 +1215,4 @@ cleanup/
 
 ### 高频问题库
 
-详情查看文档：[高频问题库](https://TBD)
+详情查看文档：[高频问题库](./docs/interview/QBANK.md)
