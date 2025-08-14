@@ -23,7 +23,7 @@
     - [时间轴 & 核心交付物](#%E6%97%B6%E9%97%B4%E8%BD%B4--%E6%A0%B8%E5%BF%83%E4%BA%A4%E4%BB%98%E7%89%A9)
       - [KPI & 简历映射](#kpi--%E7%AE%80%E5%8E%86%E6%98%A0%E5%B0%84)
   - [Week 5 - Cloud-Native 微服务上云（EKS）](#week-5---cloud-native-%E5%BE%AE%E6%9C%8D%E5%8A%A1%E4%B8%8A%E4%BA%91eks)
-    - [前置检查（10 分钟）](#%E5%89%8D%E7%BD%AE%E6%A3%80%E6%9F%A510-%E5%88%86%E9%92%9F)
+    - [前置检查](#%E5%89%8D%E7%BD%AE%E6%A3%80%E6%9F%A5)
     - [Day 1 - 应用骨架 + Docker 镜像 + 推送 ECR（最小可运行）](#day-1---%E5%BA%94%E7%94%A8%E9%AA%A8%E6%9E%B6--docker-%E9%95%9C%E5%83%8F--%E6%8E%A8%E9%80%81-ecr%E6%9C%80%E5%B0%8F%E5%8F%AF%E8%BF%90%E8%A1%8C)
     - [Day 2 - K8s 基础对象（NS/SA/Config/Secret/Deployment/Service）](#day-2---k8s-%E5%9F%BA%E7%A1%80%E5%AF%B9%E8%B1%A1nssaconfigsecretdeploymentservice)
     - [Day 3 - Ingress（ALB）对外暴露 + HPA](#day-3---ingressalb%E5%AF%B9%E5%A4%96%E6%9A%B4%E9%9C%B2--hpa)
@@ -31,7 +31,7 @@
     - [Day 5 - 收尾硬化 + 文档化 + 指标留痕](#day-5---%E6%94%B6%E5%B0%BE%E7%A1%AC%E5%8C%96--%E6%96%87%E6%A1%A3%E5%8C%96--%E6%8C%87%E6%A0%87%E7%95%99%E7%97%95)
     - [常见问题与 20 分钟退路](#%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98%E4%B8%8E-20-%E5%88%86%E9%92%9F%E9%80%80%E8%B7%AF)
   - [Week 6 - 观测 & 韧性](#week-6---%E8%A7%82%E6%B5%8B--%E9%9F%A7%E6%80%A7)
-    - [通用前置（10 分钟）](#%E9%80%9A%E7%94%A8%E5%89%8D%E7%BD%AE10-%E5%88%86%E9%92%9F)
+    - [通用前置](#%E9%80%9A%E7%94%A8%E5%89%8D%E7%BD%AE)
     - [Day 1 - 应用指标暴露 + AMP 工作区](#day-1---%E5%BA%94%E7%94%A8%E6%8C%87%E6%A0%87%E6%9A%B4%E9%9C%B2--amp-%E5%B7%A5%E4%BD%9C%E5%8C%BA)
     - [Day 2 - ADOT Collector（采集 → AMP）+ 成本护栏](#day-2---adot-collector%E9%87%87%E9%9B%86-%E2%86%92-amp-%E6%88%90%E6%9C%AC%E6%8A%A4%E6%A0%8F)
     - [Day 3 - Grafana Dash + SLI/SLO 口径](#day-3---grafana-dash--slislo-%E5%8F%A3%E5%BE%84)
@@ -39,12 +39,12 @@
     - [Day 5 - 整理与硬化（配额/限额/告警）](#day-5---%E6%95%B4%E7%90%86%E4%B8%8E%E7%A1%AC%E5%8C%96%E9%85%8D%E9%A2%9D%E9%99%90%E9%A2%9D%E5%91%8A%E8%AD%A6)
     - [20 分钟退路清单](#20-%E5%88%86%E9%92%9F%E9%80%80%E8%B7%AF%E6%B8%85%E5%8D%95)
   - [Week 7 - CI/CD + DevOps](#week-7---cicd--devops)
-    - [通用前置](#%E9%80%9A%E7%94%A8%E5%89%8D%E7%BD%AE)
-  - [Day 1 - 创建 GitHub OIDC 角色 + EKS RBAC 映射](#day-1---%E5%88%9B%E5%BB%BA-github-oidc-%E8%A7%92%E8%89%B2--eks-rbac-%E6%98%A0%E5%B0%84)
-  - [Day 2 - CI：Maven 构建 + 单测 + 镜像构建/扫描/推送](#day-2---cimaven-%E6%9E%84%E5%BB%BA--%E5%8D%95%E6%B5%8B--%E9%95%9C%E5%83%8F%E6%9E%84%E5%BB%BA%E6%89%AB%E6%8F%8F%E6%8E%A8%E9%80%81)
-  - [Day 3 - CD：发布到 EKS（滚动更新）+ 策略参数](#day-3---cd%E5%8F%91%E5%B8%83%E5%88%B0-eks%E6%BB%9A%E5%8A%A8%E6%9B%B4%E6%96%B0-%E7%AD%96%E7%95%A5%E5%8F%82%E6%95%B0)
-  - [Day 4 - 回滚与手动触发；参数化环境](#day-4---%E5%9B%9E%E6%BB%9A%E4%B8%8E%E6%89%8B%E5%8A%A8%E8%A7%A6%E5%8F%91%E5%8F%82%E6%95%B0%E5%8C%96%E7%8E%AF%E5%A2%83)
-  - [Day 5 - 指标留痕 + 文档固化 + 清理脚本](#day-5---%E6%8C%87%E6%A0%87%E7%95%99%E7%97%95--%E6%96%87%E6%A1%A3%E5%9B%BA%E5%8C%96--%E6%B8%85%E7%90%86%E8%84%9A%E6%9C%AC)
+    - [通用前置](#%E9%80%9A%E7%94%A8%E5%89%8D%E7%BD%AE-1)
+    - [Day 1 - 创建 GitHub OIDC 角色 + EKS RBAC 映射](#day-1---%E5%88%9B%E5%BB%BA-github-oidc-%E8%A7%92%E8%89%B2--eks-rbac-%E6%98%A0%E5%B0%84)
+    - [Day 2 - CI：Maven 构建 + 单测 + 镜像构建/扫描/推送](#day-2---cimaven-%E6%9E%84%E5%BB%BA--%E5%8D%95%E6%B5%8B--%E9%95%9C%E5%83%8F%E6%9E%84%E5%BB%BA%E6%89%AB%E6%8F%8F%E6%8E%A8%E9%80%81)
+    - [Day 3 - CD：发布到 EKS（滚动更新）+ 策略参数](#day-3---cd%E5%8F%91%E5%B8%83%E5%88%B0-eks%E6%BB%9A%E5%8A%A8%E6%9B%B4%E6%96%B0-%E7%AD%96%E7%95%A5%E5%8F%82%E6%95%B0)
+    - [Day 4 - 回滚与手动触发；参数化环境](#day-4---%E5%9B%9E%E6%BB%9A%E4%B8%8E%E6%89%8B%E5%8A%A8%E8%A7%A6%E5%8F%91%E5%8F%82%E6%95%B0%E5%8C%96%E7%8E%AF%E5%A2%83)
+    - [Day 5 - 指标留痕 + 文档固化 + 清理脚本](#day-5---%E6%8C%87%E6%A0%87%E7%95%99%E7%97%95--%E6%96%87%E6%A1%A3%E5%9B%BA%E5%8C%96--%E6%B8%85%E7%90%86%E8%84%9A%E6%9C%AC)
     - [20 分钟退路总表](#20-%E5%88%86%E9%92%9F%E9%80%80%E8%B7%AF%E6%80%BB%E8%A1%A8)
   - [Week 8 - TBD](#week-8---tbd)
 
@@ -67,11 +67,9 @@
 - **Day1: Java 语法与 OOP**
   - 数据类型、控制结构（条件语句、循环）
   - 面向对象基础（封装、继承、多态）
-
 - **Day2: 集合框架与异常处理**
   - 集合框架（List, Set, Map）
   - 异常机制（try-catch、throws、自定义异常）
-
 - **Day3: Java 多线程基础**
   - 线程创建（Thread、Runnable、Callable）
   - 线程池使用（ExecutorService）
@@ -213,7 +211,9 @@
 > 目标：把一个最小可讲、可演示的 **Spring Boot 微服务** 跑上现有 EKS（NodeGroup），通过 ALB 对外暴露；必要时最小接入 S3（IRSA），并完成可量化产物。
 > 原则：**只做最小闭环**（可截图/可复现），遇到卡顿 > 20 分钟走“退路方案”，避免低收益 debug。
 
-### 前置检查（10 分钟）
+### 前置检查
+
+10 分钟完成：
 
 - 若集群已销毁：执行现有 **一键重建**（半小时内可起）。
 - 设定本周通用变量（bash）：
@@ -251,8 +251,11 @@ docker push $(aws sts get-caller-identity --query Account --output text).dkr.ecr
 
 **产物**：
 
-- `apps/task-api` 源码；`Dockerfile`；ECR 镜像 `:0.1.0` 截图
-  **退路**：ECR 推送异常 → 暂用 Docker Hub 公有仓库（只改镜像前缀）。
+`apps/task-api` 源码；`Dockerfile`；ECR 镜像 `:0.1.0` 截图
+
+**退路**：
+
+ECR 推送异常 → 暂用 Docker Hub 公有仓库（只改镜像前缀）。
 
 ### Day 2 - K8s 基础对象（NS/SA/Config/Secret/Deployment/Service）
 
@@ -327,8 +330,13 @@ sed -e "s|\${NS}|$NS|g" -e "s|\${APP}|$APP|g" \
 kubectl get pod -n $NS -w
 ```
 
-**产物**：`kubectl get deploy,svc -n $NS` 截图；就绪 1/1。
-**退路**：Probe 失败 → 暂时改为 `/actuator/health`；或放宽 `initialDelaySeconds`。
+**产物**：
+
+`kubectl get deploy,svc -n $NS` 截图；就绪 1/1。
+
+**退路**：
+
+Probe 失败 → 暂时改为 `/actuator/health`；或放宽 `initialDelaySeconds`。
 
 ### Day 3 - Ingress（ALB）对外暴露 + HPA
 
@@ -383,8 +391,13 @@ kubectl apply -f k8s/hpa.yaml
 kubectl get ingress -n $NS
 ```
 
-**产物**：ALB DNS 可访问首页/健康检查截图；`kubectl describe hpa` 输出。
-**退路**：ALB 迟迟不出 → 检查子网 tag / sg；临时改为 `kubectl port-forward` 验证服务可用性。
+**产物**：
+
+ALB DNS 可访问首页/健康检查截图；`kubectl describe hpa` 输出。
+
+**退路**：
+
+ALB 迟迟不出 → 检查子网 tag / sg；临时改为 `kubectl port-forward` 验证服务可用性。
 
 ### Day 4 -（可选但高收益）S3 最小接入 + IRSA
 
@@ -414,8 +427,13 @@ curl -X POST "http://<ALB_DNS>/api/files/put?key=test.txt" -d 'hello'
 curl "http://<ALB_DNS>/api/files/get?key=test.txt"   # 预期返回 hello
 ```
 
-**产物**：两条 curl 成功截图；应用日志相关片段。
-**退路**：若当日遇到卡点 → 暂跳过 S3，保留 IRSA 绑定，Day5 先完成文档与演示。
+**产物**：
+
+两条 curl 成功截图；应用日志相关片段。
+
+**退路**：
+
+若当日遇到卡点 → 暂跳过 S3，保留 IRSA 绑定，Day5 先完成文档与演示。
 
 ### Day 5 - 收尾硬化 + 文档化 + 指标留痕
 
@@ -463,7 +481,9 @@ spec:
 > 目标：在**不引入重型运维**的前提下，建立“应用 + 集群”的指标观测、SLO 口径与最小化 Chaos 自愈演示。
 > 原则：继续 **单集群多命名空间**；一次只做“可讲清楚的最小闭环”。卡顿 > 20 分钟即走退路方案。
 
-### 通用前置（10 分钟）
+### 通用前置
+
+10 分钟 完成：
 
 ```bash
 export AWS_REGION=ap-southeast-1
@@ -483,10 +503,8 @@ export AMP_ALIAS=renda-lab
 **做什么**
 
 1. 在 `apps/task-api` 开启 **Actuator + Prometheus**：
-
    - `pom.xml` 增：`spring-boot-starter-actuator`、`micrometer-registry-prometheus`
    - `application.yml`：
-
      ```yaml
      management:
        endpoints.web.exposure.include: health,info,prometheus
@@ -494,13 +512,11 @@ export AMP_ALIAS=renda-lab
      ```
 2. 本地跑一次 `/actuator/prometheus` 验证。
 3. 创建 **AMP Workspace**（一次性）：
-
    ```bash
    aws amp create-workspace --region $AWS_REGION --alias $AMP_ALIAS \
      --query workspaceId --output text > .amp_id
    ```
 4. 记录 AMP remote\_write 端点（供 ADOT 使用）：
-
    ```bash
    AMP_ID=$(cat .amp_id)
    echo "https://aps-workspaces.$AWS_REGION.amazonaws.com/workspaces/$AMP_ID/api/v1/remote_write" > .amp_rw
@@ -511,14 +527,15 @@ export AMP_ALIAS=renda-lab
 - `/actuator/prometheus` 截图
 - `.amp_id`、`.amp_rw` 文件（勿提交敏感数据，可写入 README 为占位）
 
-**退路**：若 AMP 创建受限 → 暂改为 **Prometheus Helm（本地集群内）+ Grafana OSS**，后面步骤中的“remote\_write”全部替换为本地 `http://prometheus:9090`（仅演示用）。
+**退路**：
+
+若 AMP 创建受限 → 暂改为 **Prometheus Helm（本地集群内）+ Grafana OSS**，后面步骤中的“remote\_write”全部替换为本地 `http://prometheus:9090`（仅演示用）。
 
 ### Day 2 - ADOT Collector（采集 → AMP）+ 成本护栏
 
 **做什么**
 
 1. 新建 `observability/adot-collector.yaml`：最小 **Agent/DaemonSet**，采集 **应用 /actuator/prometheus** 与 **kube-state-metrics**（如未装可先跳过）。带**成本护栏**：
-
    ```yaml
    apiVersion: v1
    kind: Namespace
@@ -589,11 +606,9 @@ export AMP_ALIAS=renda-lab
              processors: [filter/drop_kubelet, attributes, batch]
              exporters: [prometheusremotewrite]
    ```
-
    > 将 `${AMP_REMOTE_WRITE}` 手动替换为 `.amp_rw` 的值；`${AWS_REGION}` 替换为变量。
 2. 绑定 SA 的最小权限（可沿用集群级 IRSA；如无则直接 `kubectl apply` 运行，不涉及 AWS 写权限）。
 3. 应用：
-
    ```bash
    kubectl apply -f observability/adot-collector.yaml
    ```
@@ -604,7 +619,9 @@ export AMP_ALIAS=renda-lab
 - `observability/adot-collector.yaml`
 - AMP 工作区有新指标（可用 `curl` 验证 remote\_write 200）
 
-**退路**：若 ADOT 配置反复出错 → 改用 **kube-prometheus-stack** Helm（Operator）一键起 Prom+Grafana（成本稍高，但流程直观），或暂时只走 CloudWatch Container Insights 做截图演示。
+**退路**：
+
+若 ADOT 配置反复出错 → 改用 **kube-prometheus-stack** Helm（Operator）一键起 Prom+Grafana（成本稍高，但流程直观），或暂时只走 CloudWatch Container Insights 做截图演示。
 
 ### Day 3 - Grafana Dash + SLI/SLO 口径
 
@@ -612,12 +629,10 @@ export AMP_ALIAS=renda-lab
 
 1. **Grafana Cloud**（或本地 Grafana）：新增 **Prometheus(AMP)** 数据源（SigV4 认证）。
 2. 导入一个最小仪表盘：
-
    - 应用：`http_server_requests_seconds_bucket{app="$APP"}` 计算 **P95**
    - 错误率：`sum(rate(http_server_requests_seconds_count{status=~"5..",app="$APP"}[5m])) / sum(rate(http_server_requests_seconds_count{app="$APP"}[5m]))`
    - 资源：容器 CPU/内存（cAdvisor 指标或 `container_*` 指标）
 3. 定义 SLI/SLO：
-
    - **可用性**：5xx 率 < 0.1%（近 1 天） → SLO=99.9%
    - **延迟**：P95 < 300ms（近 1 天）
      写入 `observability/slo.yaml`（文档式定义）。
@@ -627,21 +642,21 @@ export AMP_ALIAS=renda-lab
 - Grafana 仪表盘截图（至少 3 张：P95、错误率、CPU/内存）
 - `observability/slo.yaml`（口径 + 阈值）
 
-**退路**：Grafana Cloud 配置困难 → 使用 **kubectl port-forward** 暂时本地访问 Grafana OSS 服务；或作为替代，导出 AMP 的 `series`/`query_range` 返回 JSON 截图存证。
+**退路**：
+
+Grafana Cloud 配置困难 → 使用 **kubectl port-forward** 暂时本地访问 Grafana OSS 服务；或作为替代，导出 AMP 的 `series`/`query_range` 返回 JSON 截图存证。
 
 ### Day 4 - Chaos Mesh 安装 + `pod-kill`/`network-latency` 实验
 
 **做什么**
 
 1. 安装（EC2 NodeGroup 支持 **privileged**）：
-
    ```bash
    helm repo add chaos-mesh https://charts.chaos-mesh.org
    helm install chaos-mesh chaos-mesh/chaos-mesh -n chaos-testing --create-namespace \
      --set chaosDaemon.securityContext.privileged=true
    ```
 2. `pod-kill`（30 秒）：`chaos/pod-kill.yaml`
-
    ```yaml
    apiVersion: chaos-mesh.org/v1alpha1
    kind: PodChaos
@@ -654,16 +669,13 @@ export AMP_ALIAS=renda-lab
        labelSelectors: { app: ${APP} }
      duration: "30s"
    ```
-
    执行与观测：
-
    ```bash
    date +%s > .t0 && kubectl apply -f chaos/pod-kill.yaml
    kubectl get pods -n $NS -w   # 观察新 Pod 就绪
    date +%s > .t1 && echo "MTTR=$(( $(cat .t1) - $(cat .t0) ))s"
    ```
 3. `network-latency`（100ms\@30s）：
-
    ```yaml
    apiVersion: chaos-mesh.org/v1alpha1
    kind: NetworkChaos
@@ -686,7 +698,9 @@ export AMP_ALIAS=renda-lab
 - **MTTR 计算**记录（`MTTR=xx s`）
 - Grafana 截图（实验窗口内 P95/错误率/副本数变化）
 
-**退路**：Chaos Mesh 不稳定 → **手动 `kubectl delete pod`** 替代表演自愈；网络延迟改为用 `tc netem` 容器进行最小演示。
+**退路**：
+
+Chaos Mesh 不稳定 → **手动 `kubectl delete pod`** 替代表演自愈；网络延迟改为用 `tc netem` 容器进行最小演示。
 
 ### Day 5 - 整理与硬化（配额/限额/告警）
 
@@ -757,20 +771,20 @@ export ECR_REPO=task-manager
 
 产物总表：
 
-* `iam/github-oidc/`（信任策略、权限策略、创建脚本）
-* `.github/workflows/ci-cd.yml`（构建、扫描、推送、发布、回滚）
-* `deploy/`（Helm values 或 Kustomize/patch 脚本）
-* 截图：Actions 运行记录、EKS 滚动发布与回滚、时间指标
+- `iam/github-oidc/`（信任策略、权限策略、创建脚本）
+- `.github/workflows/ci-cd.yml`（构建、扫描、推送、发布、回滚）
+- `deploy/`（Helm values 或 Kustomize/patch 脚本）
+- 截图：Actions 运行记录、EKS 滚动发布与回滚、时间指标
 
-## Day 1 - 创建 GitHub OIDC 角色 + EKS RBAC 映射
+### Day 1 - 创建 GitHub OIDC 角色 + EKS RBAC 映射
 
 **做什么**
 
 1. **创建 OIDC 身份提供商（GitHub）**（一次性；若账户已有可跳过）：
-   * URL: `https://token.actions.githubusercontent.com`
-   * Audience: `sts.amazonaws.com`
+   - URL: `https://token.actions.githubusercontent.com`
+   - Audience: `sts.amazonaws.com`
 2. **创建 IAM 角色**（可命名：`github-actions-renda-lab`）：
-   * **信任策略（trust policy）**（限制到你的 GitHub 仓库）：
+   - **信任策略（trust policy）**（限制到你的 GitHub 仓库）：
 
      ```json
      {
@@ -790,7 +804,7 @@ export ECR_REPO=task-manager
        }]
      }
      ```
-   * **权限策略**（最小化，供 ECR/EKS 使用）：
+   - **权限策略**（最小化，供 ECR/EKS 使用）：
      ```json
      {
        "Version": "2012-10-17",
@@ -815,13 +829,15 @@ export ECR_REPO=task-manager
    > 为减少权限问题，先用 `system:masters` 跑通；Week 8 再细化到最小 RBAC。
 
 **验收**
-* 运行：`aws eks update-kubeconfig --name $CLUSTER --region $AWS_REGION` 后，手动 `kubectl auth can-i create deploy -A` 通过。
-* README 记录 Role ARN、受信主体（repo）、权限边界。
+
+- 运行：`aws eks update-kubeconfig --name $CLUSTER --region $AWS_REGION` 后，手动 `kubectl auth can-i create deploy -A` 通过。
+- README 记录 Role ARN、受信主体（repo）、权限边界。
 
 **退路**
-* OIDC 一直卡住 → 临时用 **访问密钥** 创建一个最小权限用户供本周演示（**周末删除**），或改用 **CodeBuild/CodePipeline** 先完成闭环。
 
-## Day 2 - CI：Maven 构建 + 单测 + 镜像构建/扫描/推送
+- OIDC 一直卡住 → 临时用 **访问密钥** 创建一个最小权限用户供本周演示（**周末删除**），或改用 **CodeBuild/CodePipeline** 先完成闭环。
+
+### Day 2 - CI：Maven 构建 + 单测 + 镜像构建/扫描/推送
 
 **做什么**
 
@@ -890,16 +906,17 @@ export ECR_REPO=task-manager
 
 **验收**
 
-* CI 通过；ECR 出现 `${IMAGE_TAG}` 镜像。
-* README 增加“构建成功/日期/构建时长”。
+- CI 通过；ECR 出现 `${IMAGE_TAG}` 镜像。
+- README 增加“构建成功/日期/构建时长”。
 
 **退路**
 
-* Trivy 扫描阻塞（误报或基础镜像问题）→ 先把 **`exit-code: '0'`**，记录 issue，后续换基础镜像再严格把关。
+- Trivy 扫描阻塞（误报或基础镜像问题）→ 先把 **`exit-code: '0'`**，记录 issue，后续换基础镜像再严格把关。
 
-## Day 3 - CD：发布到 EKS（滚动更新）+ 策略参数
+### Day 3 - CD：发布到 EKS（滚动更新）+ 策略参数
 
 **做什么**
+
 在同一个 `ci-cd.yml` 里新增 **cd 作业**（依赖 ci）：
 
 ```yaml
@@ -949,13 +966,15 @@ spec:
 ```
 
 **验收**
-* Actions 中 `cd` 任务成功；`rollout status` 成功。
-* 记录 **Lead Time**（从 push 到服务可用的时长）。
+
+- Actions 中 `cd` 任务成功；`rollout status` 成功。
+- 记录 **Lead Time**（从 push 到服务可用的时长）。
 
 **退路**
-* `rollout` 超时 → 暂把副本数设为 1、放宽 `readinessProbe`，先保证闭环；晚些再调优健康检查。
 
-## Day 4 - 回滚与手动触发；参数化环境
+- `rollout` 超时 → 暂把副本数设为 1、放宽 `readinessProbe`，先保证闭环；晚些再调优健康检查。
+
+### Day 4 - 回滚与手动触发；参数化环境
 
 **做什么**
 
@@ -983,41 +1002,43 @@ spec:
 3. 记录“回滚成功截图/命令”。
 
 **验收**
-* `rollback` 任务手动触发可成功回滚；`rollout history` 可见修订列表。
+
+- `rollback` 任务手动触发可成功回滚；`rollout history` 可见修订列表。
 
 **退路**
-* 回滚失败 → 直接 `kubectl set image` 指到上一个 tag（ECR 列表里复制），然后 `rollout status`。
 
-## Day 5 - 指标留痕 + 文档固化 + 清理脚本
+- 回滚失败 → 直接 `kubectl set image` 指到上一个 tag（ECR 列表里复制），然后 `rollout status`。
+
+### Day 5 - 指标留痕 + 文档固化 + 清理脚本
 
 **做什么**
 
 1. **指标**：
-   * 统计近 1 周 **发布成功率**（成功/总次数）
-   * 统计 **平均构建时长**、**平均 Lead Time**
-   * 追加到 README “本周指标”区，并生成 `progress.png`（表格/截图皆可，简单即可）
+   - 统计近 1 周 **发布成功率**（成功/总次数）
+   - 统计 **平均构建时长**、**平均 Lead Time**
+   - 追加到 README “本周指标”区，并生成 `progress.png`（表格/截图皆可，简单即可）
 2. **文档**：
-   * 在 README “部署方式”下新增 “**CI/CD（GitHub Actions + OIDC）**” 小节：写清“如何授权/如何触发/如何回滚”
-   * 把 OIDC 角色、`aws-auth` 映射、最小权限策略放入 `iam/github-oidc/README.md`（便于面试展示）
+   - 在 README “部署方式”下新增 “**CI/CD（GitHub Actions + OIDC）**” 小节：写清“如何授权/如何触发/如何回滚”
+   - 把 OIDC 角色、`aws-auth` 映射、最小权限策略放入 `iam/github-oidc/README.md`（便于面试展示）
 3. **脚本**：
-   * `deploy/redeploy.sh`（用于本地复现与演示）
-   * 确保 `cleanup.sh` 不误删 ECR 里用于回滚的 1～2 个最近 tag（保留 2～5 个）
+   - `deploy/redeploy.sh`（用于本地复现与演示）
+   - 确保 `cleanup.sh` 不误删 ECR 里用于回滚的 1～2 个最近 tag（保留 2～5 个）
 
 **验收**
 
-* README “CI/CD + 指标” 小节完善；Actions 截图已归档。
-* 一键 `destroy` 后，README 明确“**如何在下次重建后恢复 CI/CD**”（通常只需：重建集群 → 更新 kubeconfig → `aws-auth` 映射 → 立即可发版）。
+- README “CI/CD + 指标” 小节完善；Actions 截图已归档。
+- 一键 `destroy` 后，README 明确“**如何在下次重建后恢复 CI/CD**”（通常只需：重建集群 → 更新 kubeconfig → `aws-auth` 映射 → 立即可发版）。
 
 **退路**
 
-* 指标获取麻烦 → 先人工统计（Actions 运行页复制数据），后续有需要再接入 GitHub API 脚本。
+- 指标获取麻烦 → 先人工统计（Actions 运行页复制数据），后续有需要再接入 GitHub API 脚本。
 
 ### 20 分钟退路总表
 
-* **OIDC 配置耗时** → 临时用访问密钥用户跑通本周，**周末删除**；或切 **CodeBuild/CodePipeline**（只跑 ECR 推送 + `kubectl` 发布）
-* **Trivy 阻塞** → 先放宽为警告模式，记 issue；不阻断主线
-* **`kubectl` 权限问题** → 回到 Day1，确认 `aws-auth` 已添加 `rolearn`；或先将角色加入 `system:masters` 再慢慢收敛
-* **发布失败** → 使用 `rollout undo` 或“指定 tag”回滚；务必记录“失败原因 + 改进项”两行文字
+- **OIDC 配置耗时** → 临时用访问密钥用户跑通本周，**周末删除**；或切 **CodeBuild/CodePipeline**（只跑 ECR 推送 + `kubectl` 发布）
+- **Trivy 阻塞** → 先放宽为警告模式，记 issue；不阻断主线
+- **`kubectl` 权限问题** → 回到 Day1，确认 `aws-auth` 已添加 `rolearn`；或先将角色加入 `system:masters` 再慢慢收敛
+- **发布失败** → 使用 `rollout undo` 或“指定 tag”回滚；务必记录“失败原因 + 改进项”两行文字
 
 ---
 
