@@ -1,3 +1,21 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [Nightly Destroy → Morning Create: AWS Lab Cost-Saving Playbook](#nightly-destroy-%E2%86%92-morning-create-aws-lab-cost-saving-playbook)
+  - [0 · 关键信息（你的环境）](#0-%C2%B7-%E5%85%B3%E9%94%AE%E4%BF%A1%E6%81%AF%E4%BD%A0%E7%9A%84%E7%8E%AF%E5%A2%83)
+  - [1 · 背景与目标](#1-%C2%B7-%E8%83%8C%E6%99%AF%E4%B8%8E%E7%9B%AE%E6%A0%87)
+  - [2 · 四阶段实施总览](#2-%C2%B7-%E5%9B%9B%E9%98%B6%E6%AE%B5%E5%AE%9E%E6%96%BD%E6%80%BB%E8%A7%88)
+  - [3 · 目录结构](#3-%C2%B7-%E7%9B%AE%E5%BD%95%E7%BB%93%E6%9E%84)
+  - [4 · 核心变量](#4-%C2%B7-%E6%A0%B8%E5%BF%83%E5%8F%98%E9%87%8F)
+  - [5 · 每日操作流程](#5-%C2%B7-%E6%AF%8F%E6%97%A5%E6%93%8D%E4%BD%9C%E6%B5%81%E7%A8%8B)
+  - [6 · 固定域名原理](#6-%C2%B7-%E5%9B%BA%E5%AE%9A%E5%9F%9F%E5%90%8D%E5%8E%9F%E7%90%86)
+  - [7 · 成本估算 & 预算](#7-%C2%B7-%E6%88%90%E6%9C%AC%E4%BC%B0%E7%AE%97--%E9%A2%84%E7%AE%97)
+  - [8 · 常见故障速查](#8-%C2%B7-%E5%B8%B8%E8%A7%81%E6%95%85%E9%9A%9C%E9%80%9F%E6%9F%A5)
+  - [9 · 附录（Makefile & backend 片段）](#9-%C2%B7-%E9%99%84%E5%BD%95makefile--backend-%E7%89%87%E6%AE%B5)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Nightly Destroy → Morning Create: AWS Lab Cost-Saving Playbook
 
 > **目的**

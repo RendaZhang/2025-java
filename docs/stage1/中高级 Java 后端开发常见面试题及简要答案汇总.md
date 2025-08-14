@@ -1,3 +1,19 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [中高级 Java 后端开发常见面试题及简要答案汇总](#%E4%B8%AD%E9%AB%98%E7%BA%A7-java-%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91%E5%B8%B8%E8%A7%81%E9%9D%A2%E8%AF%95%E9%A2%98%E5%8F%8A%E7%AE%80%E8%A6%81%E7%AD%94%E6%A1%88%E6%B1%87%E6%80%BB)
+  - [Java 基础](#java-%E5%9F%BA%E7%A1%80)
+  - [JVM（Java 虚拟机）](#jvmjava-%E8%99%9A%E6%8B%9F%E6%9C%BA)
+  - [Spring / Spring Boot](#spring--spring-boot)
+  - [数据库 (MySQL)](#%E6%95%B0%E6%8D%AE%E5%BA%93-mysql)
+  - [Redis / 缓存机制](#redis--%E7%BC%93%E5%AD%98%E6%9C%BA%E5%88%B6)
+  - [分布式系统](#%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F)
+  - [系统设计题](#%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1%E9%A2%98)
+  - [操作系统 / 计算机网络](#%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F--%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # 中高级 Java 后端开发常见面试题及简要答案汇总
 
 ## Java 基础

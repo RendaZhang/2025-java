@@ -1,3 +1,38 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [Day 1 · AWS VPC / ALB / IAM](#day-1-%C2%B7-aws-vpc--alb--iam)
+  - [VPC Wizard 实操](#vpc-wizard-%E5%AE%9E%E6%93%8D)
+    - [VPC](#vpc)
+      - [Your AWS virtual network](#your-aws-virtual-network)
+      - [Subnets within this VPC](#subnets-within-this-vpc)
+      - [Route network traffic to resources](#route-network-traffic-to-resources)
+      - [Connections to other networks](#connections-to-other-networks)
+  - [NAT & Route 校验](#nat--route-%E6%A0%A1%E9%AA%8C)
+    - [创建 **Public** 实例](#%E5%88%9B%E5%BB%BA-public-%E5%AE%9E%E4%BE%8B)
+    - [创建 **Private** 实例](#%E5%88%9B%E5%BB%BA-private-%E5%AE%9E%E4%BE%8B)
+    - [验证出网&路由](#%E9%AA%8C%E8%AF%81%E5%87%BA%E7%BD%91%E8%B7%AF%E7%94%B1)
+  - [创建 & 验证 ALB](#%E5%88%9B%E5%BB%BA--%E9%AA%8C%E8%AF%81-alb)
+    - [创建 Target Group](#%E5%88%9B%E5%BB%BA-target-group)
+    - [部署临时 Python HTTP 服务器并注册 Target](#%E9%83%A8%E7%BD%B2%E4%B8%B4%E6%97%B6-python-http-%E6%9C%8D%E5%8A%A1%E5%99%A8%E5%B9%B6%E6%B3%A8%E5%86%8C-target)
+    - [创建 Application Load Balancer](#%E5%88%9B%E5%BB%BA-application-load-balancer)
+    - [验证 & 记录](#%E9%AA%8C%E8%AF%81--%E8%AE%B0%E5%BD%95)
+  - [IAM 角色设计与权限验证](#iam-%E8%A7%92%E8%89%B2%E8%AE%BE%E8%AE%A1%E4%B8%8E%E6%9D%83%E9%99%90%E9%AA%8C%E8%AF%81)
+    - [创建 `eks-admin-role`](#%E5%88%9B%E5%BB%BA-eks-admin-role)
+    - [使用 IAM Policy Simulator 验证最小权限](#%E4%BD%BF%E7%94%A8-iam-policy-simulator-%E9%AA%8C%E8%AF%81%E6%9C%80%E5%B0%8F%E6%9D%83%E9%99%90)
+    - [追加 S3 只读策略并复测](#%E8%BF%BD%E5%8A%A0-s3-%E5%8F%AA%E8%AF%BB%E7%AD%96%E7%95%A5%E5%B9%B6%E5%A4%8D%E6%B5%8B)
+    - [预告：OIDC Provider 关联](#%E9%A2%84%E5%91%8Aoidc-provider-%E5%85%B3%E8%81%94)
+  - [Terraform stub 初始化](#terraform-stub-%E5%88%9D%E5%A7%8B%E5%8C%96)
+    - [目录结构](#%E7%9B%AE%E5%BD%95%E7%BB%93%E6%9E%84)
+    - [`backend.tf` — 远端状态存储](#backendtf--%E8%BF%9C%E7%AB%AF%E7%8A%B6%E6%80%81%E5%AD%98%E5%82%A8)
+    - [`provider.tf` — AWS Provider](#providertf--aws-provider)
+    - [`variables.tf` — 输入变量](#variablestf--%E8%BE%93%E5%85%A5%E5%8F%98%E9%87%8F)
+    - [`terraform.tfvars` — 具体值（按你环境填写）](#terraformtfvars--%E5%85%B7%E4%BD%93%E5%80%BC%E6%8C%89%E4%BD%A0%E7%8E%AF%E5%A2%83%E5%A1%AB%E5%86%99)
+    - [初始化并验证](#%E5%88%9D%E5%A7%8B%E5%8C%96%E5%B9%B6%E9%AA%8C%E8%AF%81)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Day 1 · AWS VPC / ALB / IAM
 
 ______________________________________________________________________

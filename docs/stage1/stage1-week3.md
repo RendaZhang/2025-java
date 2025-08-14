@@ -1,3 +1,48 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [Week 3: Algorithm Enhancement and Preliminary Performance Optimization](#week-3-algorithm-enhancement-and-preliminary-performance-optimization)
+  - [Day 1 → Day 3 Recap (Algorithms Track) 🏁](#day-1-%E2%86%92-day-3-recap-algorithms-track-)
+    - [Day 1 — Dynamic Programming “Boot Camp”](#day-1--dynamic-programming-boot-camp)
+    - [Day 2 — Advanced DP Patterns](#day-2--advanced-dp-patterns)
+    - [Day 3 — Backtracking ✚ Greedy](#day-3--backtracking-%E2%9C%9A-greedy)
+    - [Week-to-Date “Aha!” Moments ✨](#week-to-date-aha-moments-)
+    - [Next Steps](#next-steps)
+  - [Day 4 – JVM & GC](#day-4--jvm--gc)
+    - [1. Heap Layout Refresher](#1-heap-layout-refresher)
+    - [2. Collector Landscape](#2-collector-landscape)
+    - [3. Baseline vs Tuned Results _(G1, 512 MB heap)_](#3-baseline-vs-tuned-results-_g1-512-mb-heap_)
+    - [4. Tools Used](#4-tools-used)
+    - [5. Key Takeaways](#5-key-takeaways)
+    - [6. Next Experiments](#6-next-experiments)
+  - [Day 5 - JVM Performance-Tuning Report · task-manager](#day-5---jvm-performance-tuning-report-%C2%B7-task-manager)
+    - [1 · Baseline vs Tuned Numbers](#1-%C2%B7-baseline-vs-tuned-numbers)
+    - [2 · What Hurt in the Baseline ❌](#2-%C2%B7-what-hurt-in-the-baseline-)
+    - [3 · Why This Flag ✔️](#3-%C2%B7-why-this-flag-)
+    - [4 · Remaining Hotspots](#4-%C2%B7-remaining-hotspots)
+    - [5 · Next Experiments 🔭](#5-%C2%B7-next-experiments-)
+    - [6 · English Summary (≈ 180 words)](#6-%C2%B7-english-summary-%E2%89%88-180-words)
+  - [Day 6 - MySQL Advanced Indexing & Tuning](#day-6---mysql-advanced-indexing--tuning)
+    - [Problem](#problem)
+    - [Analysis](#analysis)
+    - [Fix](#fix)
+    - [Result](#result)
+    - [Takeaways](#takeaways)
+    - [Next Steps](#next-steps-1)
+  - [Week-3 Cheat Sheet 🗂️ (Algorithms · JVM · MySQL)](#week-3-cheat-sheet--algorithms-%C2%B7-jvm-%C2%B7-mysql)
+    - [1. Algorithms](#1-algorithms)
+    - [2. JVM GC](#2-jvm-gc)
+    - [3. MySQL](#3-mysql)
+  - [Week-3 Engineering Digest](#week-3-engineering-digest)
+    - [1 · What I Set Out to Do](#1-%C2%B7-what-i-set-out-to-do)
+    - [2 · Highlights](#2-%C2%B7-highlights)
+    - [3 · Key Challenges Encountered](#3-%C2%B7-key-challenges-encountered)
+    - [4 · What I Learned](#4-%C2%B7-what-i-learned)
+    - [5 · Next Week (Week 4) Road-map](#5-%C2%B7-next-week-week-4-road-map)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Week 3: Algorithm Enhancement and Preliminary Performance Optimization
 
 ______________________________________________________________________

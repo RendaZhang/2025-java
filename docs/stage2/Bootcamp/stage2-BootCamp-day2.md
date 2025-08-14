@@ -1,3 +1,52 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [Bootcamp Day 2 · EKS 集群落地 + Terraform 绑定（NodeGroup 版）](#bootcamp-day-2-%C2%B7-eks-%E9%9B%86%E7%BE%A4%E8%90%BD%E5%9C%B0--terraform-%E7%BB%91%E5%AE%9Anodegroup-%E7%89%88)
+  - [环境预检](#%E7%8E%AF%E5%A2%83%E9%A2%84%E6%A3%80)
+    - [检查 AWS CLI 登录状态 & 默认 Region](#%E6%A3%80%E6%9F%A5-aws-cli-%E7%99%BB%E5%BD%95%E7%8A%B6%E6%80%81--%E9%BB%98%E8%AE%A4-region)
+    - [快速 Service Quotas 自检](#%E5%BF%AB%E9%80%9F-service-quotas-%E8%87%AA%E6%A3%80)
+      - [核心配额与正确的 QuotaCode](#%E6%A0%B8%E5%BF%83%E9%85%8D%E9%A2%9D%E4%B8%8E%E6%AD%A3%E7%A1%AE%E7%9A%84-quotacode)
+      - [CLI 快速查询与脚本示例](#cli-%E5%BF%AB%E9%80%9F%E6%9F%A5%E8%AF%A2%E4%B8%8E%E8%84%9A%E6%9C%AC%E7%A4%BA%E4%BE%8B)
+      - [**目标值建议**](#%E7%9B%AE%E6%A0%87%E5%80%BC%E5%BB%BA%E8%AE%AE)
+  - [生成 `eksctl-cluster.yaml`](#%E7%94%9F%E6%88%90-eksctl-clusteryaml)
+    - [拿到 VPC & Subnet ID](#%E6%8B%BF%E5%88%B0-vpc--subnet-id)
+    - [创建文件 `eksctl-cluster.yaml`](#%E5%88%9B%E5%BB%BA%E6%96%87%E4%BB%B6-eksctl-clusteryaml)
+      - [全 Spot 实例配置](#%E5%85%A8-spot-%E5%AE%9E%E4%BE%8B%E9%85%8D%E7%BD%AE)
+      - [混合 Spot + OD 实例配置](#%E6%B7%B7%E5%90%88-spot--od-%E5%AE%9E%E4%BE%8B%E9%85%8D%E7%BD%AE)
+  - [`eksctl create cluster` 并等待 CloudFormation 完成](#eksctl-create-cluster-%E5%B9%B6%E7%AD%89%E5%BE%85-cloudformation-%E5%AE%8C%E6%88%90)
+    - [确保凭证 & 区域](#%E7%A1%AE%E4%BF%9D%E5%87%AD%E8%AF%81--%E5%8C%BA%E5%9F%9F)
+    - [安装 eksctl](#%E5%AE%89%E8%A3%85-eksctl)
+    - [创建集群](#%E5%88%9B%E5%BB%BA%E9%9B%86%E7%BE%A4)
+    - [观察进度（可选）](#%E8%A7%82%E5%AF%9F%E8%BF%9B%E5%BA%A6%E5%8F%AF%E9%80%89)
+    - [集群验证](#%E9%9B%86%E7%BE%A4%E9%AA%8C%E8%AF%81)
+  - [开启控制面日志 (API & Authenticator)](#%E5%BC%80%E5%90%AF%E6%8E%A7%E5%88%B6%E9%9D%A2%E6%97%A5%E5%BF%97-api--authenticator)
+    - [启用日志](#%E5%90%AF%E7%94%A8%E6%97%A5%E5%BF%97)
+    - [验证日志配置 & CloudWatch LogGroup](#%E9%AA%8C%E8%AF%81%E6%97%A5%E5%BF%97%E9%85%8D%E7%BD%AE--cloudwatch-loggroup)
+  - [安装 Cluster Autoscaler - IRSA 版](#%E5%AE%89%E8%A3%85-cluster-autoscaler---irsa-%E7%89%88)
+    - [检查 / 关联 OIDC Provider](#%E6%A3%80%E6%9F%A5--%E5%85%B3%E8%81%94-oidc-provider)
+    - [创建 IAM Policy & Role（IRSA）](#%E5%88%9B%E5%BB%BA-iam-policy--roleirsa)
+      - [下载官方最小策略](#%E4%B8%8B%E8%BD%BD%E5%AE%98%E6%96%B9%E6%9C%80%E5%B0%8F%E7%AD%96%E7%95%A5)
+      - [创建 IAM Policy](#%E5%88%9B%E5%BB%BA-iam-policy)
+      - [创建具有信任策略的 IAM Role](#%E5%88%9B%E5%BB%BA%E5%85%B7%E6%9C%89%E4%BF%A1%E4%BB%BB%E7%AD%96%E7%95%A5%E7%9A%84-iam-role)
+    - [安装 Cluster Autoscaler（Helm）](#%E5%AE%89%E8%A3%85-cluster-autoscalerhelm)
+    - [验证 Autoscaler 工作](#%E9%AA%8C%E8%AF%81-autoscaler-%E5%B7%A5%E4%BD%9C)
+      - [确认 Pod Ready](#%E7%A1%AE%E8%AE%A4-pod-ready)
+      - [触发扩容 / 缩容](#%E8%A7%A6%E5%8F%91%E6%89%A9%E5%AE%B9--%E7%BC%A9%E5%AE%B9)
+  - [把集群资源导入 Terraform](#%E6%8A%8A%E9%9B%86%E7%BE%A4%E8%B5%84%E6%BA%90%E5%AF%BC%E5%85%A5-terraform)
+    - [确保本地 Terraform 后端指向 **us-east-1**](#%E7%A1%AE%E4%BF%9D%E6%9C%AC%E5%9C%B0-terraform-%E5%90%8E%E7%AB%AF%E6%8C%87%E5%90%91-us-east-1)
+    - [为 **EKS 模块** 准备最小 stub](#%E4%B8%BA-eks-%E6%A8%A1%E5%9D%97-%E5%87%86%E5%A4%87%E6%9C%80%E5%B0%8F-stub)
+    - [获取必要资源 ID / ARN](#%E8%8E%B7%E5%8F%96%E5%BF%85%E8%A6%81%E8%B5%84%E6%BA%90-id--arn)
+    - [执行 import（建议脚本化）](#%E6%89%A7%E8%A1%8C-import%E5%BB%BA%E8%AE%AE%E8%84%9A%E6%9C%AC%E5%8C%96)
+    - [验证计划无漂移 Drift](#%E9%AA%8C%E8%AF%81%E8%AE%A1%E5%88%92%E6%97%A0%E6%BC%82%E7%A7%BB-drift)
+  - [设定 Budget 告警 & Spot Interruption 通知](#%E8%AE%BE%E5%AE%9A-budget-%E5%91%8A%E8%AD%A6--spot-interruption-%E9%80%9A%E7%9F%A5)
+    - [创建 SNS Topic & 订阅](#%E5%88%9B%E5%BB%BA-sns-topic--%E8%AE%A2%E9%98%85)
+    - [给 NodeGroup 绑定 Spot 通知](#%E7%BB%99-nodegroup-%E7%BB%91%E5%AE%9A-spot-%E9%80%9A%E7%9F%A5)
+    - [创建月度成本预算（650 CNY）](#%E5%88%9B%E5%BB%BA%E6%9C%88%E5%BA%A6%E6%88%90%E6%9C%AC%E9%A2%84%E7%AE%97650-cny)
+    - [验证](#%E9%AA%8C%E8%AF%81)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Bootcamp Day 2 · EKS 集群落地 + Terraform 绑定（NodeGroup 版）
 
 ______________________________________________________________________

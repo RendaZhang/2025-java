@@ -1,3 +1,40 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [Week 2 - Review of Spring Framework, Databases, and Caching](#week-2---review-of-spring-framework-databases-and-caching)
+  - [Day 1 - Spring](#day-1---spring)
+    - [🔍 Spring Core Summary (IOC & AOP)](#-spring-core-summary-ioc--aop)
+  - [Day 2 – Spring Boot Basics, REST API & Observability](#day-2--spring-boot-basics-rest-api--observability)
+    - [✅ Spring Boot Auto-configuration](#-spring-boot-auto-configuration)
+    - [✅ RESTful CRUD for `Task`](#-restful-crud-for-task)
+    - [✅ Service / Repository Layer](#-service--repository-layer)
+    - [✅ Observability](#-observability)
+  - [Day 3 – Integrating MySQL & Production-ready API](#day-3--integrating-mysql--production-ready-api)
+    - [🔗 MySQL + Spring Data JPA](#-mysql--spring-data-jpa)
+    - [🛠 DTO Mapping](#-dto-mapping)
+    - [🔐 Security & Documentation](#-security--documentation)
+    - [📊 Observability](#-observability)
+  - [Day 4 – Spring Cloud Microservices Fundamentals](#day-4--spring-cloud-microservices-fundamentals)
+    - [End-to-end Flow](#end-to-end-flow)
+  - [Day 5 – MySQL Query‑Optimization Summary 🚀](#day-5--mysql-query%E2%80%91optimization-summary-)
+    - [🔍 Indexing Strategy](#-indexing-strategy)
+    - [🛠 Execution‑Plan Analysis](#-execution%E2%80%91plan-analysis)
+    - [⚡️ Query‑Pattern Improvements](#%EF%B8%8F-query%E2%80%91pattern-improvements)
+    - [📈 Measurable Gains](#-measurable-gains)
+    - [Takeaways](#takeaways)
+  - [Day 6 – Redis Caching Integration Summary 🚀](#day-6--redis-caching-integration-summary-)
+    - [🔑 Key Redis Concepts Reviewed](#-key-redis-concepts-reviewed)
+    - [🛠 Implementation Highlights](#-implementation-highlights)
+    - [📈 Measured Performance](#-measured-performance)
+    - [🧩 Lessons Learned](#-lessons-learned)
+  - [Day 7 - Weekly Technical Log](#day-7---weekly-technical-log)
+    - [🛠 Platform & Infrastructure](#-platform--infrastructure)
+    - [⚙️ Core Features Delivered](#-core-features-delivered)
+    - [📈 Outcomes & Lessons](#-outcomes--lessons)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Week 2 - Review of Spring Framework, Databases, and Caching
 
 ______________________________________________________________________

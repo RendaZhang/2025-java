@@ -1,3 +1,53 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [Java 云原生 BootCamp Day 2 操作手册](#java-%E4%BA%91%E5%8E%9F%E7%94%9F-bootcamp-day-2-%E6%93%8D%E4%BD%9C%E6%89%8B%E5%86%8C)
+  - [阶段一：VPC 网络配置](#%E9%98%B6%E6%AE%B5%E4%B8%80vpc-%E7%BD%91%E7%BB%9C%E9%85%8D%E7%BD%AE)
+      - [操作目的与背景](#%E6%93%8D%E4%BD%9C%E7%9B%AE%E7%9A%84%E4%B8%8E%E8%83%8C%E6%99%AF)
+      - [操作步骤](#%E6%93%8D%E4%BD%9C%E6%AD%A5%E9%AA%A4)
+      - [验证命令与预期输出](#%E9%AA%8C%E8%AF%81%E5%91%BD%E4%BB%A4%E4%B8%8E%E9%A2%84%E6%9C%9F%E8%BE%93%E5%87%BA)
+      - [常见错误提示与解决办法（Troubleshooting）](#%E5%B8%B8%E8%A7%81%E9%94%99%E8%AF%AF%E6%8F%90%E7%A4%BA%E4%B8%8E%E8%A7%A3%E5%86%B3%E5%8A%9E%E6%B3%95troubleshooting)
+      - [✅ 阶段一验收清单](#-%E9%98%B6%E6%AE%B5%E4%B8%80%E9%AA%8C%E6%94%B6%E6%B8%85%E5%8D%95)
+  - [阶段二：ALB 创建与域名配置](#%E9%98%B6%E6%AE%B5%E4%BA%8Calb-%E5%88%9B%E5%BB%BA%E4%B8%8E%E5%9F%9F%E5%90%8D%E9%85%8D%E7%BD%AE)
+      - [操作目的与背景](#%E6%93%8D%E4%BD%9C%E7%9B%AE%E7%9A%84%E4%B8%8E%E8%83%8C%E6%99%AF-1)
+      - [操作步骤](#%E6%93%8D%E4%BD%9C%E6%AD%A5%E9%AA%A4-1)
+      - [验证命令与预期输出](#%E9%AA%8C%E8%AF%81%E5%91%BD%E4%BB%A4%E4%B8%8E%E9%A2%84%E6%9C%9F%E8%BE%93%E5%87%BA-1)
+      - [常见错误提示与解决办法（Troubleshooting）](#%E5%B8%B8%E8%A7%81%E9%94%99%E8%AF%AF%E6%8F%90%E7%A4%BA%E4%B8%8E%E8%A7%A3%E5%86%B3%E5%8A%9E%E6%B3%95troubleshooting-1)
+      - [✅ 阶段二验收清单](#-%E9%98%B6%E6%AE%B5%E4%BA%8C%E9%AA%8C%E6%94%B6%E6%B8%85%E5%8D%95)
+  - [阶段三：IAM 权限配置](#%E9%98%B6%E6%AE%B5%E4%B8%89iam-%E6%9D%83%E9%99%90%E9%85%8D%E7%BD%AE)
+      - [操作目的与背景](#%E6%93%8D%E4%BD%9C%E7%9B%AE%E7%9A%84%E4%B8%8E%E8%83%8C%E6%99%AF-2)
+      - [操作步骤](#%E6%93%8D%E4%BD%9C%E6%AD%A5%E9%AA%A4-2)
+      - [验证命令与预期输出](#%E9%AA%8C%E8%AF%81%E5%91%BD%E4%BB%A4%E4%B8%8E%E9%A2%84%E6%9C%9F%E8%BE%93%E5%87%BA-2)
+      - [常见错误提示与解决办法（Troubleshooting）](#%E5%B8%B8%E8%A7%81%E9%94%99%E8%AF%AF%E6%8F%90%E7%A4%BA%E4%B8%8E%E8%A7%A3%E5%86%B3%E5%8A%9E%E6%B3%95troubleshooting-2)
+      - [✅ 阶段三验收清单](#-%E9%98%B6%E6%AE%B5%E4%B8%89%E9%AA%8C%E6%94%B6%E6%B8%85%E5%8D%95)
+  - [阶段四：EKS 集群部署](#%E9%98%B6%E6%AE%B5%E5%9B%9Beks-%E9%9B%86%E7%BE%A4%E9%83%A8%E7%BD%B2)
+      - [操作目的与背景](#%E6%93%8D%E4%BD%9C%E7%9B%AE%E7%9A%84%E4%B8%8E%E8%83%8C%E6%99%AF-3)
+      - [操作步骤](#%E6%93%8D%E4%BD%9C%E6%AD%A5%E9%AA%A4-3)
+      - [验证命令与预期输出](#%E9%AA%8C%E8%AF%81%E5%91%BD%E4%BB%A4%E4%B8%8E%E9%A2%84%E6%9C%9F%E8%BE%93%E5%87%BA-3)
+      - [常见错误提示与解决办法（Troubleshooting）](#%E5%B8%B8%E8%A7%81%E9%94%99%E8%AF%AF%E6%8F%90%E7%A4%BA%E4%B8%8E%E8%A7%A3%E5%86%B3%E5%8A%9E%E6%B3%95troubleshooting-3)
+      - [✅ 阶段四验收清单](#-%E9%98%B6%E6%AE%B5%E5%9B%9B%E9%AA%8C%E6%94%B6%E6%B8%85%E5%8D%95)
+  - [阶段五：Terraform 资源导入](#%E9%98%B6%E6%AE%B5%E4%BA%94terraform-%E8%B5%84%E6%BA%90%E5%AF%BC%E5%85%A5)
+      - [操作目的与背景](#%E6%93%8D%E4%BD%9C%E7%9B%AE%E7%9A%84%E4%B8%8E%E8%83%8C%E6%99%AF-4)
+      - [操作步骤](#%E6%93%8D%E4%BD%9C%E6%AD%A5%E9%AA%A4-4)
+      - [验证命令与预期输出](#%E9%AA%8C%E8%AF%81%E5%91%BD%E4%BB%A4%E4%B8%8E%E9%A2%84%E6%9C%9F%E8%BE%93%E5%87%BA-4)
+      - [常见错误提示与解决办法（Troubleshooting）](#%E5%B8%B8%E8%A7%81%E9%94%99%E8%AF%AF%E6%8F%90%E7%A4%BA%E4%B8%8E%E8%A7%A3%E5%86%B3%E5%8A%9E%E6%B3%95troubleshooting-4)
+      - [✅ 阶段五验收清单](#-%E9%98%B6%E6%AE%B5%E4%BA%94%E9%AA%8C%E6%94%B6%E6%B8%85%E5%8D%95)
+  - [阶段六：Cluster Autoscaler 安装](#%E9%98%B6%E6%AE%B5%E5%85%ADcluster-autoscaler-%E5%AE%89%E8%A3%85)
+      - [操作目的与背景](#%E6%93%8D%E4%BD%9C%E7%9B%AE%E7%9A%84%E4%B8%8E%E8%83%8C%E6%99%AF-5)
+      - [操作步骤](#%E6%93%8D%E4%BD%9C%E6%AD%A5%E9%AA%A4-5)
+      - [验证命令与预期输出](#%E9%AA%8C%E8%AF%81%E5%91%BD%E4%BB%A4%E4%B8%8E%E9%A2%84%E6%9C%9F%E8%BE%93%E5%87%BA-5)
+      - [常见错误提示与解决办法（Troubleshooting）](#%E5%B8%B8%E8%A7%81%E9%94%99%E8%AF%AF%E6%8F%90%E7%A4%BA%E4%B8%8E%E8%A7%A3%E5%86%B3%E5%8A%9E%E6%B3%95troubleshooting-5)
+      - [✅ 阶段六验收清单](#-%E9%98%B6%E6%AE%B5%E5%85%AD%E9%AA%8C%E6%94%B6%E6%B8%85%E5%8D%95)
+  - [阶段七：环境关停与清理（可选）](#%E9%98%B6%E6%AE%B5%E4%B8%83%E7%8E%AF%E5%A2%83%E5%85%B3%E5%81%9C%E4%B8%8E%E6%B8%85%E7%90%86%E5%8F%AF%E9%80%89)
+      - [操作目的与背景](#%E6%93%8D%E4%BD%9C%E7%9B%AE%E7%9A%84%E4%B8%8E%E8%83%8C%E6%99%AF-6)
+      - [操作步骤](#%E6%93%8D%E4%BD%9C%E6%AD%A5%E9%AA%A4-6)
+      - [验证命令与预期输出](#%E9%AA%8C%E8%AF%81%E5%91%BD%E4%BB%A4%E4%B8%8E%E9%A2%84%E6%9C%9F%E8%BE%93%E5%87%BA-6)
+      - [常见错误提示与解决办法（Troubleshooting）](#%E5%B8%B8%E8%A7%81%E9%94%99%E8%AF%AF%E6%8F%90%E7%A4%BA%E4%B8%8E%E8%A7%A3%E5%86%B3%E5%8A%9E%E6%B3%95troubleshooting-6)
+      - [✅ 阶段七验收清单](#-%E9%98%B6%E6%AE%B5%E4%B8%83%E9%AA%8C%E6%94%B6%E6%B8%85%E5%8D%95)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Java 云原生 BootCamp Day 2 操作手册
 
 **最后更新：** 2025 年 6 月 28 日

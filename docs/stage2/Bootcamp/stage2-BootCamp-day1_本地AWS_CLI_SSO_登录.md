@@ -1,3 +1,19 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [AWS SSO + Terraform Local Workflow Cheat Sheet](#aws%C2%A0sso%C2%A0-terraform%C2%A0local%C2%A0workflow%C2%A0cheat%C2%A0sheet)
+  - [0 · 关键参数 (你的环境)](#0%C2%A0%C2%B7%C2%A0%E5%85%B3%E9%94%AE%E5%8F%82%E6%95%B0-%E4%BD%A0%E7%9A%84%E7%8E%AF%E5%A2%83)
+  - [1 · Console 侧一次性设置 (仅首次)](#1%C2%A0%C2%B7%C2%A0console-%E4%BE%A7%E4%B8%80%E6%AC%A1%E6%80%A7%E8%AE%BE%E7%BD%AE-%E4%BB%85%E9%A6%96%E6%AC%A1)
+  - [2 · 本地机器第一次设置 (Windows WSL / macOS / Linux)](#2%C2%A0%C2%B7%C2%A0%E6%9C%AC%E5%9C%B0%E6%9C%BA%E5%99%A8%E7%AC%AC%E4%B8%80%E6%AC%A1%E8%AE%BE%E7%BD%AE-windows%C2%A0wsl--macos--linux)
+  - [3 · Terraform Backend / Provider 关键片段](#3%C2%A0%C2%B7%C2%A0terraform%C2%A0backend--provider-%E5%85%B3%E9%94%AE%E7%89%87%E6%AE%B5)
+  - [4 · 日常工作流 (每次开机 / 换终端)](#4%C2%A0%C2%B7%C2%A0%E6%97%A5%E5%B8%B8%E5%B7%A5%E4%BD%9C%E6%B5%81-%E6%AF%8F%E6%AC%A1%E5%BC%80%E6%9C%BA--%E6%8D%A2%E7%BB%88%E7%AB%AF)
+  - [5 · 迁移到新电脑 / macOS 步骤](#5%C2%A0%C2%B7%C2%A0%E8%BF%81%E7%A7%BB%E5%88%B0%E6%96%B0%E7%94%B5%E8%84%91--macos-%E6%AD%A5%E9%AA%A4)
+  - [6 · Troubleshooting 常见错误](#6%C2%A0%C2%B7%C2%A0troubleshooting-%E5%B8%B8%E8%A7%81%E9%94%99%E8%AF%AF)
+  - [7 · 安全最佳实践](#7%C2%A0%C2%B7%C2%A0%E5%AE%89%E5%85%A8%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # AWS SSO + Terraform Local Workflow Cheat Sheet
 
 > **Purpose ｜用途**

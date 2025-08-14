@@ -1,3 +1,18 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [Day-0 · Docker & Kubernetes Refresher](#day-0-%C2%B7-docker--kubernetes-refresher)
+  - [Play-with-Docker 快速实验](#play-with-docker-%E5%BF%AB%E9%80%9F%E5%AE%9E%E9%AA%8C)
+  - [Killercoda Kubernetes Playground](#killercoda-kubernetes-playground)
+  - [本地环境对齐](#%E6%9C%AC%E5%9C%B0%E7%8E%AF%E5%A2%83%E5%AF%B9%E9%BD%90)
+    - [安装或升级 Docker Desktop](#%E5%AE%89%E8%A3%85%E6%88%96%E5%8D%87%E7%BA%A7-docker-desktop)
+    - [2. 验证 Docker](#2-%E9%AA%8C%E8%AF%81-docker)
+    - [3. 安装 kubectl](#3-%E5%AE%89%E8%A3%85-kubectl)
+    - [4. 选择并安装本地 Kubernetes](#4-%E9%80%89%E6%8B%A9%E5%B9%B6%E5%AE%89%E8%A3%85%E6%9C%AC%E5%9C%B0-kubernetes)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Day-0 · Docker & Kubernetes Refresher
 
 ## Play-with-Docker 快速实验

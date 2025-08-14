@@ -25,3 +25,10 @@ repos:
     rev: v1.37.1
     hooks:
       - id: yamllint
+  - repo: local
+    hooks:
+      - id: update-doctoc
+        name: Update Doctoc
+        entry: scripts/run-doctoc.sh
+        language: script
+        pass_filenames: false
