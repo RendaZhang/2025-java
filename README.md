@@ -1,50 +1,61 @@
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
-<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
-- [📌 2025 Java 学习计划](#-2025-java-%E5%AD%A6%E4%B9%A0%E8%AE%A1%E5%88%92)
-  - [🎯 总体目标](#-%E6%80%BB%E4%BD%93%E7%9B%AE%E6%A0%87)
-  - [📅 第一阶段（第 1-4 周）：基础复习与技能提升](#-%E7%AC%AC%E4%B8%80%E9%98%B6%E6%AE%B5%E7%AC%AC-1-4-%E5%91%A8%E5%9F%BA%E7%A1%80%E5%A4%8D%E4%B9%A0%E4%B8%8E%E6%8A%80%E8%83%BD%E6%8F%90%E5%8D%87)
-    - [🔖 第 1 周：Java 基础、开发工具与算法快速复习](#-%E7%AC%AC-1-%E5%91%A8java-%E5%9F%BA%E7%A1%80%E5%BC%80%E5%8F%91%E5%B7%A5%E5%85%B7%E4%B8%8E%E7%AE%97%E6%B3%95%E5%BF%AB%E9%80%9F%E5%A4%8D%E4%B9%A0)
-      - [☑️ Java 基础（共 3 天）](#-java-%E5%9F%BA%E7%A1%80%E5%85%B1-3-%E5%A4%A9)
-      - [☑️ 开发工具（共 1 天）](#-%E5%BC%80%E5%8F%91%E5%B7%A5%E5%85%B7%E5%85%B1-1-%E5%A4%A9)
-      - [☑️ 算法基础（贯穿全周）](#-%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80%E8%B4%AF%E7%A9%BF%E5%85%A8%E5%91%A8)
-      - [☑️ 英语听力与口语（贯穿全周）](#-%E8%8B%B1%E8%AF%AD%E5%90%AC%E5%8A%9B%E4%B8%8E%E5%8F%A3%E8%AF%AD%E8%B4%AF%E7%A9%BF%E5%85%A8%E5%91%A8)
-    - [🔖 第 2 周：Spring 框架、数据库与缓存复习](#-%E7%AC%AC-2-%E5%91%A8spring-%E6%A1%86%E6%9E%B6%E6%95%B0%E6%8D%AE%E5%BA%93%E4%B8%8E%E7%BC%93%E5%AD%98%E5%A4%8D%E4%B9%A0)
-    - [🔖 第 3 周：算法强化与性能优化初步](#-%E7%AC%AC-3-%E5%91%A8%E7%AE%97%E6%B3%95%E5%BC%BA%E5%8C%96%E4%B8%8E%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96%E5%88%9D%E6%AD%A5)
-    - [🔖 第 4 周：英语能力提升与面试准备](#-%E7%AC%AC-4-%E5%91%A8%E8%8B%B1%E8%AF%AD%E8%83%BD%E5%8A%9B%E6%8F%90%E5%8D%87%E4%B8%8E%E9%9D%A2%E8%AF%95%E5%87%86%E5%A4%87)
-  - [🚀 第二阶段 Java Cloud-Native Sprint（AWS 专版 · NodeGroup）](#-%E7%AC%AC%E4%BA%8C%E9%98%B6%E6%AE%B5-java-cloud-native-sprintaws-%E4%B8%93%E7%89%88-%C2%B7-nodegroup)
+- [2025 Java 学习计划](#2025-java-%E5%AD%A6%E4%B9%A0%E8%AE%A1%E5%88%92)
+  - [总体目标](#%E6%80%BB%E4%BD%93%E7%9B%AE%E6%A0%87)
+  - [第一阶段（第 1-4 周）：基础复习与技能提升](#%E7%AC%AC%E4%B8%80%E9%98%B6%E6%AE%B5%E7%AC%AC-1-4-%E5%91%A8%E5%9F%BA%E7%A1%80%E5%A4%8D%E4%B9%A0%E4%B8%8E%E6%8A%80%E8%83%BD%E6%8F%90%E5%8D%87)
+    - [第 1 周：Java 基础、开发工具与算法快速复习](#%E7%AC%AC-1-%E5%91%A8java-%E5%9F%BA%E7%A1%80%E5%BC%80%E5%8F%91%E5%B7%A5%E5%85%B7%E4%B8%8E%E7%AE%97%E6%B3%95%E5%BF%AB%E9%80%9F%E5%A4%8D%E4%B9%A0)
+      - [Java 基础（共 3 天）](#java-%E5%9F%BA%E7%A1%80%E5%85%B1-3-%E5%A4%A9)
+      - [开发工具（共 1 天）](#%E5%BC%80%E5%8F%91%E5%B7%A5%E5%85%B7%E5%85%B1-1-%E5%A4%A9)
+      - [算法基础（贯穿全周）](#%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80%E8%B4%AF%E7%A9%BF%E5%85%A8%E5%91%A8)
+      - [英语听力与口语（贯穿全周）](#%E8%8B%B1%E8%AF%AD%E5%90%AC%E5%8A%9B%E4%B8%8E%E5%8F%A3%E8%AF%AD%E8%B4%AF%E7%A9%BF%E5%85%A8%E5%91%A8)
+    - [第 2 周：Spring 框架、数据库与缓存复习](#%E7%AC%AC-2-%E5%91%A8spring-%E6%A1%86%E6%9E%B6%E6%95%B0%E6%8D%AE%E5%BA%93%E4%B8%8E%E7%BC%93%E5%AD%98%E5%A4%8D%E4%B9%A0)
+    - [第 3 周：算法强化与性能优化初步](#%E7%AC%AC-3-%E5%91%A8%E7%AE%97%E6%B3%95%E5%BC%BA%E5%8C%96%E4%B8%8E%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96%E5%88%9D%E6%AD%A5)
+    - [第 4 周：英语能力提升与面试准备](#%E7%AC%AC-4-%E5%91%A8%E8%8B%B1%E8%AF%AD%E8%83%BD%E5%8A%9B%E6%8F%90%E5%8D%87%E4%B8%8E%E9%9D%A2%E8%AF%95%E5%87%86%E5%A4%87)
+  - [第二阶段 Java Cloud-Native Sprint](#%E7%AC%AC%E4%BA%8C%E9%98%B6%E6%AE%B5-java-cloud-native-sprint)
+    - [执行背景](#%E6%89%A7%E8%A1%8C%E8%83%8C%E6%99%AF)
+      - [声明](#%E5%A3%B0%E6%98%8E)
+      - [护栏](#%E6%8A%A4%E6%A0%8F)
+      - [每日模板](#%E6%AF%8F%E6%97%A5%E6%A8%A1%E6%9D%BF)
     - [当前进度](#%E5%BD%93%E5%89%8D%E8%BF%9B%E5%BA%A6)
-    - [📌 快速导航（进度链接）](#-%E5%BF%AB%E9%80%9F%E5%AF%BC%E8%88%AA%E8%BF%9B%E5%BA%A6%E9%93%BE%E6%8E%A5)
-    - [🛡 执行护栏（全阶段通用）](#-%E6%89%A7%E8%A1%8C%E6%8A%A4%E6%A0%8F%E5%85%A8%E9%98%B6%E6%AE%B5%E9%80%9A%E7%94%A8)
-    - [🧭 每日执行模板（避免低效 debug）](#-%E6%AF%8F%E6%97%A5%E6%89%A7%E8%A1%8C%E6%A8%A1%E6%9D%BF%E9%81%BF%E5%85%8D%E4%BD%8E%E6%95%88-debug)
-    - [📆 时间轴 & 核心交付物](#-%E6%97%B6%E9%97%B4%E8%BD%B4--%E6%A0%B8%E5%BF%83%E4%BA%A4%E4%BB%98%E7%89%A9)
-      - [🎯 KPI & 简历映射](#-kpi--%E7%AE%80%E5%8E%86%E6%98%A0%E5%B0%84)
+      - [快速导航](#%E5%BF%AB%E9%80%9F%E5%AF%BC%E8%88%AA)
+    - [时间轴 & 核心交付物](#%E6%97%B6%E9%97%B4%E8%BD%B4--%E6%A0%B8%E5%BF%83%E4%BA%A4%E4%BB%98%E7%89%A9)
+      - [KPI & 简历映射](#kpi--%E7%AE%80%E5%8E%86%E6%98%A0%E5%B0%84)
   - [Week 5 — Cloud-Native 微服务上云（EKS）· 可执行清单（Day1–Day5）](#week-5--cloud-native-%E5%BE%AE%E6%9C%8D%E5%8A%A1%E4%B8%8A%E4%BA%91eks%C2%B7-%E5%8F%AF%E6%89%A7%E8%A1%8C%E6%B8%85%E5%8D%95day1day5)
-    - [✅ 前置检查（10 分钟）](#-%E5%89%8D%E7%BD%AE%E6%A3%80%E6%9F%A510-%E5%88%86%E9%92%9F)
+    - [前置检查（10 分钟）](#%E5%89%8D%E7%BD%AE%E6%A3%80%E6%9F%A510-%E5%88%86%E9%92%9F)
     - [Day 1｜应用骨架 + Docker 镜像 + 推送 ECR（最小可运行）](#day-1%EF%BD%9C%E5%BA%94%E7%94%A8%E9%AA%A8%E6%9E%B6--docker-%E9%95%9C%E5%83%8F--%E6%8E%A8%E9%80%81-ecr%E6%9C%80%E5%B0%8F%E5%8F%AF%E8%BF%90%E8%A1%8C)
     - [Day 2｜K8s 基础对象（NS/SA/Config/Secret/Deployment/Service）](#day-2%EF%BD%9Ck8s-%E5%9F%BA%E7%A1%80%E5%AF%B9%E8%B1%A1nssaconfigsecretdeploymentservice)
     - [Day 3｜Ingress（ALB）对外暴露 + HPA](#day-3%EF%BD%9Cingressalb%E5%AF%B9%E5%A4%96%E6%9A%B4%E9%9C%B2--hpa)
     - [Day 4｜（可选但高收益）S3 最小接入 + IRSA](#day-4%EF%BD%9C%E5%8F%AF%E9%80%89%E4%BD%86%E9%AB%98%E6%94%B6%E7%9B%8As3-%E6%9C%80%E5%B0%8F%E6%8E%A5%E5%85%A5--irsa)
     - [Day 5｜收尾硬化 + 文档化 + 指标留痕](#day-5%EF%BD%9C%E6%94%B6%E5%B0%BE%E7%A1%AC%E5%8C%96--%E6%96%87%E6%A1%A3%E5%8C%96--%E6%8C%87%E6%A0%87%E7%95%99%E7%97%95)
     - [常见问题与 20 分钟退路](#%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98%E4%B8%8E-20-%E5%88%86%E9%92%9F%E9%80%80%E8%B7%AF)
-  - [Week 6](#week-6)
+  - [Week 6 — 可执行清单（Day1–Day5）](#week-6--%E5%8F%AF%E6%89%A7%E8%A1%8C%E6%B8%85%E5%8D%95day1day5)
+    - [通用前置（10 分钟）](#%E9%80%9A%E7%94%A8%E5%89%8D%E7%BD%AE10-%E5%88%86%E9%92%9F)
+    - [Day 1｜应用指标暴露 + AMP 工作区](#day-1%EF%BD%9C%E5%BA%94%E7%94%A8%E6%8C%87%E6%A0%87%E6%9A%B4%E9%9C%B2--amp-%E5%B7%A5%E4%BD%9C%E5%8C%BA)
+    - [Day 2｜ADOT Collector（采集 → AMP）+ 成本护栏](#day-2%EF%BD%9Cadot-collector%E9%87%87%E9%9B%86-%E2%86%92-amp-%E6%88%90%E6%9C%AC%E6%8A%A4%E6%A0%8F)
+    - [Day 3｜Grafana Dash + SLI/SLO 口径](#day-3%EF%BD%9Cgrafana-dash--slislo-%E5%8F%A3%E5%BE%84)
+    - [Day 4｜Chaos Mesh 安装 + `pod-kill`/`network-latency` 实验](#day-4%EF%BD%9Cchaos-mesh-%E5%AE%89%E8%A3%85--pod-killnetwork-latency-%E5%AE%9E%E9%AA%8C)
+    - [Day 5｜整理与硬化（配额/限额/告警）](#day-5%EF%BD%9C%E6%95%B4%E7%90%86%E4%B8%8E%E7%A1%AC%E5%8C%96%E9%85%8D%E9%A2%9D%E9%99%90%E9%A2%9D%E5%91%8A%E8%AD%A6)
+    - [20 分钟退路清单](#20-%E5%88%86%E9%92%9F%E9%80%80%E8%B7%AF%E6%B8%85%E5%8D%95)
+  - [Week 7 - TBD](#week-7---tbd)
+  - [Week 8 - TBD](#week-8---tbd)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
-# 📌 2025 Java 学习计划
+# 2025 Java 学习计划
 
-## 🎯 总体目标
+## 总体目标
 
 系统复习与提升 Java 基础知识、算法能力以及英语综合技能，以顺利通过外企技术面试，达到中高级 Java 开发工程师或 Java 项目技术 Leader 的水平。
 
 ---
 
-## 📅 第一阶段（第 1-4 周）：基础复习与技能提升
+## 第一阶段（第 1-4 周）：基础复习与技能提升
 
-### 🔖 第 1 周：Java 基础、开发工具与算法快速复习
+### 第 1 周：Java 基础、开发工具与算法快速复习
 
-#### ☑️ Java 基础（共 3 天）
+#### Java 基础（共 3 天）
 
 - **Day1: Java 语法与 OOP**
   - 数据类型、控制结构（条件语句、循环）
@@ -59,7 +70,7 @@
   - 线程池使用（ExecutorService）
   - 线程同步（synchronized、Lock）与线程安全（竞态条件、原子操作）
 
-#### ☑️ 开发工具（共 1 天）
+#### 开发工具（共 1 天）
 
 - Git（版本控制与分支管理）
 - Maven（项目构建与依赖管理）
@@ -67,16 +78,16 @@
 - IntelliJ IDEA（基础操作与快捷键）
 - Docker（容器化基础使用）
 
-#### ☑️ 算法基础（贯穿全周）
+#### 算法基础（贯穿全周）
 
 - 每日完成 1-2 道 Leetcode Medium 算法题目练习（数据结构与基础算法）
 
-#### ☑️ 英语听力与口语（贯穿全周）
+#### 英语听力与口语（贯穿全周）
 
 - 每天收听 30 分钟英文技术播客或视频（如 TechLead）
 - 每天英文口语复述算法题或技术知识点，锻炼表达能力
 
-### 🔖 第 2 周：Spring 框架、数据库与缓存复习
+### 第 2 周：Spring 框架、数据库与缓存复习
 
 - **Day1: Spring 核心**
   - 依赖注入（IOC）、面向切面编程（AOP）
@@ -93,7 +104,7 @@
 - **Day7: 周总结与项目优化**
   - 项目代码整合与文档编写
 
-### 🔖 第 3 周：算法强化与性能优化初步
+### 第 3 周：算法强化与性能优化初步
 
 | 天次 | 学习主题 | 关键要点 | 主要产出 |
 |------|----------|----------|----------|
@@ -105,7 +116,7 @@
 | **Day 6** | MySQL 高级优化 & 索引深度 | - 覆盖索引、下推谓词<br>- Buffer Pool 命中率<br>- EXPLAIN JSON / optimizer_trace | 优化前后 EXPLAIN + `mysql-adv-day6.md` |
 | **Day 7** | 周整合 & 输出 | - 知识库 & Cheat Sheet<br>- Pull Request：GC/Index 参数合并<br>- 英文周报 ≥ 200 词 + 5 min 算法讲解视频 | `week3-cheatsheet.md` + `week3-report-en.md` + `week4-plan-draft.md` |
 
-### 🔖 第 4 周：英语能力提升与面试准备
+### 第 4 周：英语能力提升与面试准备
 
 - **Day1-Day3: 技术英文阅读与写作**
   - 阅读英文技术文章或书籍（如《Effective Java》）
@@ -118,9 +129,14 @@
 
 ---
 
-## 🚀 第二阶段 Java Cloud-Native Sprint（AWS 专版 · NodeGroup）
+## 第二阶段 Java Cloud-Native Sprint
 
-> **执行声明（2025-Stage2 · AWS 专版）**
+### 执行背景
+
+#### 声明
+
+2025 - Stage 2 · AWS 专版：
+
 > - **目标导向**：以**外企 Java 云原生面试**为导向，优先“可讲清楚 + 可演示 + 可量化”，避免陷入低收益 debug。
 > - **成本/生命周期原则**：
 >   1) 用时开、用完关：**busy=重建，idle=销毁**；
@@ -129,17 +145,9 @@
 > - **计划组成**：Week5（微服务上云）→ Week6（观测+韧性）→ Week7（CI/CD+DevOps）→ Week8（Mock+简历）。
 > - **产物要求**：每个模块最少 3 个“可截图/可量化”产物 + 一段面试 STAR 故事。
 
-### 当前进度
+#### 护栏
 
-- Bootcamp **Day 1 ~ Day 3 已完成**（一键重建 / 一键销毁 已验证；Route53 保留 ≈ $0.5/月）。
-
-### 📌 快速导航（进度链接）
-
-- Bootcamp 笔记与操作：`stage2-BootCamp-day0.md` / `stage2-BootCamp-day1*.md` / `stage2-BootCamp-day2*.md`
-- 一键重建/销毁脚本：`infra/`（Terraform + 脚本）
-- 学习笔记（Google Drive/2025）：按模块对应 Week 5~8
-
-### 🛡 执行护栏（全阶段通用）
+全阶段通用：
 
 - **预算**：总账单 ≤ ¥1,500；常规按需启停 ≈ ¥800（已含缓冲）。
 - **计费控制**：EKS 控制面仅上课日开 6h；节点 `t3.small` Spot 混合，夜间 `scale-down-to-0`。
@@ -147,7 +155,9 @@
 - **可观测**：Prom 采样 `sample_limit` 并过滤 `kubelet_*`；CloudWatch Budget（\$80）与告警已开启。
 - **清理**：ALB/TG、ECR、S3、DynamoDB、Budget、EKS 全纳入 `cleanup.sh`。
 
-### 🧭 每日执行模板（避免低效 debug）
+#### 每日模板
+
+> 避免低效 debug
 
 1) **30min 理论速读**：当天主题的 3–5 个必知点（写入 `notes/YYMMDD.md`）。
 2) **90min 关键实操**：只做“面试可讲”的最小闭环（可截图、可复现）。
@@ -157,19 +167,31 @@
 
 > 全流程仅依赖 AWS 账户即可完成；后续若需多云演示，可启用 Terraform GKE provider 再走一遍 Helm / Argo 即可。
 
-### 📆 时间轴 & 核心交付物
+### 当前进度
+
+- Bootcamp **Day 1 ~ Day 3 已完成**（一键重建 / 一键销毁 已验证；Route53 保留 ≈ $0.5/月）。
+
+#### 快速导航
+
+进度链接：
+
+- Bootcamp 笔记与操作：`stage2-BootCamp-day0.md` / `stage2-BootCamp-day1*.md` / `stage2-BootCamp-day2*.md`
+- 一键重建/销毁脚本：`infra/`（Terraform + 脚本）
+- 学习笔记（Google Drive/2025）：按模块对应 Week 5~8
+
+### 时间轴 & 核心交付物
 
 | 时段 | 核心主题 & 关键实操 | 主要交付物 |
 |------|-------------------|-----------|
 | **Day-0 (½ d)** | **Docker & K8s Refresher**<br>· Play-with-Docker：`build / run / push`<br>· Kubernetes Basics 1-3：`kubectl create / expose / scale` | `stage2-BootCamp-day0.md` |
 | **Bootcamp 3 d** | **云底座 + IaC**<br>**Day 1** VPC / ALB / IAM 对照（AWS）<br>**Day 2** `eksctl` 创建 **EKS Managed NodeGroup** (Spot t3.small ×2 + OD t3.medium ×1)<br>**Day 3** Terraform 导入 EKS；`backend "s3" + DynamoDB lock + AES256` |
 | **Week 5** | **Cloud-Native 微服务上云（EKS）**<br>① Spring Boot 微服务骨架 → Docker 镜像 → 推送 ECR<br>② K8s 基础对象：Namespace / SA(IRSA) / ConfigMap / Secret / Deployment / Service<br>③ Ingress（AWS Load Balancer Controller）+ HPA → 通过 ALB DNS 暴露服务；可选：接入 S3 | 源码仓 + Docker 镜像 Tag<br>K8s YAML/Helm（含 IRSA）<br>ALB DNS 可访问截图 + （可选）S3 读写验证 |
-| **Week 6** | **Helm + HPA + Chaos 自愈**<br>· Helm Chart (`charts/task-manager/`)<br>· HPA + PDB + Cluster Autoscaler (Spot 中断容忍)<br>· Chaos Mesh `pod-kill / latency` → **MTTR ≤ 1 min** | Helm 包<br>Chaos 报告 (MTTR & P95) |
+| **Week 6** | **可观测 & 韧性（Observability + Resilience）**<br>① ADOT Collector → **Amazon Managed Prometheus (AMP)**（`sample_limit`=10k，drop `kubelet_*`）+ Grafana Cloud 仪表盘<br>② Spring Actuator 暴露应用指标，定义 SLI/SLO（可用性、P95、错误率）<br>③ **Chaos Mesh**：`pod-kill`/`network-latency` 演练 + **HPA 自愈**，输出 **MTTR ≤ 1 min** | ADOT 配置 & AMP Workspace<br>Grafana Dash 截图（应用/集群指标）<br>Chaos 报告（MTTR/P95） + HPA 触发截图 |
 | **Week 7-a** | **Observability & SRE**<br>· ADOT Sidecar → **Amazon Managed Prometheus** (采样 `sample_limit: 10000` + **metric_relabel** drop `kubelet_*`)<br>· Grafana Cloud Dash (Free 50 k MTS)<br>· 定义 99.9 % SLO + CloudWatch Composite Alert + Burn-Rate | Trace GIF + Grafana Dash<br>SLO YAML & Post-mortem |
 | **Week 7-b** | **生成式 AI Sidecar — Bedrock Titan**<br>· Spring AI + **Titan Text Express** (us-east-1)<br>· Redis Vector / PGVector<br>· CloudWatch + Budget (USD 80) 监控 Token 花费<br>· Spring Retry Exponential-Backoff 限流 | Demo 视频<br>《Bedrock FinOps.md》 |
 | **Week 8** | **Mock Marathon & Résumé v2**<br>· Mock-1：Chaos + SLO 深挖 (全英)<br>· Mock-2：AI & 多云系统设计 (全英)<br>· `progress.png`（语速 | filler | MTTR | CI 成功率）<br>· **Day-8 Cleanup** ：`codedeploy cleanup` → `terraform destroy` → `eksctl delete cluster` → 删除 ALB/TG、ECR、S3、DynamoDB、Budget | 两段 90 min 录像 + 评分表<br>`progress.png`<br>简历 v2 PDF |
 
-#### 🎯 KPI & 简历映射
+#### KPI & 简历映射
 
 | 指标 | 目标 | 简历措辞示例 |
 |------|------|-------------|
@@ -185,7 +207,7 @@
 > 目标：把一个最小可讲、可演示的 **Spring Boot 微服务** 跑上现有 EKS（NodeGroup），通过 ALB 对外暴露；必要时最小接入 S3（IRSA），并完成可量化产物。
 > 原则：**只做最小闭环**（可截图/可复现），遇到卡顿 > 20 分钟走“退路方案”，避免低收益 debug。
 
-### ✅ 前置检查（10 分钟）
+### 前置检查（10 分钟）
 
 - 若集群已销毁：执行现有 **一键重建**（半小时内可起）。
 - 设定本周通用变量（bash）：
@@ -413,23 +435,309 @@ spec:
 
 **验收清单（打勾即过）**
 
-* [ ] ALB DNS 可稳定访问 `/healthz` 与 `/api/tasks`
-* [ ] 部署就绪 1/1（或 HPA 扩展 1→3 后恢复）
-* [ ] （可选）S3 PUT/GET 成功
-* [ ] README 已更新“部署与访问”与“本周指标”
-* [ ] `demo/start.sh` / `demo/stop.sh` 可独立执行
-* [ ] 本周截图归档：ECR、Pods、Ingress、HPA、（可选）S3
+- [ ] ALB DNS 可稳定访问 `/healthz` 与 `/api/tasks`
+- [ ] 部署就绪 1/1（或 HPA 扩展 1→3 后恢复）
+- [ ] （可选）S3 PUT/GET 成功
+- [ ] README 已更新“部署与访问”与“本周指标”
+- [ ] `demo/start.sh` / `demo/stop.sh` 可独立执行
+- [ ] 本周截图归档：ECR、Pods、Ingress、HPA、（可选）S3
 
 ### 常见问题与 20 分钟退路
 
-* **ECR 登录失败** → 换 Docker Hub 公有仓并继续（后续再切回 ECR）。
-* **ALB 不创建** → 先用 `kubectl port-forward svc/${APP}-svc 8080:80` 完成演示；另开 issue 排查子网 tag/控制器。
-* **IRSA 无法授权** → 临时改用 `aws configure` 本地测试通过后，再把策略最小化回 IRSA。
+- **ECR 登录失败** → 换 Docker Hub 公有仓并继续（后续再切回 ECR）。
+- **ALB 不创建** → 先用 `kubectl port-forward svc/${APP}-svc 8080:80` 完成演示；另开 issue 排查子网 tag/控制器。
+- **IRSA 无法授权** → 临时改用 `aws configure` 本地测试通过后，再把策略最小化回 IRSA。
 
 > 完成 Week 5 后，即可在面试里完整叙述“**Java 微服务 → 容器化 → EKS 部署 → 通过 ALB 暴露 →（可选）S3 集成**”的闭环，并展示截图与指标作为佐证。
 
 ---
 
-## Week 6
+## Week 6 — 可执行清单（Day1–Day5）
+
+> 目标：在**不引入重型运维**的前提下，建立“应用 + 集群”的指标观测、SLO 口径与最小化 Chaos 自愈演示。
+> 原则：继续 **单集群多命名空间**；一次只做“可讲清楚的最小闭环”。卡顿 > 20 分钟即走退路方案。
+
+### 通用前置（10 分钟）
+
+```bash
+export AWS_REGION=ap-southeast-1
+export NS=svc-task          # 与 Week5 保持一致
+export APP=task-api
+export AMP_ALIAS=renda-lab
+```
+
+产物总表：
+
+- `observability/` 目录（ADOT 配置、Grafana Notes）
+- `chaos/` 目录（安装 values、实验 YAML、报告）
+- 截图：Grafana 图、HPA describe、Chaos 成功页、MTTR 计算过程
+
+### Day 1｜应用指标暴露 + AMP 工作区
+
+**做什么**
+
+1. 在 `apps/task-api` 开启 **Actuator + Prometheus**：
+
+   - `pom.xml` 增：`spring-boot-starter-actuator`、`micrometer-registry-prometheus`
+   - `application.yml`：
+
+     ```yaml
+     management:
+       endpoints.web.exposure.include: health,info,prometheus
+       endpoint.health.probes.enabled: true
+     ```
+2. 本地跑一次 `/actuator/prometheus` 验证。
+3. 创建 **AMP Workspace**（一次性）：
+
+   ```bash
+   aws amp create-workspace --region $AWS_REGION --alias $AMP_ALIAS \
+     --query workspaceId --output text > .amp_id
+   ```
+4. 记录 AMP remote\_write 端点（供 ADOT 使用）：
+
+   ```bash
+   AMP_ID=$(cat .amp_id)
+   echo "https://aps-workspaces.$AWS_REGION.amazonaws.com/workspaces/$AMP_ID/api/v1/remote_write" > .amp_rw
+   ```
+
+**产物**：
+
+- `/actuator/prometheus` 截图
+- `.amp_id`、`.amp_rw` 文件（勿提交敏感数据，可写入 README 为占位）
+
+**退路**：若 AMP 创建受限 → 暂改为 **Prometheus Helm（本地集群内）+ Grafana OSS**，后面步骤中的“remote\_write”全部替换为本地 `http://prometheus:9090`（仅演示用）。
+
+### Day 2｜ADOT Collector（采集 → AMP）+ 成本护栏
+
+**做什么**
+
+1. 新建 `observability/adot-collector.yaml`：最小 **Agent/DaemonSet**，采集 **应用 /actuator/prometheus** 与 **kube-state-metrics**（如未装可先跳过）。带**成本护栏**：
+
+   ```yaml
+   apiVersion: v1
+   kind: Namespace
+   metadata: { name: aws-observe }
+   ---
+   apiVersion: apps/v1
+   kind: DaemonSet
+   metadata: { name: adot, namespace: aws-observe, labels: { app: adot } }
+   spec:
+     selector: { matchLabels: { app: adot } }
+     template:
+       metadata: { labels: { app: adot } }
+       spec:
+         serviceAccountName: adot-sa
+         containers:
+         - name: collector
+           image: public.ecr.aws/aws-observability/aws-otel-collector:latest
+           args: ["--config=/etc/otel/config.yaml"]
+           volumeMounts: [{ name: conf, mountPath: /etc/otel }]
+         volumes:
+         - name: conf
+           configMap:
+             name: adot-conf
+   ---
+   apiVersion: v1
+   kind: ConfigMap
+   metadata: { name: adot-conf, namespace: aws-observe }
+   data:
+     config.yaml: |
+       receivers:
+         prometheus:
+           config:
+             scrape_configs:
+             - job_name: "app"
+               metrics_path: /actuator/prometheus
+               static_configs:
+               - targets: ["${APP}-svc.${NS}.svc.cluster.local:80"]
+       processors:
+         filter/drop_kubelet:
+           metrics:
+             include:
+               match_type: regexp
+               metric_names: ["kubelet_.*"]
+         attributes:
+           actions:
+           - key: project
+             value: phase2-sprint
+             action: upsert
+         batch: {}
+       exporters:
+         prometheusremotewrite:
+           endpoint: ${AMP_REMOTE_WRITE}
+           auth:
+             authenticator: sigv4auth
+           external_labels:
+             cluster: task-cluster
+           # 成本护栏
+           remote_write_queue:
+             max_samples_per_send: 10000
+       extensions:
+         sigv4auth:
+           region: ${AWS_REGION}
+       service:
+         extensions: [sigv4auth]
+         pipelines:
+           metrics:
+             receivers: [prometheus]
+             processors: [filter/drop_kubelet, attributes, batch]
+             exporters: [prometheusremotewrite]
+   ```
+
+   > 将 `${AMP_REMOTE_WRITE}` 手动替换为 `.amp_rw` 的值；`${AWS_REGION}` 替换为变量。
+2. 绑定 SA 的最小权限（可沿用集群级 IRSA；如无则直接 `kubectl apply` 运行，不涉及 AWS 写权限）。
+3. 应用：
+
+   ```bash
+   kubectl apply -f observability/adot-collector.yaml
+   ```
+4. 在 AMP 中确认有 **最新时间序列**（Grafana 配置见 Day3）。
+
+**产物**：
+
+- `observability/adot-collector.yaml`
+- AMP 工作区有新指标（可用 `curl` 验证 remote\_write 200）
+
+**退路**：若 ADOT 配置反复出错 → 改用 **kube-prometheus-stack** Helm（Operator）一键起 Prom+Grafana（成本稍高，但流程直观），或暂时只走 CloudWatch Container Insights 做截图演示。
+
+### Day 3｜Grafana Dash + SLI/SLO 口径
+
+**做什么**
+
+1. **Grafana Cloud**（或本地 Grafana）：新增 **Prometheus(AMP)** 数据源（SigV4 认证）。
+2. 导入一个最小仪表盘：
+
+   - 应用：`http_server_requests_seconds_bucket{app="$APP"}` 计算 **P95**
+   - 错误率：`sum(rate(http_server_requests_seconds_count{status=~"5..",app="$APP"}[5m])) / sum(rate(http_server_requests_seconds_count{app="$APP"}[5m]))`
+   - 资源：容器 CPU/内存（cAdvisor 指标或 `container_*` 指标）
+3. 定义 SLI/SLO：
+
+   - **可用性**：5xx 率 < 0.1%（近 1 天） → SLO=99.9%
+   - **延迟**：P95 < 300ms（近 1 天）
+     写入 `observability/slo.yaml`（文档式定义）。
+
+**产物**：
+
+- Grafana 仪表盘截图（至少 3 张：P95、错误率、CPU/内存）
+- `observability/slo.yaml`（口径 + 阈值）
+
+**退路**：Grafana Cloud 配置困难 → 使用 **kubectl port-forward** 暂时本地访问 Grafana OSS 服务；或作为替代，导出 AMP 的 `series`/`query_range` 返回 JSON 截图存证。
+
+### Day 4｜Chaos Mesh 安装 + `pod-kill`/`network-latency` 实验
+
+**做什么**
+
+1. 安装（EC2 NodeGroup 支持 **privileged**）：
+
+   ```bash
+   helm repo add chaos-mesh https://charts.chaos-mesh.org
+   helm install chaos-mesh chaos-mesh/chaos-mesh -n chaos-testing --create-namespace \
+     --set chaosDaemon.securityContext.privileged=true
+   ```
+2. `pod-kill`（30 秒）：`chaos/pod-kill.yaml`
+
+   ```yaml
+   apiVersion: chaos-mesh.org/v1alpha1
+   kind: PodChaos
+   metadata: { name: kill-${APP}, namespace: chaos-testing }
+   spec:
+     action: pod-kill
+     mode: one
+     selector:
+       namespaces: [${NS}]
+       labelSelectors: { app: ${APP} }
+     duration: "30s"
+   ```
+
+   执行与观测：
+
+   ```bash
+   date +%s > .t0 && kubectl apply -f chaos/pod-kill.yaml
+   kubectl get pods -n $NS -w   # 观察新 Pod 就绪
+   date +%s > .t1 && echo "MTTR=$(( $(cat .t1) - $(cat .t0) ))s"
+   ```
+3. `network-latency`（100ms\@30s）：
+
+   ```yaml
+   apiVersion: chaos-mesh.org/v1alpha1
+   kind: NetworkChaos
+   metadata: { name: net-lat-${APP}, namespace: chaos-testing }
+   spec:
+     action: delay
+     mode: one
+     selector:
+       namespaces: [${NS}]
+       labelSelectors: { app: ${APP} }
+     delay: { latency: "100ms", correlation: "0", jitter: "0ms" }
+     duration: "30s"
+   ```
+
+   观察 **P95 抬升** 与 **HPA** 是否触发（可用 `hey`/`wrk` 适度压测 1–2 分钟）。
+
+**产物**：
+
+- Chaos Dashboard 成功页面或 `kubectl` 输出截图
+- **MTTR 计算**记录（`MTTR=xx s`）
+- Grafana 截图（实验窗口内 P95/错误率/副本数变化）
+
+**退路**：Chaos Mesh 不稳定 → **手动 `kubectl delete pod`** 替代表演自愈；网络延迟改为用 `tc netem` 容器进行最小演示。
+
+### Day 5｜整理与硬化（配额/限额/告警）
+
+**做什么**
+
+1. 为 `${NS}` 增加 **ResourceQuota** 与 **LimitRange**（控制资源与成本）：
+
+   ```yaml
+   apiVersion: v1
+   kind: ResourceQuota
+   metadata: { name: rq-basic, namespace: ${NS} }
+   spec:
+     hard: { pods: "6", requests.cpu: "1", requests.memory: "1Gi", limits.cpu: "2", limits.memory: "2Gi" }
+   ---
+   apiVersion: v1
+   kind: LimitRange
+   metadata: { name: lr-defaults, namespace: ${NS} }
+   spec:
+     limits:
+     - default: { cpu: "200m", memory: "256Mi" }
+       defaultRequest: { cpu: "100m", memory: "128Mi" }
+       type: Container
+   ```
+2. 写 `observability/ALERTS.md`：
+
+   - 错误率 > 0.5%（5 分钟）触发
+   - P95 > 500ms（5 分钟）触发
+   - 副本数 ≥ 3 且 CPU < 20%（10 分钟）提示过度扩容
+
+   > 可先写“**逻辑告警**”方案，后续 Week 7a 再落 CloudWatch/Grafana 真实告警。
+3. 归档 Week 6 产物：图表、YAML、`chaos_report.md`（含实验步骤、观察与结论）。
+4. 更新 README「本周指标」：**MTTR**、**P95**、**错误率**、**HPA 触发**截图。
+
+**验收清单**
+
+- [ ] `/actuator/prometheus` 暴露正常
+- [ ] ADOT → AMP 已入库（查询到 app 指标）
+- [ ] Grafana 出图（P95 / 错误率 / CPU 内存）
+- [ ] `pod-kill` 成功、**MTTR ≤ 60s**
+- [ ] `network-latency` 生效，图上可见 P95 抬升
+- [ ] README 已更新指标与截图
+
+### 20 分钟退路清单
+
+- **AMP 开通受阻** → 临时切 **kube-prometheus-stack**（Prom+Grafana 本地版），保证出图即可；后续再切回 AMP。
+- **ADOT 配置故障** → 先只观测 **应用指标**（Prom 本地拉取），集群指标后补。
+- **Chaos 安装失败** → 手动删 Pod 模拟；或只保留 `pod-kill` 一项。
+- **Grafana 认证/网络问题** → 使用 `kubectl port-forward` 本地访问 Grafana 服务或导出时序 JSON 作为证据。
+
+---
+
+## Week 7 - TBD
+
+TBD
+
+---
+
+## Week 8 - TBD
 
 TBD
