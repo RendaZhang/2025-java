@@ -38,7 +38,14 @@
     - [Day 4 - Chaos Mesh 安装 + `pod-kill`/`network-latency` 实验](#day-4---chaos-mesh-%E5%AE%89%E8%A3%85--pod-killnetwork-latency-%E5%AE%9E%E9%AA%8C)
     - [Day 5 - 整理与硬化（配额/限额/告警）](#day-5---%E6%95%B4%E7%90%86%E4%B8%8E%E7%A1%AC%E5%8C%96%E9%85%8D%E9%A2%9D%E9%99%90%E9%A2%9D%E5%91%8A%E8%AD%A6)
     - [20 分钟退路清单](#20-%E5%88%86%E9%92%9F%E9%80%80%E8%B7%AF%E6%B8%85%E5%8D%95)
-  - [Week 7 - TBD](#week-7---tbd)
+  - [Week 7 - CI/CD + DevOps](#week-7---cicd--devops)
+    - [通用前置](#%E9%80%9A%E7%94%A8%E5%89%8D%E7%BD%AE)
+  - [Day 1 - 创建 GitHub OIDC 角色 + EKS RBAC 映射](#day-1---%E5%88%9B%E5%BB%BA-github-oidc-%E8%A7%92%E8%89%B2--eks-rbac-%E6%98%A0%E5%B0%84)
+  - [Day 2 - CI：Maven 构建 + 单测 + 镜像构建/扫描/推送](#day-2---cimaven-%E6%9E%84%E5%BB%BA--%E5%8D%95%E6%B5%8B--%E9%95%9C%E5%83%8F%E6%9E%84%E5%BB%BA%E6%89%AB%E6%8F%8F%E6%8E%A8%E9%80%81)
+  - [Day 3 - CD：发布到 EKS（滚动更新）+ 策略参数](#day-3---cd%E5%8F%91%E5%B8%83%E5%88%B0-eks%E6%BB%9A%E5%8A%A8%E6%9B%B4%E6%96%B0-%E7%AD%96%E7%95%A5%E5%8F%82%E6%95%B0)
+  - [Day 4 - 回滚与手动触发；参数化环境](#day-4---%E5%9B%9E%E6%BB%9A%E4%B8%8E%E6%89%8B%E5%8A%A8%E8%A7%A6%E5%8F%91%E5%8F%82%E6%95%B0%E5%8C%96%E7%8E%AF%E5%A2%83)
+  - [Day 5 - 指标留痕 + 文档固化 + 清理脚本](#day-5---%E6%8C%87%E6%A0%87%E7%95%99%E7%97%95--%E6%96%87%E6%A1%A3%E5%9B%BA%E5%8C%96--%E6%B8%85%E7%90%86%E8%84%9A%E6%9C%AC)
+    - [20 分钟退路总表](#20-%E5%88%86%E9%92%9F%E9%80%80%E8%B7%AF%E6%80%BB%E8%A1%A8)
   - [Week 8 - TBD](#week-8---tbd)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -187,8 +194,7 @@
 | **Bootcamp 3 d** | **云底座 + IaC**<br>**Day 1** VPC / ALB / IAM 对照（AWS）<br>**Day 2** `eksctl` 创建 **EKS Managed NodeGroup** (Spot t3.small ×2 + OD t3.medium ×1)<br>**Day 3** Terraform 导入 EKS；`backend "s3" + DynamoDB lock + AES256` |
 | **Week 5** | **Cloud-Native 微服务上云（EKS）**<br>① Spring Boot 微服务骨架 → Docker 镜像 → 推送 ECR<br>② K8s 基础对象：Namespace / SA(IRSA) / ConfigMap / Secret / Deployment / Service<br>③ Ingress（AWS Load Balancer Controller）+ HPA → 通过 ALB DNS 暴露服务；可选：接入 S3 | 源码仓 + Docker 镜像 Tag<br>K8s YAML/Helm（含 IRSA）<br>ALB DNS 可访问截图 + （可选）S3 读写验证 |
 | **Week 6** | **可观测 & 韧性（Observability + Resilience）**<br>① ADOT Collector → **Amazon Managed Prometheus (AMP)**（`sample_limit`=10k，drop `kubelet_*`）+ Grafana Cloud 仪表盘<br>② Spring Actuator 暴露应用指标，定义 SLI/SLO（可用性、P95、错误率）<br>③ **Chaos Mesh**：`pod-kill`/`network-latency` 演练 + **HPA 自愈**，输出 **MTTR ≤ 1 min** | ADOT 配置 & AMP Workspace<br>Grafana Dash 截图（应用/集群指标）<br>Chaos 报告（MTTR/P95） + HPA 触发截图 |
-| **Week 7-a** | **Observability & SRE**<br>· ADOT Sidecar → **Amazon Managed Prometheus** (采样 `sample_limit: 10000` + **metric_relabel** drop `kubelet_*`)<br>· Grafana Cloud Dash (Free 50 k MTS)<br>· 定义 99.9 % SLO + CloudWatch Composite Alert + Burn-Rate | Trace GIF + Grafana Dash<br>SLO YAML & Post-mortem |
-| **Week 7-b** | **生成式 AI Sidecar — Bedrock Titan**<br>· Spring AI + **Titan Text Express** (us-east-1)<br>· Redis Vector / PGVector<br>· CloudWatch + Budget (USD 80) 监控 Token 花费<br>· Spring Retry Exponential-Backoff 限流 | Demo 视频<br>《Bedrock FinOps.md》 |
+| **Week 7** | **CI/CD + DevOps 自动化**<br>① GitHub Actions（OIDC）→ **ECR** 推镜像 → **EKS** 滚动发布（Helm/`kubectl`）<br>② 阶段门：Maven 单测 + **Trivy** 镜像扫描 + 策略化回滚（`rollout undo`）<br>③ 指标留痕：构建时长、发布成功率、平均改动交付时间（Lead Time） | `.github/workflows/ci-cd.yml`<br>IAM OIDC 角色 + `aws-auth` RBAC<br>发布/回滚脚本与运行截图 |
 | **Week 8** | **Mock Marathon & Résumé v2**<br>· Mock-1：Chaos + SLO 深挖 (全英)<br>· Mock-2：AI & 多云系统设计 (全英)<br>· `progress.png`（语速 | filler | MTTR | CI 成功率）<br>· **Day-8 Cleanup** ：`codedeploy cleanup` → `terraform destroy` → `eksctl delete cluster` → 删除 ALB/TG、ECR、S3、DynamoDB、Budget | 两段 90 min 录像 + 评分表<br>`progress.png`<br>简历 v2 PDF |
 
 #### KPI & 简历映射
@@ -732,9 +738,286 @@ export AMP_ALIAS=renda-lab
 
 ---
 
-## Week 7 - TBD
+## Week 7 - CI/CD + DevOps
 
-TBD
+> 目标：把“**提交代码 → 自动构建/测试 → 推镜像 → 发布到 EKS**”贯通，且**无需长期密钥**（GitHub OIDC AssumeRole），保留最小回滚策略与指标留痕。
+> 原则：**不上复杂工具就能跑通**；卡顿 > 20 分钟走退路（见每天“退路”）。
+
+### 通用前置
+
+10 分钟完成：
+
+```bash
+export AWS_REGION=ap-southeast-1
+export CLUSTER=task-cluster
+export NS=svc-task
+export APP=task-api
+export ECR_REPO=task-manager
+```
+
+产物总表：
+
+* `iam/github-oidc/`（信任策略、权限策略、创建脚本）
+* `.github/workflows/ci-cd.yml`（构建、扫描、推送、发布、回滚）
+* `deploy/`（Helm values 或 Kustomize/patch 脚本）
+* 截图：Actions 运行记录、EKS 滚动发布与回滚、时间指标
+
+## Day 1 - 创建 GitHub OIDC 角色 + EKS RBAC 映射
+
+**做什么**
+
+1. **创建 OIDC 身份提供商（GitHub）**（一次性；若账户已有可跳过）：
+   * URL: `https://token.actions.githubusercontent.com`
+   * Audience: `sts.amazonaws.com`
+2. **创建 IAM 角色**（可命名：`github-actions-renda-lab`）：
+   * **信任策略（trust policy）**（限制到你的 GitHub 仓库）：
+
+     ```json
+     {
+       "Version": "2012-10-17",
+       "Statement": [{
+         "Effect": "Allow",
+         "Principal": { "Federated": "arn:aws:iam::<ACCOUNT_ID>:oidc-provider/token.actions.githubusercontent.com" },
+         "Action": "sts:AssumeRoleWithWebIdentity",
+         "Condition": {
+           "StringEquals": {
+             "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
+           },
+           "StringLike": {
+             "token.actions.githubusercontent.com:sub": "repo:<GITHUB_USER_OR_ORG>/<REPO_NAME>:*"
+           }
+         }
+       }]
+     }
+     ```
+   * **权限策略**（最小化，供 ECR/EKS 使用）：
+     ```json
+     {
+       "Version": "2012-10-17",
+       "Statement": [
+         { "Effect": "Allow", "Action": [
+             "ecr:GetAuthorizationToken","ecr:BatchCheckLayerAvailability","ecr:CompleteLayerUpload",
+             "ecr:UploadLayerPart","ecr:InitiateLayerUpload","ecr:PutImage","ecr:DescribeRepositories",
+             "ecr:ListImages","ecr:CreateRepository"
+           ], "Resource": "*" },
+         { "Effect": "Allow", "Action": ["eks:DescribeCluster"], "Resource": "*" }
+       ]
+     }
+     ```
+3. **把该角色加入 EKS RBAC**（`aws-auth` ConfigMap）：
+   ```yaml
+   # 追加到 kube-system/ns 下的 aws-auth ConfigMap 的 mapRoles:
+   - rolearn: arn:aws:iam::<ACCOUNT_ID>:role/github-actions-renda-lab
+     username: github-actions
+     groups:
+       - system:masters   # 若要更细粒度，可绑定到自定义 ClusterRole
+   ```
+   > 为减少权限问题，先用 `system:masters` 跑通；Week 8 再细化到最小 RBAC。
+
+**验收**
+* 运行：`aws eks update-kubeconfig --name $CLUSTER --region $AWS_REGION` 后，手动 `kubectl auth can-i create deploy -A` 通过。
+* README 记录 Role ARN、受信主体（repo）、权限边界。
+
+**退路**
+* OIDC 一直卡住 → 临时用 **访问密钥** 创建一个最小权限用户供本周演示（**周末删除**），或改用 **CodeBuild/CodePipeline** 先完成闭环。
+
+## Day 2 - CI：Maven 构建 + 单测 + 镜像构建/扫描/推送
+
+**做什么**
+
+1. 在仓库根创建 `.github/workflows/ci-cd.yml`：**CI 作业**
+   ```yaml
+   name: CI-CD
+   on:
+     push:
+       branches: [ "main" ]
+     workflow_dispatch: {}
+   env:
+     AWS_REGION: ap-southeast-1
+     ECR_REPO: task-manager
+     IMAGE_TAG: ${{ github.sha }}
+     CLUSTER: task-cluster
+     NS: svc-task
+     APP: task-api
+
+   jobs:
+     ci:
+       runs-on: ubuntu-latest
+       permissions:
+         id-token: write   # OIDC
+         contents: read
+       steps:
+         - uses: actions/checkout@v4
+
+         - name: Set up JDK 21
+           uses: actions/setup-java@v4
+           with:
+             distribution: temurin
+             java-version: '21'
+             cache: 'maven'
+
+         - name: Build & Test (Maven)
+           run: mvn -B -DskipTests=false clean test package
+
+         - name: Configure AWS (OIDC)
+           uses: aws-actions/configure-aws-credentials@v4
+           with:
+             role-to-assume: arn:aws:iam::<ACCOUNT_ID>:role/github-actions-renda-lab
+             aws-region: ${{ env.AWS_REGION }}
+
+         - name: Login to ECR
+           uses: aws-actions/amazon-ecr-login@v2
+
+         - name: Build image
+           run: |
+             ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+             IMAGE="$ACCOUNT_ID.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO}:${IMAGE_TAG}"
+             docker build -t "$IMAGE" ./apps/task-api
+             echo "IMAGE=$IMAGE" >> $GITHUB_ENV
+
+         - name: Trivy scan (High/Critical only, fail on critical)
+           uses: aquasecurity/trivy-action@0.20.0
+           with:
+             image-ref: ${{ env.IMAGE }}
+             severity: HIGH,CRITICAL
+             exit-code: '1'
+             ignore-unfixed: true
+
+         - name: Push image
+           run: docker push "${IMAGE}"
+   ```
+2. 推一次代码，确保 **CI 绿**；记录**构建时长**。
+
+**验收**
+
+* CI 通过；ECR 出现 `${IMAGE_TAG}` 镜像。
+* README 增加“构建成功/日期/构建时长”。
+
+**退路**
+
+* Trivy 扫描阻塞（误报或基础镜像问题）→ 先把 **`exit-code: '0'`**，记录 issue，后续换基础镜像再严格把关。
+
+## Day 3 - CD：发布到 EKS（滚动更新）+ 策略参数
+
+**做什么**
+在同一个 `ci-cd.yml` 里新增 **cd 作业**（依赖 ci）：
+
+```yaml
+  cd:
+    needs: [ci]
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::<ACCOUNT_ID>:role/github-actions-renda-lab
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Update kubeconfig
+        run: aws eks update-kubeconfig --name $CLUSTER --region $AWS_REGION
+
+      - name: Patch image & apply (kubectl)
+        run: |
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          IMAGE="$ACCOUNT_ID.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO}:${IMAGE_TAG}"
+          # 用 yq/kustomize/helm 皆可；这里示例直接 kubectl set image：
+          kubectl -n $NS set image deploy/${APP} ${APP}=$IMAGE
+          kubectl -n $NS annotate deploy/${APP} deploy.kubernetes.io/revision-keep='5' --overwrite
+          kubectl -n $NS rollout status deploy/${APP} --timeout=180s
+
+      - name: Smoke test via Ingress
+        run: |
+          ALB=$(kubectl -n $NS get ing -o jsonpath='{.items[0].status.loadBalancer.ingress[0].hostname}')
+          curl -sSf "http://$ALB/healthz" | grep -i ok
+```
+
+**建议在 Deployment 增加滚动策略（一次性改 YAML）**：
+
+```yaml
+spec:
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  progressDeadlineSeconds: 180
+```
+
+**验收**
+* Actions 中 `cd` 任务成功；`rollout status` 成功。
+* 记录 **Lead Time**（从 push 到服务可用的时长）。
+
+**退路**
+* `rollout` 超时 → 暂把副本数设为 1、放宽 `readinessProbe`，先保证闭环；晚些再调优健康检查。
+
+## Day 4 - 回滚与手动触发；参数化环境
+
+**做什么**
+
+1. 在 `ci-cd.yml` 追加一个**手动回滚工作流**（`workflow_dispatch` 接收 `imageTag` 参数）：
+
+```yaml
+  rollback:
+    if: ${{ github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::<ACCOUNT_ID>:role/github-actions-renda-lab
+          aws-region: ${{ env.AWS_REGION }}
+      - name: Update kubeconfig
+        run: aws eks update-kubeconfig --name $CLUSTER --region $AWS_REGION
+      - name: Rollout undo (to previous)
+        run: kubectl -n $NS rollout undo deploy/${APP}
+```
+
+> 如需指定镜像版本回滚，可加输入参数 `imageTag`，再用 `kubectl set image`。
+
+2. **环境防护**：给 `cd` 作业加 `environment: dev`，并在 GitHub 仓库里为 `dev` 环境开启**手动批准**（防误发）。
+3. 记录“回滚成功截图/命令”。
+
+**验收**
+* `rollback` 任务手动触发可成功回滚；`rollout history` 可见修订列表。
+
+**退路**
+* 回滚失败 → 直接 `kubectl set image` 指到上一个 tag（ECR 列表里复制），然后 `rollout status`。
+
+## Day 5 - 指标留痕 + 文档固化 + 清理脚本
+
+**做什么**
+
+1. **指标**：
+   * 统计近 1 周 **发布成功率**（成功/总次数）
+   * 统计 **平均构建时长**、**平均 Lead Time**
+   * 追加到 README “本周指标”区，并生成 `progress.png`（表格/截图皆可，简单即可）
+2. **文档**：
+   * 在 README “部署方式”下新增 “**CI/CD（GitHub Actions + OIDC）**” 小节：写清“如何授权/如何触发/如何回滚”
+   * 把 OIDC 角色、`aws-auth` 映射、最小权限策略放入 `iam/github-oidc/README.md`（便于面试展示）
+3. **脚本**：
+   * `deploy/redeploy.sh`（用于本地复现与演示）
+   * 确保 `cleanup.sh` 不误删 ECR 里用于回滚的 1～2 个最近 tag（保留 2～5 个）
+
+**验收**
+
+* README “CI/CD + 指标” 小节完善；Actions 截图已归档。
+* 一键 `destroy` 后，README 明确“**如何在下次重建后恢复 CI/CD**”（通常只需：重建集群 → 更新 kubeconfig → `aws-auth` 映射 → 立即可发版）。
+
+**退路**
+
+* 指标获取麻烦 → 先人工统计（Actions 运行页复制数据），后续有需要再接入 GitHub API 脚本。
+
+### 20 分钟退路总表
+
+* **OIDC 配置耗时** → 临时用访问密钥用户跑通本周，**周末删除**；或切 **CodeBuild/CodePipeline**（只跑 ECR 推送 + `kubectl` 发布）
+* **Trivy 阻塞** → 先放宽为警告模式，记 issue；不阻断主线
+* **`kubectl` 权限问题** → 回到 Day1，确认 `aws-auth` 已添加 `rolearn`；或先将角色加入 `system:masters` 再慢慢收敛
+* **发布失败** → 使用 `rollout undo` 或“指定 tag”回滚；务必记录“失败原因 + 改进项”两行文字
 
 ---
 
