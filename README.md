@@ -46,7 +46,14 @@
     - [Day 4 - 回滚与手动触发；参数化环境](#day-4---%E5%9B%9E%E6%BB%9A%E4%B8%8E%E6%89%8B%E5%8A%A8%E8%A7%A6%E5%8F%91%E5%8F%82%E6%95%B0%E5%8C%96%E7%8E%AF%E5%A2%83)
     - [Day 5 - 指标留痕 + 文档固化 + 清理脚本](#day-5---%E6%8C%87%E6%A0%87%E7%95%99%E7%97%95--%E6%96%87%E6%A1%A3%E5%9B%BA%E5%8C%96--%E6%B8%85%E7%90%86%E8%84%9A%E6%9C%AC)
     - [20 分钟退路总表](#20-%E5%88%86%E9%92%9F%E9%80%80%E8%B7%AF%E6%80%BB%E8%A1%A8)
-  - [Week 8 - TBD](#week-8---tbd)
+  - [Week 8 — Mock + Résumé](#week-8--mock--r%C3%A9sum%C3%A9)
+    - [通用前置](#%E9%80%9A%E7%94%A8%E5%89%8D%E7%BD%AE-2)
+  - [Day 1 - 成果打包 & 架构一页纸（One-Pager）](#day-1---%E6%88%90%E6%9E%9C%E6%89%93%E5%8C%85--%E6%9E%B6%E6%9E%84%E4%B8%80%E9%A1%B5%E7%BA%B8one-pager)
+  - [Day 2 - Mock-1（全英）：运行/韧性/观测深挖](#day-2---mock-1%E5%85%A8%E8%8B%B1%E8%BF%90%E8%A1%8C%E9%9F%A7%E6%80%A7%E8%A7%82%E6%B5%8B%E6%B7%B1%E6%8C%96)
+  - [Day 3 - 简历 v2（中/英）+ LinkedIn 打磨](#day-3---%E7%AE%80%E5%8E%86-v2%E4%B8%AD%E8%8B%B1-linkedin-%E6%89%93%E7%A3%A8)
+    - [Day 4 - Mock-2（全英）：AI + 多云系统设计](#day-4---mock-2%E5%85%A8%E8%8B%B1ai--%E5%A4%9A%E4%BA%91%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1)
+    - [Day 5 - Day-8 Cleanup 收官 + 招聘投递包](#day-5---day-8-cleanup-%E6%94%B6%E5%AE%98--%E6%8B%9B%E8%81%98%E6%8A%95%E9%80%92%E5%8C%85)
+    - [高频问题库](#%E9%AB%98%E9%A2%91%E9%97%AE%E9%A2%98%E5%BA%93)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -193,7 +200,7 @@
 | **Week 5** | **Cloud-Native 微服务上云（EKS）**<br>① Spring Boot 微服务骨架 → Docker 镜像 → 推送 ECR<br>② K8s 基础对象：Namespace / SA(IRSA) / ConfigMap / Secret / Deployment / Service<br>③ Ingress（AWS Load Balancer Controller）+ HPA → 通过 ALB DNS 暴露服务；可选：接入 S3 | 源码仓 + Docker 镜像 Tag<br>K8s YAML/Helm（含 IRSA）<br>ALB DNS 可访问截图 + （可选）S3 读写验证 |
 | **Week 6** | **可观测 & 韧性（Observability + Resilience）**<br>① ADOT Collector → **Amazon Managed Prometheus (AMP)**（`sample_limit`=10k，drop `kubelet_*`）+ Grafana Cloud 仪表盘<br>② Spring Actuator 暴露应用指标，定义 SLI/SLO（可用性、P95、错误率）<br>③ **Chaos Mesh**：`pod-kill`/`network-latency` 演练 + **HPA 自愈**，输出 **MTTR ≤ 1 min** | ADOT 配置 & AMP Workspace<br>Grafana Dash 截图（应用/集群指标）<br>Chaos 报告（MTTR/P95） + HPA 触发截图 |
 | **Week 7** | **CI/CD + DevOps 自动化**<br>① GitHub Actions（OIDC）→ **ECR** 推镜像 → **EKS** 滚动发布（Helm/`kubectl`）<br>② 阶段门：Maven 单测 + **Trivy** 镜像扫描 + 策略化回滚（`rollout undo`）<br>③ 指标留痕：构建时长、发布成功率、平均改动交付时间（Lead Time） | `.github/workflows/ci-cd.yml`<br>IAM OIDC 角色 + `aws-auth` RBAC<br>发布/回滚脚本与运行截图 |
-| **Week 8** | **Mock Marathon & Résumé v2**<br>· Mock-1：Chaos + SLO 深挖 (全英)<br>· Mock-2：AI & 多云系统设计 (全英)<br>· `progress.png`（语速 | filler | MTTR | CI 成功率）<br>· **Day-8 Cleanup** ：`codedeploy cleanup` → `terraform destroy` → `eksctl delete cluster` → 删除 ALB/TG、ECR、S3、DynamoDB、Budget | 两段 90 min 录像 + 评分表<br>`progress.png`<br>简历 v2 PDF |
+| **Week 8** | **Mock Marathon & Résumé v2**<br>① Mock-1：故障注入 + SLO 深挖（全英，含追问）<br>② Mock-2：AI + 多云系统设计（全英，画架构图）<br>③ 成果打包：README/作品集/两段演示视频/`progress.png` 指标折线<br>④ **Day-8 Cleanup**：一键销毁 + 账单审计 + 重建演练清单 | 两段 90min 录像 + 评分表（含改进项）<br>简历 v2（中/英）PDF + LinkedIn 文案<br>`progress.png` + 架构图 + `cleanup/` 脚本 & 账单截图 |
 
 #### KPI & 简历映射
 
@@ -1042,6 +1049,170 @@ spec:
 
 ---
 
-## Week 8 - TBD
+## Week 8 — Mock + Résumé
 
-TBD
+> 目标：把前 3 周产出**打包为“面试可讲、可量化”的成果**，并通过两次全英文 Mock 找出最后的短板；同时完成简历 v2 与一键销毁/重建收官。
+> 原则：**最小可展示** > 形式主义；当天卡顿 > 20 分钟走退路方案。
+
+### 通用前置
+
+10 分钟 完成：
+
+```bash
+export NS=svc-task
+export APP=task-api
+export CLUSTER=task-cluster
+```
+
+本周产物目录建议：
+
+```
+docs/
+  interview/
+    qbank.md           # 高频问&标准要点
+    star_stories.md    # STAR 素材库（每条 ≤ 6 行）
+    mock1_scorecard.md # 打分与改进项
+    mock2_scorecard.md
+  architecture/
+    system-onepager.md # 一页纸架构说明
+    diagrams/          # 架构图(png/svg)
+  resume/
+    resume_cn_v2.pdf
+    resume_en_v2.pdf
+  metrics/
+    progress.png       # 指标折线
+cleanup/
+  day8_runbook.md
+  cleanup.sh
+```
+
+## Day 1 - 成果打包 & 架构一页纸（One-Pager）
+
+**做什么**
+
+1. **仓库整理**：统一命名、删无用分支/文件、补 `.gitignore`。
+2. **架构一页纸**（`docs/architecture/system-onepager.md`）：
+
+   - 背景/目标（3 行）
+   - 架构图（EKS NodeGroup + ALB + IRSA + S3/AMP/Grafana + CI/CD）
+   - 流程：Dev → CI → ECR → CD → EKS → ALB → 用户；应用 → ADOT → AMP → Grafana
+   - SLO 口径：99.9% 可用、P95<300ms、错误率<0.1%
+   - 成本策略：单集群多 NS、Spot、采样/过滤、Budget
+3. **演示脚本**：`demo/start.sh` / `demo/stop.sh` 最终检查（Week5 已有的基础上补充观测/Chaos 一键启动/关闭）。
+4. **指标折线**：把 Week5–7 的关键指标整理进 `docs/metrics/progress.png`（可先用表格截图代替）。
+
+**产物**
+
+- `system-onepager.md` + 架构图
+- `demo/*` 脚本可运行
+- `progress.png`（或临时表格/截图）
+
+**退路（20 分钟原则）**
+
+- 架构图工具卡顿 → 先画手稿拍照上传；后补电子版
+- `progress.png` 不会画 → 用 README 表格 + 截图替代
+
+## Day 2 - Mock-1（全英）：运行/韧性/观测深挖
+
+**主题**：你是资深 Java/Cloud 候选人，面试官围绕 **运行稳定性** 追问（EKS、HPA、Chaos、SLO、日志指标）。
+**流程（90 分钟自测/录制）**
+
+1. **Warm-up 10′**：英文自我介绍（30–45 秒 Elevator Pitch）
+2. **Tech Q\&A 60′**（录音/录像，问题示例写入 `docs/interview/qbank.md`）：
+
+   - 如何把 Spring Boot 上到 EKS？（对象/Ingress/HPA/探针/无状态）
+   - IRSA 最小权限如何配置？为什么不用长期密钥？
+   - 观测链路：ADOT → AMP → Grafana；如何控制成本？
+   - Chaos 场景：`pod-kill` MTTR 如何测，如何缩短？
+   - SLO 设计：99.9% 与错误预算的关系？
+3. **Hands-on 10′**：现场滚动发布 `kubectl set image` 并观察 `rollout status`
+4. **Debrief 10′**：自我打分并写入 `docs/interview/mock1_scorecard.md`（得分+3 个改进项）
+
+**产物**
+
+- 90′ 录音/录像（可选）
+- `mock1_scorecard.md`（含“下一步改进”）
+- `qbank.md` 新增 8–12 个高频问要点答案（用要点，不写大段）
+
+**退路**
+
+- 无法录制 → 用语音备忘或记要点
+- 现场失败 → 用预先录像的发布演示作为替代（保证面试可讲）
+
+## Day 3 - 简历 v2（中/英）+ LinkedIn 打磨
+
+**做什么**
+
+1. **简历框架**（一页，项目置顶）：
+   - **Cloud DevOps Lab（2025）** — 3–5 条量化要点：
+     - 例：*“构建 **CI/CD（GitHub OIDC）**，从提交到上线 **Lead Time ≤ 8 min**；引入 **Trivy** 阶段门拦截高危镜像。”*
+     - 例：*“在 **EKS NodeGroup** 上落地 **HPA+PDB**，`pod-kill` 实验 **MTTR 49s**；SLO 99.9%。”*
+     - 例：*“ADOT→AMP→Grafana：**Trace/Metric 覆盖 ≥ 95%**；`sample_limit`+relabel 降低指标写入 **50%+**。”*
+     - 例：*“IRSA 最小权限访问 **S3**，清退长期密钥；**Day-8 Cleanup** 一键销毁，月固定成本 ≈ \$0.5（Route53）。”*
+   - 技术栈关键字：Java 21 / Spring Boot / Docker / K8s / EKS / Helm / Terraform / GitHub Actions / OIDC / AMP / Grafana / Chaos Mesh / AWS（ALB、ECR、S3、CloudWatch）
+2. **中文/英文版**各出一份 PDF（文件名：`Renda_Zhang_Java_Cloud_2025_CN.pdf` / `..._EN.pdf`）。
+3. **LinkedIn/拉钩/猎聘**短版简介（3 行内）：
+
+   - *“Java 后端 + 云原生（EKS）— 搭建 CI/CD 与观测闭环，IRSA 最小权限与成本优化，面向外企中高级岗位。”*
+4. 在 `docs/resume/` 保存源文件与 PDF；README 顶部加“**Résumé v2**”链接。
+
+**产物**
+
+- 简历 v2（中/英）PDF
+- LinkedIn 简介文案（贴到个人主页）
+
+**退路**
+
+- 量化指标缺数字 → 先写“目标/现状”，后补精确值；或填区间/近似值（例如“≈50%”）
+
+### Day 4 - Mock-2（全英）：AI + 多云系统设计
+
+**主题**：面试官给场景：*“构建一个面向 10k QPS 的任务管理服务，支持文本智能摘要（Bedrock Titan），可移植到其他云。”*
+**流程（90 分钟自测/录制）**
+
+1. **白板/画图 25′**：画出 **API Gateway/ALB → EKS → Service → Bedrock**；缓存/熔断/重试；队列（SQS 可选）；多 AZ；IaC 与 GitHub OIDC。
+2. **权衡 20′**：成本 vs 延迟、Fargate vs NodeGroup、AMP vs 自建 Prom、GitOps vs 直推。
+3. **扩展问题 30′**：
+   - 限流与回放（令牌桶/漏桶 + SQS）
+   - 隐私与密钥（IRSA、KMS、Parameter Store）
+   - 可移植性（Terraform provider/Helm values，可迁移到 GKE）
+4. **收尾 15′**：把答案精炼成 `docs/architecture/design-qa.md`；更新一张“对比表”。
+
+**产物**
+
+- 架构图（png/svg）
+- `design-qa.md`（10–15 个要点 Q/A）
+- `mock2_scorecard.md`（得分 + 改进项）
+
+**退路**
+
+- 画图耗时 → 用文字列表 + 手绘照片替代
+- 对比点拿不准 → 写“权衡框架”而非定论（比如“功能/成本/复杂度/可移植性”四象限）
+
+### Day 5 - Day-8 Cleanup 收官 + 招聘投递包
+
+**做什么**
+
+1. **最终 cleanup**（`cleanup/day8_runbook.md`）：
+   - 顺序：暂停 Actions → 导出指标/截图 → `demo/stop.sh` → `terraform destroy` → `eksctl delete cluster` → 清理 ALB/TG/ECR 冷镜像/S3/DynamoDB/Budgets（保留 Route53）
+   - 验证：**账单面板 0 新增固定支出**（除 Route53）
+2. **重建演练（抽查）**：半小时重建一次，验证 README“快速开始”无缺页。
+3. **招聘投递包**：
+   - 简历 v2（中/英）+ README 项目亮点 + 架构一页纸 + 两段 Mock 结论
+   - `docs/interview/star_stories.md` 补齐 6–8 条 STAR（故障自愈 / 成本优化 / CI/CD 整改 / 权限收敛 / 性能压测 / 团队协作）。
+4. **计划交接**：在 README 顶部“**下一阶段建议**”留 3 条路线（如：Redis 缓存、金丝雀/蓝绿对比、Bedrock 成本配额自动化）。
+
+**产物**
+
+- `cleanup/*` 运行记录 + 账单截图
+- 一次“重建成功”截图（≤30 分钟）
+- 招聘投递包压缩包（私用）
+
+**退路**
+
+- `destroy` 卡资源依赖 → 单资源控制台删除，记录在 `day8_runbook.md` 里
+- 重建超时 → 记录卡点与命令输出，后续安排半天专修（不占本周）
+
+### 高频问题库
+
+详情查看文档：[高频问题库](https://TBD)
