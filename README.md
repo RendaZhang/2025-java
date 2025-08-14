@@ -17,6 +17,8 @@
     - [📌 快速导航（进度链接）](#-%E5%BF%AB%E9%80%9F%E5%AF%BC%E8%88%AA%E8%BF%9B%E5%BA%A6%E9%93%BE%E6%8E%A5)
     - [🛡 执行护栏（全阶段通用）](#-%E6%89%A7%E8%A1%8C%E6%8A%A4%E6%A0%8F%E5%85%A8%E9%98%B6%E6%AE%B5%E9%80%9A%E7%94%A8)
     - [🧭 每日执行模板（避免低效 debug）](#-%E6%AF%8F%E6%97%A5%E6%89%A7%E8%A1%8C%E6%A8%A1%E6%9D%BF%E9%81%BF%E5%85%8D%E4%BD%8E%E6%95%88-debug)
+    - [📆 时间轴 & 核心交付物](#-%E6%97%B6%E9%97%B4%E8%BD%B4--%E6%A0%B8%E5%BF%83%E4%BA%A4%E4%BB%98%E7%89%A9)
+    - [🎯 KPI & 简历映射](#-kpi--%E7%AE%80%E5%8E%86%E6%98%A0%E5%B0%84)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -143,3 +145,24 @@
 > **下一步**：进入 **Week 5 – Cloud-Native 微服务上云（EKS）** 的可执行清单（按“Day 1 → Day 5”逐日拆分、每步附命令与预期截图/指标），并与现有一键重建/销毁保持兼容。
 
 > 全流程仅依赖 AWS 账户即可完成；后续若需多云演示，可启用 Terraform GKE provider 再走一遍 Helm / Argo 即可。
+
+### 📆 时间轴 & 核心交付物
+
+| 时段 | 核心主题 & 关键实操 | 主要交付物 |
+|------|-------------------|-----------|
+| **Day-0 (½ d)** | **Docker & K8s Refresher**<br>· Play-with-Docker：`build / run / push`<br>· Kubernetes Basics 1-3：`kubectl create / expose / scale` | `day0-notes.md` |
+| **Bootcamp 3 d** | **云底座 + IaC**<br>**Day 1** VPC / ALB / IAM 对照（AWS）<br>**Day 2-AM** `eksctl` 创建 **EKS Managed NodeGroup** (Spot t3.small ×2 + OD t3.medium ×1)<br>**Day 2-PM** Terraform 导入 EKS；`backend "s3" + DynamoDB lock + AES256`<br>**Day 3** 声明式扩展：ECR、EFS、(预留 GKE stub) | `eksctl-config.yaml`<br>`main.tf` / `terraform.tfstate`<br>《云服务对照笔记》 |
+| **Week 5** | **双 GitOps CI/CD**<br>① CodeCommit → CodeBuild(+**Trivy**) → ECR → **CodeDeploy Blue-Green → EKS** (ALB 双 TargetGroup🟢/🔵，自动移除旧 TG)<br>② GitHub Actions → Docker Hub → **Argo CD** (ns `argo-demo`，OIDC-IRSA 最小权限) | 流水线 & 蓝/绿发布截图<br>Argo Sync GIF<br>IAM json + Trivy 扫描报告 |
+| **Week 6** | **Helm + HPA + Chaos 自愈**<br>· Helm Chart (`charts/task-manager/`)<br>· HPA + PDB + Cluster Autoscaler (Spot 中断容忍)<br>· Chaos Mesh `pod-kill / latency` → **MTTR ≤ 1 min** | Helm 包<br>Chaos 报告 (MTTR & P95) |
+| **Week 7-a** | **Observability & SRE**<br>· ADOT Sidecar → **Amazon Managed Prometheus** (采样 `sample_limit: 10000` + **metric_relabel** drop `kubelet_*`)<br>· Grafana Cloud Dash (Free 50 k MTS)<br>· 定义 99.9 % SLO + CloudWatch Composite Alert + Burn-Rate | Trace GIF + Grafana Dash<br>SLO YAML & Post-mortem |
+| **Week 7-b** | **生成式 AI Sidecar — Bedrock Titan**<br>· Spring AI + **Titan Text Express** (us-east-1)<br>· Redis Vector / PGVector<br>· CloudWatch + Budget (USD 80) 监控 Token 花费<br>· Spring Retry Exponential-Backoff 限流 | Demo 视频<br>《Bedrock FinOps.md》 |
+| **Week 8** | **Mock Marathon & Résumé v2**<br>· Mock-1：Chaos + SLO 深挖 (全英)<br>· Mock-2：AI & 多云系统设计 (全英)<br>· `progress.png`（语速 | filler | MTTR | CI 成功率）<br>· **Day-8 Cleanup** ：`codedeploy cleanup` → `terraform destroy` → `eksctl delete cluster` → 删除 ALB/TG、ECR、S3、DynamoDB、Budget | 两段 90 min 录像 + 评分表<br>`progress.png`<br>简历 v2 PDF |
+
+### 🎯 KPI & 简历映射
+
+| 指标 | 目标 | 简历措辞示例 |
+|------|------|-------------|
+| GitOps 发布成功率 | ≥ 98 % | “双链路 GitOps 发布成功率 **98 %+**” |
+| Chaos 平均恢复 MTTR | ≤ 1 min | “注入 pod-kill 后平均恢复 **49 s** (业内基线 5 min)” |
+| Trace 覆盖率 | ≥ 95 % | “OpenTelemetry 链路覆盖 **95 %** API 请求” |
+| 英文 Mock 综合分 | ≥ 4.0 / 5 | “全英文系统设计 Mock 得分 **4.2 / 5**” |
