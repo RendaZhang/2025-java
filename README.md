@@ -22,21 +22,21 @@
       - [快速导航](#%E5%BF%AB%E9%80%9F%E5%AF%BC%E8%88%AA)
     - [时间轴 & 核心交付物](#%E6%97%B6%E9%97%B4%E8%BD%B4--%E6%A0%B8%E5%BF%83%E4%BA%A4%E4%BB%98%E7%89%A9)
       - [KPI & 简历映射](#kpi--%E7%AE%80%E5%8E%86%E6%98%A0%E5%B0%84)
-  - [Week 5 — Cloud-Native 微服务上云（EKS）· 可执行清单（Day1–Day5）](#week-5--cloud-native-%E5%BE%AE%E6%9C%8D%E5%8A%A1%E4%B8%8A%E4%BA%91eks%C2%B7-%E5%8F%AF%E6%89%A7%E8%A1%8C%E6%B8%85%E5%8D%95day1day5)
+  - [Week 5 - Cloud-Native 微服务上云（EKS）](#week-5---cloud-native-%E5%BE%AE%E6%9C%8D%E5%8A%A1%E4%B8%8A%E4%BA%91eks)
     - [前置检查（10 分钟）](#%E5%89%8D%E7%BD%AE%E6%A3%80%E6%9F%A510-%E5%88%86%E9%92%9F)
-    - [Day 1｜应用骨架 + Docker 镜像 + 推送 ECR（最小可运行）](#day-1%EF%BD%9C%E5%BA%94%E7%94%A8%E9%AA%A8%E6%9E%B6--docker-%E9%95%9C%E5%83%8F--%E6%8E%A8%E9%80%81-ecr%E6%9C%80%E5%B0%8F%E5%8F%AF%E8%BF%90%E8%A1%8C)
-    - [Day 2｜K8s 基础对象（NS/SA/Config/Secret/Deployment/Service）](#day-2%EF%BD%9Ck8s-%E5%9F%BA%E7%A1%80%E5%AF%B9%E8%B1%A1nssaconfigsecretdeploymentservice)
-    - [Day 3｜Ingress（ALB）对外暴露 + HPA](#day-3%EF%BD%9Cingressalb%E5%AF%B9%E5%A4%96%E6%9A%B4%E9%9C%B2--hpa)
-    - [Day 4｜（可选但高收益）S3 最小接入 + IRSA](#day-4%EF%BD%9C%E5%8F%AF%E9%80%89%E4%BD%86%E9%AB%98%E6%94%B6%E7%9B%8As3-%E6%9C%80%E5%B0%8F%E6%8E%A5%E5%85%A5--irsa)
-    - [Day 5｜收尾硬化 + 文档化 + 指标留痕](#day-5%EF%BD%9C%E6%94%B6%E5%B0%BE%E7%A1%AC%E5%8C%96--%E6%96%87%E6%A1%A3%E5%8C%96--%E6%8C%87%E6%A0%87%E7%95%99%E7%97%95)
+    - [Day 1 - 应用骨架 + Docker 镜像 + 推送 ECR（最小可运行）](#day-1---%E5%BA%94%E7%94%A8%E9%AA%A8%E6%9E%B6--docker-%E9%95%9C%E5%83%8F--%E6%8E%A8%E9%80%81-ecr%E6%9C%80%E5%B0%8F%E5%8F%AF%E8%BF%90%E8%A1%8C)
+    - [Day 2 - K8s 基础对象（NS/SA/Config/Secret/Deployment/Service）](#day-2---k8s-%E5%9F%BA%E7%A1%80%E5%AF%B9%E8%B1%A1nssaconfigsecretdeploymentservice)
+    - [Day 3 - Ingress（ALB）对外暴露 + HPA](#day-3---ingressalb%E5%AF%B9%E5%A4%96%E6%9A%B4%E9%9C%B2--hpa)
+    - [Day 4 -（可选但高收益）S3 最小接入 + IRSA](#day-4--%E5%8F%AF%E9%80%89%E4%BD%86%E9%AB%98%E6%94%B6%E7%9B%8As3-%E6%9C%80%E5%B0%8F%E6%8E%A5%E5%85%A5--irsa)
+    - [Day 5 - 收尾硬化 + 文档化 + 指标留痕](#day-5---%E6%94%B6%E5%B0%BE%E7%A1%AC%E5%8C%96--%E6%96%87%E6%A1%A3%E5%8C%96--%E6%8C%87%E6%A0%87%E7%95%99%E7%97%95)
     - [常见问题与 20 分钟退路](#%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98%E4%B8%8E-20-%E5%88%86%E9%92%9F%E9%80%80%E8%B7%AF)
-  - [Week 6 — 可执行清单（Day1–Day5）](#week-6--%E5%8F%AF%E6%89%A7%E8%A1%8C%E6%B8%85%E5%8D%95day1day5)
+  - [Week 6 - 观测 & 韧性](#week-6---%E8%A7%82%E6%B5%8B--%E9%9F%A7%E6%80%A7)
     - [通用前置（10 分钟）](#%E9%80%9A%E7%94%A8%E5%89%8D%E7%BD%AE10-%E5%88%86%E9%92%9F)
-    - [Day 1｜应用指标暴露 + AMP 工作区](#day-1%EF%BD%9C%E5%BA%94%E7%94%A8%E6%8C%87%E6%A0%87%E6%9A%B4%E9%9C%B2--amp-%E5%B7%A5%E4%BD%9C%E5%8C%BA)
-    - [Day 2｜ADOT Collector（采集 → AMP）+ 成本护栏](#day-2%EF%BD%9Cadot-collector%E9%87%87%E9%9B%86-%E2%86%92-amp-%E6%88%90%E6%9C%AC%E6%8A%A4%E6%A0%8F)
-    - [Day 3｜Grafana Dash + SLI/SLO 口径](#day-3%EF%BD%9Cgrafana-dash--slislo-%E5%8F%A3%E5%BE%84)
-    - [Day 4｜Chaos Mesh 安装 + `pod-kill`/`network-latency` 实验](#day-4%EF%BD%9Cchaos-mesh-%E5%AE%89%E8%A3%85--pod-killnetwork-latency-%E5%AE%9E%E9%AA%8C)
-    - [Day 5｜整理与硬化（配额/限额/告警）](#day-5%EF%BD%9C%E6%95%B4%E7%90%86%E4%B8%8E%E7%A1%AC%E5%8C%96%E9%85%8D%E9%A2%9D%E9%99%90%E9%A2%9D%E5%91%8A%E8%AD%A6)
+    - [Day 1 - 应用指标暴露 + AMP 工作区](#day-1---%E5%BA%94%E7%94%A8%E6%8C%87%E6%A0%87%E6%9A%B4%E9%9C%B2--amp-%E5%B7%A5%E4%BD%9C%E5%8C%BA)
+    - [Day 2 - ADOT Collector（采集 → AMP）+ 成本护栏](#day-2---adot-collector%E9%87%87%E9%9B%86-%E2%86%92-amp-%E6%88%90%E6%9C%AC%E6%8A%A4%E6%A0%8F)
+    - [Day 3 - Grafana Dash + SLI/SLO 口径](#day-3---grafana-dash--slislo-%E5%8F%A3%E5%BE%84)
+    - [Day 4 - Chaos Mesh 安装 + `pod-kill`/`network-latency` 实验](#day-4---chaos-mesh-%E5%AE%89%E8%A3%85--pod-killnetwork-latency-%E5%AE%9E%E9%AA%8C)
+    - [Day 5 - 整理与硬化（配额/限额/告警）](#day-5---%E6%95%B4%E7%90%86%E4%B8%8E%E7%A1%AC%E5%8C%96%E9%85%8D%E9%A2%9D%E9%99%90%E9%A2%9D%E5%91%8A%E8%AD%A6)
     - [20 分钟退路清单](#20-%E5%88%86%E9%92%9F%E9%80%80%E8%B7%AF%E6%B8%85%E5%8D%95)
   - [Week 7 - TBD](#week-7---tbd)
   - [Week 8 - TBD](#week-8---tbd)
@@ -202,7 +202,7 @@
 
 ---
 
-## Week 5 — Cloud-Native 微服务上云（EKS）· 可执行清单（Day1–Day5）
+## Week 5 - Cloud-Native 微服务上云（EKS）
 
 > 目标：把一个最小可讲、可演示的 **Spring Boot 微服务** 跑上现有 EKS（NodeGroup），通过 ALB 对外暴露；必要时最小接入 S3（IRSA），并完成可量化产物。
 > 原则：**只做最小闭环**（可截图/可复现），遇到卡顿 > 20 分钟走“退路方案”，避免低收益 debug。
@@ -220,7 +220,7 @@
 
 > 预期产物总表：源码仓（子模块 `apps/task-api`）、ECR 镜像 tag、K8s YAML/Helm、ALB DNS 可访问截图、（可选）S3 读写验证。
 
-### Day 1｜应用骨架 + Docker 镜像 + 推送 ECR（最小可运行）
+### Day 1 - 应用骨架 + Docker 镜像 + 推送 ECR（最小可运行）
 
 **做什么**
 
@@ -248,7 +248,7 @@ docker push $(aws sts get-caller-identity --query Account --output text).dkr.ecr
 - `apps/task-api` 源码；`Dockerfile`；ECR 镜像 `:0.1.0` 截图
   **退路**：ECR 推送异常 → 暂用 Docker Hub 公有仓库（只改镜像前缀）。
 
-### Day 2｜K8s 基础对象（NS/SA/Config/Secret/Deployment/Service）
+### Day 2 - K8s 基础对象（NS/SA/Config/Secret/Deployment/Service）
 
 **做什么**
 
@@ -324,7 +324,7 @@ kubectl get pod -n $NS -w
 **产物**：`kubectl get deploy,svc -n $NS` 截图；就绪 1/1。
 **退路**：Probe 失败 → 暂时改为 `/actuator/health`；或放宽 `initialDelaySeconds`。
 
-### Day 3｜Ingress（ALB）对外暴露 + HPA
+### Day 3 - Ingress（ALB）对外暴露 + HPA
 
 **做什么**
 
@@ -380,7 +380,7 @@ kubectl get ingress -n $NS
 **产物**：ALB DNS 可访问首页/健康检查截图；`kubectl describe hpa` 输出。
 **退路**：ALB 迟迟不出 → 检查子网 tag / sg；临时改为 `kubectl port-forward` 验证服务可用性。
 
-### Day 4｜（可选但高收益）S3 最小接入 + IRSA
+### Day 4 -（可选但高收益）S3 最小接入 + IRSA
 
 **做什么**
 
@@ -411,7 +411,7 @@ curl "http://<ALB_DNS>/api/files/get?key=test.txt"   # 预期返回 hello
 **产物**：两条 curl 成功截图；应用日志相关片段。
 **退路**：若当日遇到卡点 → 暂跳过 S3，保留 IRSA 绑定，Day5 先完成文档与演示。
 
-### Day 5｜收尾硬化 + 文档化 + 指标留痕
+### Day 5 - 收尾硬化 + 文档化 + 指标留痕
 
 **做什么**
 
@@ -452,7 +452,7 @@ spec:
 
 ---
 
-## Week 6 — 可执行清单（Day1–Day5）
+## Week 6 - 观测 & 韧性
 
 > 目标：在**不引入重型运维**的前提下，建立“应用 + 集群”的指标观测、SLO 口径与最小化 Chaos 自愈演示。
 > 原则：继续 **单集群多命名空间**；一次只做“可讲清楚的最小闭环”。卡顿 > 20 分钟即走退路方案。
@@ -472,7 +472,7 @@ export AMP_ALIAS=renda-lab
 - `chaos/` 目录（安装 values、实验 YAML、报告）
 - 截图：Grafana 图、HPA describe、Chaos 成功页、MTTR 计算过程
 
-### Day 1｜应用指标暴露 + AMP 工作区
+### Day 1 - 应用指标暴露 + AMP 工作区
 
 **做什么**
 
@@ -507,7 +507,7 @@ export AMP_ALIAS=renda-lab
 
 **退路**：若 AMP 创建受限 → 暂改为 **Prometheus Helm（本地集群内）+ Grafana OSS**，后面步骤中的“remote\_write”全部替换为本地 `http://prometheus:9090`（仅演示用）。
 
-### Day 2｜ADOT Collector（采集 → AMP）+ 成本护栏
+### Day 2 - ADOT Collector（采集 → AMP）+ 成本护栏
 
 **做什么**
 
@@ -600,7 +600,7 @@ export AMP_ALIAS=renda-lab
 
 **退路**：若 ADOT 配置反复出错 → 改用 **kube-prometheus-stack** Helm（Operator）一键起 Prom+Grafana（成本稍高，但流程直观），或暂时只走 CloudWatch Container Insights 做截图演示。
 
-### Day 3｜Grafana Dash + SLI/SLO 口径
+### Day 3 - Grafana Dash + SLI/SLO 口径
 
 **做什么**
 
@@ -623,7 +623,7 @@ export AMP_ALIAS=renda-lab
 
 **退路**：Grafana Cloud 配置困难 → 使用 **kubectl port-forward** 暂时本地访问 Grafana OSS 服务；或作为替代，导出 AMP 的 `series`/`query_range` 返回 JSON 截图存证。
 
-### Day 4｜Chaos Mesh 安装 + `pod-kill`/`network-latency` 实验
+### Day 4 - Chaos Mesh 安装 + `pod-kill`/`network-latency` 实验
 
 **做什么**
 
@@ -682,7 +682,7 @@ export AMP_ALIAS=renda-lab
 
 **退路**：Chaos Mesh 不稳定 → **手动 `kubectl delete pod`** 替代表演自愈；网络延迟改为用 `tc netem` 容器进行最小演示。
 
-### Day 5｜整理与硬化（配额/限额/告警）
+### Day 5 - 整理与硬化（配额/限额/告警）
 
 **做什么**
 
