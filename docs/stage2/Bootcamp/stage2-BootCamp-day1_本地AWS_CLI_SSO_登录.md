@@ -21,7 +21,7 @@
 > ① 快速回顾 "Console 侧启用 IAM Identity Center → 本地 AWS CLI SSO 登录 → Terraform init" 的完整流水。
 > ② 隔一段时间后想不起细节，或换到 macOS / 另一台电脑时，可按本表再跑一次。
 
-______________________________________________________________________
+---
 
 ## 0 · 关键参数 (你的环境)
 
@@ -35,7 +35,7 @@ ______________________________________________________________________
 | **DynamoDB Lock Table** | `tf-state-lock` |
 | **CLI Profile Name** | `phase2-sso` |
 
-______________________________________________________________________
+---
 
 ## 1 · Console 侧一次性设置 (仅首次)
 
@@ -47,22 +47,26 @@ ______________________________________________________________________
 
 完成后记下「SSO Start URL + Home Region」。
 
-______________________________________________________________________
+---
 
 ## 2 · 本地机器第一次设置 (Windows WSL / macOS / Linux)
 
 ```bash
 # 1. 安装 AWS CLI v2 (WSL 可用 apt, macOS 可用 brew)
+
 aws --version   # >= 2.7
 
 # 2. 交互式配置 SSO Profile
+
 aws configure sso --profile phase2-sso
 # >> 输入 SSO Start URL, SSO Region, 选择 Account & Permission Set
 
 # 3. 浏览器弹窗 -> Allow 授权
+
 aws sso login --profile phase2-sso
 
 # 4. (可选) 默认使用该 Profile
+
 export AWS_PROFILE=phase2-sso
 ```
 
@@ -70,12 +74,13 @@ export AWS_PROFILE=phase2-sso
 > `~/.aws/config`   → 保存 profile + sso‑session
 > `~/.aws/cli/cache` → 存短期凭证 (12 h 过期)，到期重跑 `aws sso login`。
 
-______________________________________________________________________
+---
 
 ## 3 · Terraform Backend / Provider 关键片段
 
 ```hcl
 # backend.tf
+
 terraform {
   backend "s3" {
     bucket      = "phase2-tf-state-us-east-1"
@@ -87,6 +92,7 @@ terraform {
 }
 
 # provider.tf
+
 provider "aws" {
   region  = var.region
   profile = "phase2-sso"
@@ -96,15 +102,17 @@ provider "aws" {
 }
 ```
 
-______________________________________________________________________
+---
 
 ## 4 · 日常工作流 (每次开机 / 换终端)
 
 ```bash
 # Step A: 刷新 SSO 凭证
+
 aws sso login --profile phase2-sso   # 无弹窗则已缓存
 
 # Step B: Terraform 生命周期
+
 cd infra/aws
 terraform init    # 首次或换机器时
 terraform plan
@@ -116,7 +124,7 @@ terraform apply   # 若要变更
 - `aws sso logout` 可以主动失效本机刷新令牌。
 - 若使用 `Terragrunt` 同理在 `~/.aws/config` 指定 `profile` 即可。
 
-______________________________________________________________________
+---
 
 ## 5 · 迁移到新电脑 / macOS 步骤
 
@@ -127,7 +135,7 @@ ______________________________________________________________________
 
 > **不需要复制 `~/.aws/credentials`** —— SSO 登录生成的短期凭证自动写入缓存。
 
-______________________________________________________________________
+---
 
 ## 6 · Troubleshooting 常见错误
 
@@ -139,7 +147,7 @@ ______________________________________________________________________
 | DynamoDB Lock 抛 `AccessDeniedException` | Permission Set 缺 `AmazonDynamoDBFullAccess` 或表名写错。 |
 | `dynamodb_table deprecated` Warning | 换成 `lock_table` (Terraform 1.7+) or 继续忽略。 |
 
-______________________________________________________________________
+---
 
 ## 7 · 安全最佳实践
 
@@ -148,7 +156,7 @@ ______________________________________________________________________
 - **State 加密**：S3 后端默认 SSE-S3；如需 SSE-KMS 请在 backend 加 `kms_key_id = "alias/tf-state-key"`。
 - **锁表计费**：DynamoDB `PAY_PER_REQUEST` 仅万次级别 $0.25/月，可忽略。
 
-______________________________________________________________________
+---
 
 > **记得**：每 12 h 重新 `aws sso login`；Terraform 换机时只需「CLI+SSO+backend.tf」三件套，别带任何长效密钥。
 

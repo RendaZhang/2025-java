@@ -101,7 +101,7 @@
      aws ec2 describe-nat-gateways --filter "Name=vpc-id,Values=<VPC-ID>" --region us-east-1 --profile phase2-sso
      ```
 
-     将 `<VPC-ID>` 替换为实际创建的 VPC ID（Terraform 输出或 state 文件中可查）。预期看到1个新 VPC，若干子网（公有/私有各2个），以及状态为 **available** 的 NAT Gateway。
+     将 `<VPC-ID>` 替换为实际创建的 VPC ID（Terraform 输出或 state 文件中可查）。预期看到 1 个新 VPC，若干子网（公有/私有各 2 个），以及状态为 **available** 的 NAT Gateway。
 
 #### 验证命令与预期输出
 
@@ -155,18 +155,18 @@
 #### ✅ 阶段一验收清单
 
 - [ ] VPC 已成功创建，状态为 *available*，CIDR 设置正确（无冲突）。
-- [ ] 每个可用区均创建了**公有子网**和**私有子网**各至少1个，并正确关联到新 VPC。
+- [ ] 每个可用区均创建了**公有子网**和**私有子网**各至少 1 个，并正确关联到新 VPC。
 - [ ] **Internet Gateway** 已关联到该 VPC，公有子网的路由表包含一条 0.0.0.0/0 指向 Internet Gateway 的路由。
 - [ ] **NAT Gateway** 已创建且为 *available* 状态，私有子网的路由表包含一条 0.0.0.0/0 指向 NAT Gateway 的路由。
 - [ ] Terraform 状态文件 (`terraform.state`) 中存在 VPC、Subnet、NAT 等资源记录，且未出现任何错误。
 
-______________________________________________________________________
+---
 
 ## 阶段二：ALB 创建与域名配置
 
 #### 操作目的与背景
 
-在完成基础网络后，本阶段将部署 **应用型负载均衡器（ALB, Application Load Balancer）** 及其配套资源，为集群中的服务提供对外访问入口。Terraform 将根据需要创建 ALB 以及安全组，并在 **Route 53** 中创建相应的 DNS 记录，将友好的域名指向 ALB。这一阶段确保集群对外服务的流量入口就绪。由于 ALB 是可选的高成本资源，我们可以通过 Terraform 开关灵活启停 ALB 以节省费用（稍后Stop操作中会涉及）。在每日演练中，通常在启动集群前开启 ALB，在停止集群时删除 ALB。
+在完成基础网络后，本阶段将部署 **应用型负载均衡器（ALB, Application Load Balancer）** 及其配套资源，为集群中的服务提供对外访问入口。Terraform 将根据需要创建 ALB 以及安全组，并在 **Route 53** 中创建相应的 DNS 记录，将友好的域名指向 ALB。这一阶段确保集群对外服务的流量入口就绪。由于 ALB 是可选的高成本资源，我们可以通过 Terraform 开关灵活启停 ALB 以节省费用（稍后 Stop 操作中会涉及）。在每日演练中，通常在启动集群前开启 ALB，在停止集群时删除 ALB。
 
 #### 操作步骤
 
@@ -176,7 +176,7 @@ ______________________________________________________________________
    terraform apply -auto-approve -var="region=us-east-1" -var="create_alb=true"
    ```
 
-   此操作将创建一个 ALB（包含默认监听器）、关联的安全组，以及 DNS A记录（alias）。安全组规则默认开放 HTTP/HTTPS 所需端口；Route 53 DNS 记录会将 **lab.rendazhang.com** 根域名解析到新建 ALB 的域名上。*若您未预先创建 Route 53 Hosted Zone，Terraform 在这一步会报错，需要在 AWS 控制台手动创建名为 `lab.rendazhang.com` 的托管区或将域名变量调整为您自己的已配置域名。如不需要DNS，可暂时将相关 Terraform 资源注释掉。*
+   此操作将创建一个 ALB（包含默认监听器）、关联的安全组，以及 DNS A 记录（alias）。安全组规则默认开放 HTTP/HTTPS 所需端口；Route 53 DNS 记录会将 **lab.rendazhang.com** 根域名解析到新建 ALB 的域名上。*若您未预先创建 Route 53 Hosted Zone，Terraform 在这一步会报错，需要在 AWS 控制台手动创建名为 `lab.rendazhang.com` 的托管区或将域名变量调整为您自己的已配置域名。如不需要 DNS，可暂时将相关 Terraform 资源注释掉。*
 
 1. **查询 ALB 信息**：使用 AWS CLI 或控制台查看 ALB 是否创建成功：
 
@@ -184,7 +184,7 @@ ______________________________________________________________________
    aws elbv2 describe-load-balancers --names <ALB-NAME> --region us-east-1 --profile phase2-sso
    ```
 
-   其中 `<ALB-NAME>` 可以通过 Terraform 输出或 AWS 控制台获得（一般Terraform模块会以 "lab-alb" 命名ALB）。以上命令应返回 ALB 的详细信息，包括 **DNSName**（ALB的访问域名）和 **State: active** 等字段。记录下 ALB 的 **DNSName** 以备后续测试使用。
+   其中 `<ALB-NAME>` 可以通过 Terraform 输出或 AWS 控制台获得（一般 Terraform 模块会以 "lab-alb" 命名 ALB）。以上命令应返回 ALB 的详细信息，包括 **DNSName**（ALB 的访问域名）和 **State: active** 等字段。记录下 ALB 的 **DNSName** 以备后续测试使用。
 
 1. **验证 DNS 解析**：如果配置了 Route 53 域名，使用 **nslookup** 或 **dig** 查询 `lab.rendazhang.com`：
 
@@ -220,7 +220,7 @@ ______________________________________________________________________
   Address: 34.ZZ.YY.XX
   ```
 
-  或显示 `lab.rendazhang.com	canonical name = lab-alb-123456789.us-east-1.elb.amazonaws.com.` 表明 DNS CNAME 已指向 ALB。在浏览器访问该域名会返回 ALB 默认响应（如果未挂载后端，则为404），表明 ALB 对外可达。
+  或显示 `lab.rendazhang.com	canonical name = lab-alb-123456789.us-east-1.elb.amazonaws.com.` 表明 DNS CNAME 已指向 ALB。在浏览器访问该域名会返回 ALB 默认响应（如果未挂载后端，则为 404），表明 ALB 对外可达。
 
 #### 常见错误提示与解决办法（Troubleshooting）
 
@@ -234,11 +234,11 @@ ______________________________________________________________________
 
 - [ ] 已创建 ALB（Application Load Balancer），在 AWS 控制台或 CLI 查询中状态为 *active*，类型为 application，Scheme 为 internet-facing。
 - [ ] ALB 分配了**安全组**，安全组入站规则包含 HTTP/HTTPS (80/443) 等必要端口，出站规则开放至 Internet。
-- [ ] **Route 53 DNS** 记录已成功添加：`lab.rendazhang.com` CNAME 指向 ALB 域名（或 A记录别名指向 ALB，视配置而定）。
+- [ ] **Route 53 DNS** 记录已成功添加：`lab.rendazhang.com` CNAME 指向 ALB 域名（或 A 记录别名指向 ALB，视配置而定）。
 - [ ] 本地通过域名或 ALB 公共 DNS 测试连接，ALB 能返回默认响应（404/503 等，因暂无后端，但证明连接已到达 ALB）。
 - [ ] Terraform 状态中存在 ALB 相关资源（如 `aws_lb`、`aws_route53_record` 等），后续可通过 Terraform 管理这些资源的生命周期。
 
-______________________________________________________________________
+---
 
 ## 阶段三：IAM 权限配置
 
@@ -291,7 +291,7 @@ ______________________________________________________________________
 1. **创建 Cluster Autoscaler IRSA 角色（eks-cluster-autoscaler）：** 返回 **IAM -> 角色**，点击“创建角色”：
 
    - **受信实体类型：** 选择 **Web Identity**（Web 身份提供者）。在下拉中选择刚创建的 EKS 集群的 **OIDC 提供者**，主体为 `sts.amazonaws.com`。在具体身份提供者选项中，选择您的集群 OIDC URL（ eksctl 创建集群时开启了 OIDC 支持）。
-   - **添加信任条件：** 当选择 OIDC 提供者后，需要指定可扮演此角色的 Kubernetes 服务账号。设置 **条件 (Condition)** 中的 `sub` 值为：`system:serviceaccount:kube-system:cluster-autoscaler`。这表示仅 `kube-system` 命名空间中名为 `cluster-autoscaler` 的服务账号可以通过IRSA来获取此角色。
+   - **添加信任条件：** 当选择 OIDC 提供者后，需要指定可扮演此角色的 Kubernetes 服务账号。设置 **条件 (Condition)** 中的 `sub` 值为：`system:serviceaccount:kube-system:cluster-autoscaler`。这表示仅 `kube-system` 命名空间中名为 `cluster-autoscaler` 的服务账号可以通过 IRSA 来获取此角色。
    - **附加权限策略：** 选中上一步创建的 **EKSClusterAutoscalerPolicy**（或如果您希望，也可直接附加 Amazon 管理的 AutoScalingFullAccess，但自定义策略权限更精细）。
    - **角色命名：** 命名为 **eks-cluster-autoscaler**，完成创建。
 
@@ -353,7 +353,7 @@ ______________________________________________________________________
 - [ ] eks-cluster-autoscaler 角色已附加 **EKSClusterAutoscalerPolicy** 策略。后续 Kubernetes 集群中的 `cluster-autoscaler` 服务账号将可通过 IRSA 获得该角色权限。
 - [ ] Terraform 配置文件中的 `eks_admin_role_arn` 已更新为 eks-admin-role 的实际 ARN，IRSA 模块中 Cluster Autoscaler 策略 ARN 已调整为您的策略 ARN（或已记录修改计划）。
 
-______________________________________________________________________
+---
 
 ## 阶段四：EKS 集群部署
 
@@ -368,7 +368,7 @@ ______________________________________________________________________
    - 集群名称 **dev**，区域 **us-east-1**。
    - VPC 网络：引用了现有 VPC ID 和子网 ID（来自 Terraform 创建的 VPC）。请确保这些 ID 与您第一阶段创建的 VPC/子网一致。如有不同，需修改 YAML 使之匹配正确的资源。
    - IAM 集成：`withOIDC: true` 开启了 OIDC 提供商用于 IRSA；`serviceRoleARN` 设置为我们在上一阶段创建的 eks-admin-role 的 ARN，确保控制平面使用预授权角色。
-   - 节点组配置：定义了一个名为 **ng-mixed** 的托管节点组，最小0、期望3、最大6节点，使用 Spot 实例（类型包括 t3.small 和 t3.medium）。Spot 实例不保证随时有容量，启用后可大幅节省成本，且节点组支持自动扩缩容。
+   - 节点组配置：定义了一个名为 **ng-mixed** 的托管节点组，最小 0、期望 3、最大 6 节点，使用 Spot 实例（类型包括 t3.small 和 t3.medium）。Spot 实例不保证随时有容量，启用后可大幅节省成本，且节点组支持自动扩缩容。
    - 节点组使用**私有子网**部署（privateNetworking: true），意味着工作节点不暴露公有 IP。所有流量经由 NAT 出网。
    - 节点标签和污点：此例未设置污点，标签标记 role=worker 等，用于标识节点用途。
    - 升级策略等其他细节。通常无需改动上述默认配置，但请核实 eks-admin-role ARN、Subnet IDs 是否准确，否则创建会失败。
@@ -402,9 +402,9 @@ ______________________________________________________________________
 
 #### 验证命令与预期输出
 
-- **eksctl 输出确认：** 在 eksctl 执行完毕时，日志最后通常有 **"EKS cluster <dev> in <us-east-1> is ready"**，并列出节点组的节点信息如 EC2 实例ID。您也可以通过 AWS 控制台的 EKS页面查看 **dev** 集群状态为 **Active**。
+- **eksctl 输出确认：** 在 eksctl 执行完毕时，日志最后通常有 **"EKS cluster <dev> in <us-east-1> is ready"**，并列出节点组的节点信息如 EC2 实例 ID。您也可以通过 AWS 控制台的 EKS 页面查看 **dev** 集群状态为 **Active**。
 
-- **AWS 控制台检查：** 打开 Amazon EKS 控制台，定位到 us-east-1 区域，看到名为 dev 的集群，点入可以查看其 **节点组** 列表有一个 ng-mixed，期望容量3，当前运行节点数可能为2-3（Spot容量情况）。在 **计算 -> EC2 实例** 页面，可以找到属于该节点组的 EC2 实例（Name通常含有 dev 和 ng-mixed 字样），状态为 running。
+- **AWS 控制台检查：** 打开 Amazon EKS 控制台，定位到 us-east-1 区域，看到名为 dev 的集群，点入可以查看其 **节点组** 列表有一个 ng-mixed，期望容量 3，当前运行节点数可能为 2-3（Spot 容量情况）。在 **计算 -> EC2 实例** 页面，可以找到属于该节点组的 EC2 实例（Name 通常含有 dev 和 ng-mixed 字样），状态为 running。
 
 - **kubectl 输出：** 执行 `kubectl get nodes`，示例输出：
 
@@ -416,16 +416,16 @@ ______________________________________________________________________
   ```
 
   以上表示 3 个节点均已就绪 (STATUS = Ready)。
-  `kubectl get pods -A` 列出各命名空间Pod，其中 `kube-system` 下的 **coredns**、**aws-node**（VPC CNI插件）、**kube-proxy** 等 Pod 均应为 **Running** 或 **Completed** 状态，没有持续 CrashLoop 的现象。
+  `kubectl get pods -A` 列出各命名空间 Pod，其中 `kube-system` 下的 **coredns**、**aws-node**（VPC CNI 插件）、**kube-proxy** 等 Pod 均应为 **Running** 或 **Completed** 状态，没有持续 CrashLoop 的现象。
 
 #### 常见错误提示与解决办法（Troubleshooting）
 
 - **eksctl 命令未找到或版本过低：** 如果终端提示 *`eksctl: command not found`*，请先确认已安装 eksctl 工具并配置在 PATH 中。版本过低可能导致不支持最新 EKS 特性，建议使用文档要求的版本（≥0.180）。升级 eksctl 可通过 `brew upgrade eksctl` (Mac) 或从 GitHub releases 手动下载。
-- **IAM 角色错误导致创建失败：** 如果 eksctl 日志显示错误例如 *`cannot assume role arn:aws:iam::...:role/eks-admin-role`* 或 *`AccessDenied`*，请检查 YAML 中 `serviceRoleARN` 是否正确填入了 eks-admin-role 的 ARN且该角色已附加必要策略（阶段三检查）。修正 ARN 或权限后，可使用 `eksctl delete cluster --name dev` 清理失败的残余，然后重新执行创建。
-- **Subnet ID 无效或不存在：** 若 eksctl 报 *`InvalidSubnetID.NotFound`*，说明 YAML 中引用的子网 ID 有误，可能未更新为 Terraform 实际创建的值。请登录 VPC控制台获取正确的子网 ID，更新 YAML 后重试。
-- **节点组创建超时或节点未达期望数：** 使用 Spot 实例时可能遇到容量不足或请求超时。如果 eksctl 最终提示节点组仅启动了部分节点，可在 EKS 控制台查看节点组详情的事件。如果持续 Spot 不可用，解决办法：可以调整实例类型（如增加其他类似规格的 instanceTypes）或暂时关闭 Spot 模式（YAML中将 `spot: true` 改为 false 使用按需实例），然后删除集群重建。
+- **IAM 角色错误导致创建失败：** 如果 eksctl 日志显示错误例如 *`cannot assume role arn:aws:iam::...:role/eks-admin-role`* 或 *`AccessDenied`*，请检查 YAML 中 `serviceRoleARN` 是否正确填入了 eks-admin-role 的 ARN 且该角色已附加必要策略（阶段三检查）。修正 ARN 或权限后，可使用 `eksctl delete cluster --name dev` 清理失败的残余，然后重新执行创建。
+- **Subnet ID 无效或不存在：** 若 eksctl 报 *`InvalidSubnetID.NotFound`*，说明 YAML 中引用的子网 ID 有误，可能未更新为 Terraform 实际创建的值。请登录 VPC 控制台获取正确的子网 ID，更新 YAML 后重试。
+- **节点组创建超时或节点未达期望数：** 使用 Spot 实例时可能遇到容量不足或请求超时。如果 eksctl 最终提示节点组仅启动了部分节点，可在 EKS 控制台查看节点组详情的事件。如果持续 Spot 不可用，解决办法：可以调整实例类型（如增加其他类似规格的 instanceTypes）或暂时关闭 Spot 模式（YAML 中将 `spot: true` 改为 false 使用按需实例），然后删除集群重建。
 - **kubectl 连接失败：** 若 `kubectl get nodes` 报错 *`could not connect to cluster`* 或超时，可能 kubeconfig 未正确设置。请重试执行 `aws eks update-kubeconfig ...` 命令，并确保 AWS CLI 使用正确 Profile 和 Region。另一个可能原因是本地网络防火墙阻拦，EKS 需访问 AWS API 端点，请确保本地网络可以访问 \*.eks.amazonaws.com 域名。
-- **系统 Pod 异常：** 如果 `aws-node` 或 `coredns` Pod CrashLoop，常见原因是少装置或配置错误。例如 VPC CNI 插件需要特定 IAM 权限（通常节点 IAM Role eksctl自动创建会附加，问题不多见），CoreDNS CrashLoop多因无法连通 cluster DNS，此时检查节点子网的 DHCP Option是否配置了 AmazonProvidedDNS（Terraform 一般默认配置无需特殊处理）。
+- **系统 Pod 异常：** 如果 `aws-node` 或 `coredns` Pod CrashLoop，常见原因是少装置或配置错误。例如 VPC CNI 插件需要特定 IAM 权限（通常节点 IAM Role eksctl 自动创建会附加，问题不多见），CoreDNS CrashLoop 多因无法连通 cluster DNS，此时检查节点子网的 DHCP Option 是否配置了 AmazonProvidedDNS（Terraform 一般默认配置无需特殊处理）。
 - **集群名字冲突：** 如果尝试创建的集群名称在当前账户区域已存在（可能前一天忘记删或者有同名集群），eksctl 会报错终止。可更换 metadata.name 或先删除同名集群：`eksctl delete cluster --name dev --region us-east-1`.
 
 #### ✅ 阶段四验收清单
@@ -436,7 +436,7 @@ ______________________________________________________________________
 - [ ] `kubectl get nodes` 显示所有节点 **Ready**，`kubectl get pods -A` 显示系统 Pods **Running**，无 CrashLoopBackOff 等异常。
 - [ ] eksctl YAML 中配置的各项均生效：包括 Spot 配置、节点标签、OIDC 提供者启用等。OIDC 提供者可在 AWS IAM 控制台 **身份提供商** 页看到对应条目。
 
-______________________________________________________________________
+---
 
 ## 阶段五：Terraform 资源导入
 
@@ -494,7 +494,7 @@ ______________________________________________________________________
   module.irsa.aws_iam_role_policy_attachment.cluster_autoscaler_attach
   ```
 
-  这些对应 EKS 集群、节点组、OIDC提供商、IRSA角色及策略附加关系。确认 `eks_cluster_autoscaler` 角色和策略关联均已导入（对应我们在阶段三创建的 IAM 角色和策略）。
+  这些对应 EKS 集群、节点组、OIDC 提供商、IRSA 角色及策略附加关系。确认 `eks_cluster_autoscaler` 角色和策略关联均已导入（对应我们在阶段三创建的 IAM 角色和策略）。
 
 - **Terraform Plan 输出：** 理想输出为：
 
@@ -520,11 +520,11 @@ ______________________________________________________________________
 
 - **Launch Template ID 变更未捕获：** 由于 eksctl 创建的节点组使用了 Launch Template，Terraform 配置中可能需要该 Launch Template ID。当前 Terraform 模块里 Launch Template ID 是硬编码值。如果集群重建导致 Launch Template ID 更新，Terraform plan 会试图调整回旧值（或认为不一致）。
 
-  - **💡 修复建议：** 将 Launch Template 相关配置改为通过数据源或变量传入，而不是硬编码具体 ID。目前手动解决办法：更新 Terraform 配置中的 `launch_template.id` 为新的 Launch Template ID（可在 AWS EC2 控制台的 Launch Templates中找到dev节点组对应的模板）。
+  - **💡 修复建议：** 将 Launch Template 相关配置改为通过数据源或变量传入，而不是硬编码具体 ID。目前手动解决办法：更新 Terraform 配置中的 `launch_template.id` 为新的 Launch Template ID（可在 AWS EC2 控制台的 Launch Templates 中找到 dev 节点组对应的模板）。
 
-- **节点 IAM Role ARN 不匹配：** 类似地，托管节点组的节点角色 ARN 也在 Terraform 配置中固定为了首次创建时的值。如果每次重建集群该 ARN 发生变化（如 eksctl 未复用旧角色），Terraform 可能报告差异。解决：可以在 eksctl 创建集群时指定复用已有节点角色，或在 Terraform 中将 `node_role_arn` 参数改为变量，通过导入步骤获取实际的角色 ARN 后赋值。手册执行中，如遇不匹配，可手动编辑 Terraform 配置文件 `infra/aws/modules/eks/main.tf`，更新第37行的 ARN 为新值。这属于代码优化范畴，实际演练时注意保持此值同步最新。
+- **节点 IAM Role ARN 不匹配：** 类似地，托管节点组的节点角色 ARN 也在 Terraform 配置中固定为了首次创建时的值。如果每次重建集群该 ARN 发生变化（如 eksctl 未复用旧角色），Terraform 可能报告差异。解决：可以在 eksctl 创建集群时指定复用已有节点角色，或在 Terraform 中将 `node_role_arn` 参数改为变量，通过导入步骤获取实际的角色 ARN 后赋值。手册执行中，如遇不匹配，可手动编辑 Terraform 配置文件 `infra/aws/modules/eks/main.tf`，更新第 37 行的 ARN 为新值。这属于代码优化范畴，实际演练时注意保持此值同步最新。
 
-- **OIDC 提供商导入问题：** 如果导入 OIDC 提供商时报 ARN 不正确，可登录 IAM控制台 -> 身份提供商，找到类似 `oidc.eks.<region>.amazonaws.com/id/XXXX` 的提供者 ARN，确认脚本组装的 ARN 是否一致。如不一致，可手动执行 import：
+- **OIDC 提供商导入问题：** 如果导入 OIDC 提供商时报 ARN 不正确，可登录 IAM 控制台 -> 身份提供商，找到类似 `oidc.eks.<region>.amazonaws.com/id/XXXX` 的提供者 ARN，确认脚本组装的 ARN 是否一致。如不一致，可手动执行 import：
 
   ```bash
   terraform import module.eks.aws_iam_openid_connect_provider.oidc[0] arn:aws:iam::<AccountID>:oidc-provider/oidc.eks.us-east-1.amazonaws.com/id/XXXX
@@ -532,7 +532,7 @@ ______________________________________________________________________
 
   将 AccountID 和 XXXX 替换为实际值。
 
-- **Terraform Plan 非预期更改：** 如果 Plan 显示需要新建或销毁资源（尤其 EKS 类资源），务必三思后再执行。通常导入完成即应无差异。如出现，可检查 Terraform版本、AWS Provider版本兼容性或模块bugs。例如 Terraform 1.x 对 AWS EKS 有些新字段默认值，必要时在 Terraform 配置中显式添加这些字段以消除虚假差异，然后再次 plan 确认。
+- **Terraform Plan 非预期更改：** 如果 Plan 显示需要新建或销毁资源（尤其 EKS 类资源），务必三思后再执行。通常导入完成即应无差异。如出现，可检查 Terraform 版本、AWS Provider 版本兼容性或模块 bugs。例如 Terraform 1.x 对 AWS EKS 有些新字段默认值，必要时在 Terraform 配置中显式添加这些字段以消除虚假差异，然后再次 plan 确认。
 
 #### ✅ 阶段五验收清单
 
@@ -540,9 +540,9 @@ ______________________________________________________________________
 - [ ] `terraform state list` 可以列出 EKS 集群 (`aws_eks_cluster`)、节点组 (`aws_eks_node_group`)、OIDC 提供商 (`aws_iam_openid_connect_provider`) 以及 IRSA 相关 IAM 资源 (`aws_iam_role` 和 `aws_iam_role_policy_attachment`)。
 - [ ] 运行 Terraform Plan 显示无需额外变更（或仅有少量可接受的修改），证明 Terraform 配置与实际基础设施状态一致。特别地，没有 **销毁 (destroy)** EKS 集群或节点组的计划。
 - [ ] Terraform 状态文件已备份到远端（S3），确保即使本地环境丢失也可恢复状态。导入操作日志（如 tf-import.sh 输出）妥善保存，以供日后排查参考。
-- [ ] 针对 Terraform 脚本中硬编码的 AWS 资源 ID/ARN（如 Launch Template、IAM策略等）已有记录或改进方案，避免下次重建时出现不匹配问题。已经考虑对 Makefile 或脚本进行改进（例如增加 `stop-hard` 命令）以完善日常重建流程。
+- [ ] 针对 Terraform 脚本中硬编码的 AWS 资源 ID/ARN（如 Launch Template、IAM 策略等）已有记录或改进方案，避免下次重建时出现不匹配问题。已经考虑对 Makefile 或脚本进行改进（例如增加 `stop-hard` 命令）以完善日常重建流程。
 
-______________________________________________________________________
+---
 
 ## 阶段六：Cluster Autoscaler 安装
 
@@ -565,7 +565,7 @@ ______________________________________________________________________
 
    - 在 Deployment 的 spec.template.spec.containers.args 下，找到 `--cluster-name=<YOUR CLUSTER NAME>`，将其值替换为 **dev**（您的集群名称）。
 
-   - 确认 Deployment 的 spec.template.spec.containers.image 使用的版本与您的集群K8s版本兼容。例如，对于 Kubernetes 1.30，可使用 autoscaler 镜像 tag `v1.30.n`（n为最新小版本）。官方 YAML 可能使用 `latest` 或较老版本，请酌情调整镜像标签以匹配 Kubernetes 版本。
+   - 确认 Deployment 的 spec.template.spec.containers.image 使用的版本与您的集群 K8s 版本兼容。例如，对于 Kubernetes 1.30，可使用 autoscaler 镜像 tag `v1.30.n`（n 为最新小版本）。官方 YAML 可能使用 `latest` 或较老版本，请酌情调整镜像标签以匹配 Kubernetes 版本。
 
    - 将 Deployment spec.template.spec 中添加以下环境变量参数，以设置缩容行为：
 
@@ -576,7 +576,7 @@ ______________________________________________________________________
        value: Asia/Shanghai         # 可选，设置时区以便日志按当地时间
      ```
 
-     同时，在 args 部分添加 `--balance-similar-node-groups` 和 `--skip-nodes-with-system-pods=false` 等参数，以启用更智能的均衡扩容和允许缩容至0节点。完整args示例：
+     同时，在 args 部分添加 `--balance-similar-node-groups` 和 `--skip-nodes-with-system-pods=false` 等参数，以启用更智能的均衡扩容和允许缩容至 0 节点。完整 args 示例：
 
      ```yaml
        args:
@@ -643,34 +643,34 @@ ______________________________________________________________________
 
 #### 验证命令与预期输出
 
-- **Deployment 状态：** 执行 `kubectl -n kube-system get deployment cluster-autoscaler -o wide`，应显示 READY 列为 `1/1`，表示1个副本全部就绪。ServiceAccount 绑定正确的话，可通过 `kubectl -n kube-system describe pod <cluster-autoscaler-pod>` 查看 **Annotations** 部分，能看到我们设置的 `eks.amazonaws.com/role-arn: arn:aws:iam::<AccountID>:role/eks-cluster-autoscaler`。
+- **Deployment 状态：** 执行 `kubectl -n kube-system get deployment cluster-autoscaler -o wide`，应显示 READY 列为 `1/1`，表示 1 个副本全部就绪。ServiceAccount 绑定正确的话，可通过 `kubectl -n kube-system describe pod <cluster-autoscaler-pod>` 查看 **Annotations** 部分，能看到我们设置的 `eks.amazonaws.com/role-arn: arn:aws:iam::<AccountID>:role/eks-cluster-autoscaler`。
 
 - **Pod 日志：** 通过 `kubectl logs` 查看日志，正常情况下无错误堆栈或权限报错。有关键几行需注意：
 
   - **启动信息：** 显示 Autoscaler 版本和参数列表，确认参数如 `--cluster-name=dev` 生效。
   - **IAM 权限检查：** 如果 IRSA 成功，日志不会有权限相关报错；否则会出现对 Auto Scaling API 调用被拒绝的信息，需要检查 IRSA 配置。
-  - **发现节点组：** 日志列出已发现的 ASG 名称 (通常为 eksctl创建的ASG，包含节点组名)。
-  - **运行周期**： 默认每10秒Autoscaler评估一次。如集群状态稳定，日志多为 "No unschedulable pods" 或 "Scale down evaluation: node X marked as unneeded" 等信息。
+  - **发现节点组：** 日志列出已发现的 ASG 名称 (通常为 eksctl 创建的 ASG，包含节点组名)。
+  - **运行周期**： 默认每 10 秒 Autoscaler 评估一次。如集群状态稳定，日志多为 "No unschedulable pods" 或 "Scale down evaluation: node X marked as unneeded" 等信息。
 
-- **功能测试 (可选)：** 部署一个超出当前节点容量的应用。例如创建一个 Deployment 请求 4 个 vCPU，而目前3个 t3.small节点不够容纳，则会有Pod Pending。几分钟内Autoscaler应检测到 unschedulable pods 并在日志中输出扩容决策，然后通过 EKS添加新节点（此过程可在 EKS控制台的节点组活动中看到scale-up记录）。待新节点就绪，Pending Pod变为Running，Autoscaler日志会记录成功扩容。相反地，删除该Deployment后，约10分钟后Autoscaler会评估缩容，若节点空闲满足条件会移除多余节点（节点会逐渐变为 NotReady -> 删除）。
+- **功能测试 (可选)：** 部署一个超出当前节点容量的应用。例如创建一个 Deployment 请求 4 个 vCPU，而目前 3 个 t3.small 节点不够容纳，则会有 Pod Pending。几分钟内 Autoscaler 应检测到 unschedulable pods 并在日志中输出扩容决策，然后通过 EKS 添加新节点（此过程可在 EKS 控制台的节点组活动中看到 scale-up 记录）。待新节点就绪，Pending Pod 变为 Running，Autoscaler 日志会记录成功扩容。相反地，删除该 Deployment 后，约 10 分钟后 Autoscaler 会评估缩容，若节点空闲满足条件会移除多余节点（节点会逐渐变为 NotReady -> 删除）。
 
 #### 常见错误提示与解决办法（Troubleshooting）
 
-- **Autoscaler Pod CrashLoopBackOff：** 执行 `kubectl describe pod` 查看详细信息。如果镜像拉取失败，检查网络或更换镜像仓库。如果错误是 **permission denied** 之类，可能 IRSA 未生效，Pod 无法调用 AWS API。请确保 ServiceAccount 名称、命名空间和 IAM角色信任中的条件完全匹配且已加注解绑定角色 ARN。也可检查 AWS CloudWatch Logs 中是否有 Autoscaler 权限错误记录，定位问题。
-- **未发现 ASG：** 日志持续提示 *“Failed to discover ASG: ...”* 之类，可能是 cluster-autoscaler 参数不正确。确保使用了 `--cloud-provider=aws` 和 `--cluster-name=dev`，名称必须与实际 EKS集群名完全一致。也确认节点组确实处于**自动伸缩组**模式（Managed Node Group 本质上会有一个隐含的 ASG，由 eksctl 创建）。通过 AWS EC2 控制台的 Auto Scaling Groups，可以看到名称类似 *eksctl-dev-nodegroup-ng-mixed-NodeGroup-...* 的ASG。Autoscaler只有检测到它才会工作。
-- **扩容不起作用：** 若有 Pending Pod 而 Autoscaler未反应，可能 Pod 设置了 `cluster-autoscaler.kubernetes.io/safe-to-evict: "false"` 或 Pod 有本地存储，默认策略不驱逐带本地存储Pod，导致不触发扩容。可以通过给 Deployment 添加 `tolerations` 允许调度失败，或者在 Autoscaler 参数中调整 `--expendable-pods-priority-cutoff` 等。基本演练中不深入此项。
-- **缩容不起作用：** 如果节点长期空闲却未缩容，检查是否有 Deployment 的 replicasets始终在每个节点留有一个Pod（即 **Pod 反亲和** 或 DaemonSet等），默认策略不会缩减导致驱逐系统Pod或DaemonSet Pod的节点。需要允许此类缩容需设置 `--skip-nodes-with-system-pods=false`（我们已经设置）以及 `--skip-nodes-with-local-storage=false` 视情况而定。
-- **时间不同步警告：** 日志可能有 *“Node not found”* 或类似警告，多由于启动初期信息未完全同步，可忽略。另如果本地时区与UTC不同，可通过TZ环境变量调整日志时区，或忽略时区差异对功能无影响。
+- **Autoscaler Pod CrashLoopBackOff：** 执行 `kubectl describe pod` 查看详细信息。如果镜像拉取失败，检查网络或更换镜像仓库。如果错误是 **permission denied** 之类，可能 IRSA 未生效，Pod 无法调用 AWS API。请确保 ServiceAccount 名称、命名空间和 IAM 角色信任中的条件完全匹配且已加注解绑定角色 ARN。也可检查 AWS CloudWatch Logs 中是否有 Autoscaler 权限错误记录，定位问题。
+- **未发现 ASG：** 日志持续提示 *“Failed to discover ASG: ...”* 之类，可能是 cluster-autoscaler 参数不正确。确保使用了 `--cloud-provider=aws` 和 `--cluster-name=dev`，名称必须与实际 EKS 集群名完全一致。也确认节点组确实处于**自动伸缩组**模式（Managed Node Group 本质上会有一个隐含的 ASG，由 eksctl 创建）。通过 AWS EC2 控制台的 Auto Scaling Groups，可以看到名称类似 *eksctl-dev-nodegroup-ng-mixed-NodeGroup-...* 的 ASG。Autoscaler 只有检测到它才会工作。
+- **扩容不起作用：** 若有 Pending Pod 而 Autoscaler 未反应，可能 Pod 设置了 `cluster-autoscaler.kubernetes.io/safe-to-evict: "false"` 或 Pod 有本地存储，默认策略不驱逐带本地存储 Pod，导致不触发扩容。可以通过给 Deployment 添加 `tolerations` 允许调度失败，或者在 Autoscaler 参数中调整 `--expendable-pods-priority-cutoff` 等。基本演练中不深入此项。
+- **缩容不起作用：** 如果节点长期空闲却未缩容，检查是否有 Deployment 的 replicasets 始终在每个节点留有一个 Pod（即 **Pod 反亲和** 或 DaemonSet 等），默认策略不会缩减导致驱逐系统 Pod 或 DaemonSet Pod 的节点。需要允许此类缩容需设置 `--skip-nodes-with-system-pods=false`（我们已经设置）以及 `--skip-nodes-with-local-storage=false` 视情况而定。
+- **时间不同步警告：** 日志可能有 *“Node not found”* 或类似警告，多由于启动初期信息未完全同步，可忽略。另如果本地时区与 UTC 不同，可通过 TZ 环境变量调整日志时区，或忽略时区差异对功能无影响。
 
 #### ✅ 阶段六验收清单
 
 - [ ] Cluster Autoscaler 部署已创建，Pod 在 **kube-system** 命名空间中处于 Running 状态，且 **不会被驱逐**（带有 `cluster-autoscaler.kubernetes.io/safe-to-evict: "false"` 注解）。
-- [ ] Cluster Autoscaler 使用的 ServiceAccount 已正确关联 IRSA：ServiceAccount 注解包含 eks-cluster-autoscaler 角色 ARN，AWS 控制台中该角色最近的 **信任关系** 调用时间已更新（表示有通过IRSA成功调用）。
-- [ ] 查看 Autoscaler 日志，确认其**检测到 EKS节点组**并定期输出扫描信息，没有出现权限不足等错误。能够看到 **Registered ASG** 等日志行，表明集群节点组已被接管监控。
-- [ ] 触发扩容/缩容测试正常：人为制造Pod Pending后，Autoscaler可以及时增加节点；移除负载后，一段时间内自动减少空闲节点，EKS 控制台的 Node Group 活动记录与 Autoscaler 日志相符。
-- [ ] Autoscaler 部署配置符合优化要求：包括使用了**AutoDiscovery**（通过 `--cluster-name` 实现，无需手动列ASG）、开启了 **balance-similar-node-groups** 保证不同类型实例均衡扩容，配置了 `--skip-nodes-with-system-pods=false` 以允许缩容至0节点，以及镜像版本匹配当前K8s版本等。
+- [ ] Cluster Autoscaler 使用的 ServiceAccount 已正确关联 IRSA：ServiceAccount 注解包含 eks-cluster-autoscaler 角色 ARN，AWS 控制台中该角色最近的 **信任关系** 调用时间已更新（表示有通过 IRSA 成功调用）。
+- [ ] 查看 Autoscaler 日志，确认其**检测到 EKS 节点组**并定期输出扫描信息，没有出现权限不足等错误。能够看到 **Registered ASG** 等日志行，表明集群节点组已被接管监控。
+- [ ] 触发扩容/缩容测试正常：人为制造 Pod Pending 后，Autoscaler 可以及时增加节点；移除负载后，一段时间内自动减少空闲节点，EKS 控制台的 Node Group 活动记录与 Autoscaler 日志相符。
+- [ ] Autoscaler 部署配置符合优化要求：包括使用了**AutoDiscovery**（通过 `--cluster-name` 实现，无需手动列 ASG）、开启了 **balance-similar-node-groups** 保证不同类型实例均衡扩容，配置了 `--skip-nodes-with-system-pods=false` 以允许缩容至 0 节点，以及镜像版本匹配当前 K8s 版本等。
 
-______________________________________________________________________
+---
 
 ## 阶段七：环境关停与清理（可选）
 
@@ -680,7 +680,7 @@ ______________________________________________________________________
 
 在完成一天的练习后，为节省费用，需要对云上资源进行关停处理。本项目提供了两种关停策略：
 
-- **停止（Stop）模式**：保留基础结构（VPC、子网、安全组等）和Terraform状态，仅关闭高成本资源如 NAT 网关、ALB，并删除 EKS 控制面和节点。这可以快速释放大部分资源占用，同时保留网络以供下次快速重建。
+- **停止（Stop）模式**：保留基础结构（VPC、子网、安全组等）和 Terraform 状态，仅关闭高成本资源如 NAT 网关、ALB，并删除 EKS 控制面和节点。这可以快速释放大部分资源占用，同时保留网络以供下次快速重建。
 - **销毁（Destroy）模式**：彻底删除所有通过 Terraform 和 eksctl 创建的资源，包括 VPC 本身。此模式适用于需要完全重置环境或者不再使用时。**警告：销毁操作不可恢复，执行前请确认无其他依赖。**
 
 #### 操作步骤
@@ -693,17 +693,17 @@ ______________________________________________________________________
    make stop
    ```
 
-   该命令实质运行了 `terraform apply -var="create_nat=false" -var="create_alb=false" -var="create_eks=false"`。它会将 NAT Gateway 和 ALB 相关资源删除或关闭，同时不再保留 EKS相关的弹性网卡和辅助资源（因为 `create_eks=false` 将对应 Terraform管理的资源计入销毁范围，但由于我们已导入 cluster, nodegroup，这里应谨慎）。
+   该命令实质运行了 `terraform apply -var="create_nat=false" -var="create_alb=false" -var="create_eks=false"`。它会将 NAT Gateway 和 ALB 相关资源删除或关闭，同时不再保留 EKS 相关的弹性网卡和辅助资源（因为 `create_eks=false` 将对应 Terraform 管理的资源计入销毁范围，但由于我们已导入 cluster, nodegroup，这里应谨慎）。
 
    **注意：**`make stop` 并不会删除 VPC、本地存储等基础架构，只是把可关停部分停掉。执行完成后，可在 AWS 控制台验证 NAT Gateway 是否删除（应变为 deleted 状态），ALB 是否消失。
 
-1. **删除 EKS 集群控制面：** NAT和ALB关停后，使用 eksctl 删除 EKS 集群：
+1. **删除 EKS 集群控制面：** NAT 和 ALB 关停后，使用 eksctl 删除 EKS 集群：
 
    ```bash
    make stop-cluster
    ```
 
-   该命令等价执行 `eksctl delete cluster --name dev --region us-east-1`。eksctl 将会删除控制平面以及节点组（将触发所有 EC2 实例和相关Auto Scaling Group的回收）。由于我们通过 IRSA 创建的OIDC提供商和IRSA角色是独立资源，它们**不会**被 eksctl 删除，需要保留用于下次重建复用（如不想保留可手动删除OIDC提供商）。
+   该命令等价执行 `eksctl delete cluster --name dev --region us-east-1`。eksctl 将会删除控制平面以及节点组（将触发所有 EC2 实例和相关 Auto Scaling Group 的回收）。由于我们通过 IRSA 创建的 OIDC 提供商和 IRSA 角色是独立资源，它们**不会**被 eksctl 删除，需要保留用于下次重建复用（如不想保留可手动删除 OIDC 提供商）。
    等待命令完成，EKS 控制台中 dev 集群应消失。此时 VPC 等仍在，但不产生产生费用的资源已关停。
 
 1. **（可选）标记停止完成**：可以执行 `make clean` 清理本地缓存文件，如 `.last-asg-bound` 等。并记录下当日操作日志 `make logs` 供事后分析。到此，环境已安全停止，次日可通过 `make start` 和 `make start-cluster` 快速重启集群。
@@ -716,9 +716,9 @@ ______________________________________________________________________
    make destroy-all
    ```
 
-   该命令会自动调用 `stop-cluster` 删除 EKS 集群，然后执行 `terraform destroy` 销毁 Terraform创建的所有资源。包括VPC、子网、路由表、安全组、以及通过Terraform管理的IAM角色、OIDC提供商等都会被删除。请谨慎运行此命令，并确保Terraform状态中没有非本练习范围的资源，以免误删。
+   该命令会自动调用 `stop-cluster` 删除 EKS 集群，然后执行 `terraform destroy` 销毁 Terraform 创建的所有资源。包括 VPC、子网、路由表、安全组、以及通过 Terraform 管理的 IAM 角色、OIDC 提供商等都会被删除。请谨慎运行此命令，并确保 Terraform 状态中没有非本练习范围的资源，以免误删。
 
-1. **清理残留和状态**：如果 destroy-all 执行成功，AWS 上应不再有演练创建的任何资源。您可以检查 S3 Bucket 中 Terraform状态文件是否仍存在，通常 destroy 不会自动删除状态文件，可根据策略选择保留或手动删除。DynamoDB 锁表记录也可清理。最后，运行 `aws sso logout` 注销会话以确保账号安全。
+1. **清理残留和状态**：如果 destroy-all 执行成功，AWS 上应不再有演练创建的任何资源。您可以检查 S3 Bucket 中 Terraform 状态文件是否仍存在，通常 destroy 不会自动删除状态文件，可根据策略选择保留或手动删除。DynamoDB 锁表记录也可清理。最后，运行 `aws sso logout` 注销会话以确保账号安全。
 
 #### 验证命令与预期输出
 
@@ -729,9 +729,9 @@ ______________________________________________________________________
 
 - **Terraform destroy 失败：** 如果在 destroy 阶段 Terraform 提示删除某些资源失败，可能是依赖顺序问题或残留依赖。例如 EKS 集群未删干净造成 VPC 删不掉，可重试执行 `terraform destroy` 再次尝试。或者通过 AWS 控制台检查是否有资源需要先手工删除（如留存的 ENI、EC2 等）。
 
-- **`make stop` 引发意外删除：** 由于我们将 `create_eks` 设置为 false 以停用 EKS相关Terraform资源，但我们导入了 EKS集群/节点组，这里可能产生混乱。实践中建议不对正在导入管理的 EKS 资源使用 terraform 削减操作，而是仅stop NAT/ALB即可。
+- **`make stop` 引发意外删除：** 由于我们将 `create_eks` 设置为 false 以停用 EKS 相关 Terraform 资源，但我们导入了 EKS 集群/节点组，这里可能产生混乱。实践中建议不对正在导入管理的 EKS 资源使用 terraform 削减操作，而是仅 stop NAT/ALB 即可。
 
-  - **💡 修复建议：** 引入一个专门的 make 目标（例如 `make stop-nat-alb`）只关停 NAT 和 ALB，不涉及 EKS 资源，以避免 Terraform 试图销毁 EKS相关状态。此外，Makefile 中提到的 `stop-hard` 目标目前未实现, 建议补充对应规则以自动调用 stop 和 eksctl delete。例如：
+  - **💡 修复建议：** 引入一个专门的 make 目标（例如 `make stop-nat-alb`）只关停 NAT 和 ALB，不涉及 EKS 资源，以避免 Terraform 试图销毁 EKS 相关状态。此外，Makefile 中提到的 `stop-hard` 目标目前未实现, 建议补充对应规则以自动调用 stop 和 eksctl delete。例如：
 
   ```make
   stop-hard: stop
@@ -742,12 +742,12 @@ ______________________________________________________________________
 
 - **资源残留收费：** 停止模式下，VPC 和某些少量资源保留不会产生成本。但如果您的 Hosted Zone 和 DynamoDB 锁表等长时间不用，也可选择删除以节省极小成本。留意 AWS Cost Explorer，确保无遗留昂贵资源（如 EIP 没有释放会产生少量闲置费用）。
 
-- **重复环境冲突：** 如果您每日重建，不销毁 VPC，则 VPC ID 保持不变，Route 53 记录也一直存在，无需每天改。但若曾销毁又重建，留意更新 eksctl YAML 和 DNS 等配置为新资源。导入脚本、Terraform配置里的ID也要相应更新。保持各阶段脚本和配置参数同步对重复演练非常重要。
+- **重复环境冲突：** 如果您每日重建，不销毁 VPC，则 VPC ID 保持不变，Route 53 记录也一直存在，无需每天改。但若曾销毁又重建，留意更新 eksctl YAML 和 DNS 等配置为新资源。导入脚本、Terraform 配置里的 ID 也要相应更新。保持各阶段脚本和配置参数同步对重复演练非常重要。
 
 #### ✅ 阶段七验收清单
 
 - [ ] 执行 **停止模式** 后：NAT Gateway、ALB 已删除，EKS 集群与节点组已删除但 VPC 等基础结构仍在。AWS 账户不再有持续计费的计算/网络资源，集群状态为**已删除**。
-- [ ] 准备第二天重建：保留的 VPC 和 Terraform状态等验证正确，无意外变动。下次执行 `make start && make start-cluster` 能在原 VPC 上重新创建相同配置的集群，实现配置复用。
-- [ ] 执行 **销毁模式** 后：本演练涉及的所有 AWS 资源均删除，无残留。S3 上 Terraform状态可备份删除。确认云上不再产生任何费用。
+- [ ] 准备第二天重建：保留的 VPC 和 Terraform 状态等验证正确，无意外变动。下次执行 `make start && make start-cluster` 能在原 VPC 上重新创建相同配置的集群，实现配置复用。
+- [ ] 执行 **销毁模式** 后：本演练涉及的所有 AWS 资源均删除，无残留。S3 上 Terraform 状态可备份删除。确认云上不再产生任何费用。
 - [ ] Makefile 脚本改进建议已经记录或实施，如增加 **stop-hard** 规则便于一键彻底关停、避免 Terraform 停止时干扰导入资源等，提升每日演练流程的可靠性和便利性。
 - [ ] 整个每日演练流程（阶段一至七）构成闭环，您已经能够在一天内从无到有部署出完整的云原生环境，并在结束时安全地将其拆除。演练过程中的问题也都得到解决，为将来的自动化和大规模部署打下基础。祝贺您完成每日演练！

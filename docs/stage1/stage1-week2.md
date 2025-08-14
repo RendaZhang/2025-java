@@ -37,7 +37,7 @@
 
 # Week 2 - Review of Spring Framework, Databases, and Caching
 
-______________________________________________________________________
+---
 
 ## Day 1 - Spring
 
@@ -61,7 +61,7 @@ We used the following annotations to implement AOP:
 
 A logging aspect was created to track all service method calls and their execution times, improving observability and maintainability.
 
-______________________________________________________________________
+---
 
 ## Day 2 – Spring Boot Basics, REST API & Observability
 
@@ -91,7 +91,7 @@ Spring Boot uses conditional annotations (e.g. `@ConditionalOnClass`) under `@En
 
 Overall, the hands-on practice reinforced my understanding of Spring Boot’s opinionated setup and demonstrated how to create clean, maintainable, and observable REST services.
 
-______________________________________________________________________
+---
 
 ## Day 3 – Integrating MySQL & Production-ready API
 
@@ -118,7 +118,7 @@ Introduced **MapStruct** to convert between entities and DTOs, preventing over-e
 
 All endpoints were validated with Postman, including edge cases such as unique-constraint violations and validation errors.
 
-______________________________________________________________________
+---
 
 ## Day 4 – Spring Cloud Microservices Fundamentals
 
@@ -138,7 +138,7 @@ ______________________________________________________________________
 
 This hands-on exercise solidified my understanding of distributed service discovery, client-side load balancing, and fault-tolerance patterns in Spring Cloud.
 
-______________________________________________________________________
+---
 
 ## Day 5 – MySQL Query‑Optimization Summary 🚀
 
@@ -205,13 +205,13 @@ ______________________________________________________________________
 
 These optimisations leave the `task‑manager` micro‑services ready for higher traffic and set a solid foundation for future caching and sharding work.
 
-______________________________________________________________________
+---
 
 ## Day 6 – Redis Caching Integration Summary 🚀
 
 Today I focused on introducing a high-performance **Redis** cache layer into the Spring-Boot-based micro-services.
 
-______________________________________________________________________
+---
 
 ### 🔑 Key Redis Concepts Reviewed
 
@@ -219,7 +219,7 @@ ______________________________________________________________________
 - Data structures mastered: **String** (hot key/value), **Hash** (object fields), **List** (queue), **ZSet** (rank).
 - Persistence & HA: **RDB / AOF** snapshots, master-replica with Sentinel.
 
-______________________________________________________________________
+---
 
 ### 🛠 Implementation Highlights
 
@@ -232,7 +232,7 @@ ______________________________________________________________________
 | **Cache penetration** | `unless="#result==null"` still caches empty result (short TTL) to block repeated misses. |
 | **Cache breakdown** | Prepared Mutex lock (Redisson) for future hot-key protection; logical-expiry pattern noted. |
 
-______________________________________________________________________
+---
 
 ### 📈 Measured Performance
 
@@ -244,7 +244,7 @@ ______________________________________________________________________
 
 Hit rate visible via `keyspace_hits / keyspace_misses` and application logs (“Cache hit for key 1”).
 
-______________________________________________________________________
+---
 
 ### 🧩 Lessons Learned
 
@@ -255,7 +255,7 @@ ______________________________________________________________________
 
 With Redis caching in place, the Task-Manager service set is ready to handle higher traffic while keeping database pressure low.
 
-______________________________________________________________________
+---
 
 ## Day 7 - Weekly Technical Log
 

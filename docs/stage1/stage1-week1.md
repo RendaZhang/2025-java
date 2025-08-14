@@ -59,7 +59,7 @@
 
 # Week 1 - Java Basic Review
 
-______________________________________________________________________
+---
 
 ## Day 1 — Java Fundamentals & OOP Quick Refresh
 
@@ -180,7 +180,7 @@ class Circle extends Shape { ... }
 class Bird implements Flyable { ... }
 ```
 
-______________________________________________________________________
+---
 
 ### Common Pitfalls to Watch
 
@@ -190,7 +190,7 @@ ______________________________________________________________________
 1. **Using `==` with objects**: Compares references, not values. Use `equals()`.
 1. **Accidental Overload Instead of Override**: Add `@Override` to catch signature mismatches.
 
-______________________________________________________________________
+---
 
 ### Quick Interview Flash Cards
 
@@ -201,11 +201,11 @@ ______________________________________________________________________
   - `finalize()`: legacy GC callback—avoid relying on it.
 - **Polymorphism Benefits**: Code to interfaces → easier extension & testing.
 
-______________________________________________________________________
+---
 
 ## Day 2 - Technical Recap – Java Collections & Exception Handling
 
-______________________________________________________________________
+---
 
 ### 1 Java Collections Framework
 
@@ -234,7 +234,7 @@ ______________________________________________________________________
 
 - **Map Traversal** → prefer `entrySet()` or `forEach((k,v) -> …)` to avoid double look-ups.
 
-______________________________________________________________________
+---
 
 ### 2 Java Exception Model
 
@@ -269,7 +269,7 @@ public class AgeOutOfRangeException extends RuntimeException {
 
 Choose **extends `Exception`** when you want callers *forced* to handle; **extends `RuntimeException`** when the error is programmer-side and optional to catch.
 
-______________________________________________________________________
+---
 
 ### 3 Interview Nuggets
 
@@ -300,7 +300,7 @@ ______________________________________________________________________
    }
    ```
 
-______________________________________________________________________
+---
 
 ### 4 Quick Cheatsheet
 
@@ -315,11 +315,11 @@ finally           → always executes (except System.exit)
 throw / throws    → throw = inside method, throws = method signature
 ```
 
-______________________________________________________________________
+---
 
 ## Day 3 – Java Multithreading Basics
 
-______________________________________________________________________
+---
 
 ### 🎯 Learning Goals
 
@@ -331,7 +331,7 @@ ______________________________________________________________________
 | **Race conditions & atomicity** | Built an unsafe counter, then fixed it with `synchronized`, `ReentrantLock`, `AtomicInteger` | Demonstrates problem->diagnosis->solution thinking |
 | **Lock-free approach** | CAS & `AtomicInteger` | Often appears as “What is CAS? When prefer atomic classes over locks?” |
 
-______________________________________________________________________
+---
 
 ### 1 Thread Creation Patterns
 
@@ -358,7 +358,7 @@ pool.shutdown();
 **Why `Runnable` / `Callable` > `Thread`?**
 *Avoids single-inheritance limit, decouples task from execution mechanics, plays nicely with thread pools.*
 
-______________________________________________________________________
+---
 
 ### 2 Executor Framework Highlights
 
@@ -380,7 +380,7 @@ ThreadPoolExecutor custom = new ThreadPoolExecutor(
 );
 ```
 
-______________________________________________________________________
+---
 
 ### 3 Synchronization Techniques
 
@@ -390,7 +390,7 @@ ______________________________________________________________________
 | `ReentrantLock` | `lock.lock(); try{...} finally{lock.unlock();}` | `tryLock`, timeouts, interruptible | Manual unlock, more boilerplate |
 | Atomic variable | `counter.incrementAndGet()` | Lock-free, high throughput under low contention | Only for single-variable invariants |
 
-______________________________________________________________________
+---
 
 ### 4 Race-Condition Demo & Fixes
 
@@ -404,7 +404,7 @@ SafeCounterAtomic        ➜  Final = 100 k
 **Key takeaway:** `count++` = read ➜ add 1 ➜ write (three steps).
 Without mutual exclusion, two threads can interleave between read/write.
 
-______________________________________________________________________
+---
 
 ### 5 CAS in a Nutshell
 
@@ -413,7 +413,7 @@ ______________________________________________________________________
 1. **Compare-And-Swap** – if memory still holds old value, write new; otherwise retry
    *CPU provides CAS as an atomic instruction (`cmpxchg`, etc.) → forms basis of `java.util.concurrent.atomic.*`.*
 
-______________________________________________________________________
+---
 
 ### 6 Interview Cheat Sheet
 
@@ -433,7 +433,7 @@ ______________________________________________________________________
 - **Q:** *When would you choose `AtomicInteger`?*
   **A:** Updating a single counter/flag at very high frequency where lock overhead hurts, and invariants are limited to that variable.
 
-______________________________________________________________________
+---
 
 ### 7 Further Practice
 
@@ -443,7 +443,7 @@ ______________________________________________________________________
 | 1116 | Print Zero, Even, Odd | multi-thread coordination |
 | 1195 | FizzBuzz Multithreaded | condition ordering |
 
-______________________________________________________________________
+---
 
 ### 📌 Daily Takeaways
 
@@ -453,7 +453,7 @@ ______________________________________________________________________
    `Atomic` < `synchronized` < `Lock` < higher-level constructs (`BlockingQueue`, `CompletableFuture`, etc.).
 1. Measure under realistic load – contention changes the best choice.
 
-______________________________________________________________________
+---
 
 ### 💡 Next Steps
 
@@ -461,11 +461,11 @@ ______________________________________________________________________
 - Explore high-level synchronizers (`CountDownLatch`, `CyclicBarrier`, `Semaphore`).
 - Review JVM memory model & `volatile` semantics for visibility guarantees.
 
-______________________________________________________________________
+---
 
 ## Day 4 - Tooling Review & Hands-on Practice
 
-______________________________________________________________________
+---
 
 ### ✅ Module 1 – Git Version Control
 
@@ -495,7 +495,7 @@ git push / pull
 - Practiced branching, merging, conflict resolution.
 - Mastered `stash` for shelving work and `rebase` for tidy history.
 
-______________________________________________________________________
+---
 
 ### ✅ Module 2 – Maven Build Tool
 
@@ -519,7 +519,7 @@ mvn dependency:tree
 - Added **Guava** dependency; wrote sample code.
 - Simulated version clash with Hadoop → fixed using `exclusions`.
 
-______________________________________________________________________
+---
 
 ### ✅ Module 3 – MySQL Ops & Optimization
 
@@ -543,7 +543,7 @@ EXPLAIN SELECT * FROM users WHERE email='alice@example.com';
 - Built `users` & `orders` tables; executed CRUD + JOIN.
 - Observed index hit vs. miss with `EXPLAIN`.
 
-______________________________________________________________________
+---
 
 ### ✅ Module 4 – IntelliJ IDEA Productivity
 
@@ -564,7 +564,7 @@ ______________________________________________________________________
 - Integrated Git panel for commit & push.
 - Debugged `calculateSum()` with breakpoints, conditional break, variable edit.
 
-______________________________________________________________________
+---
 
 ### ✅ Module 5 – Docker Basics & Java Containerization
 
@@ -592,13 +592,13 @@ docker ps / stop / rm / rmi
 - Launched **Nginx** container on port 8080.
 - Wrote Dockerfile, built image for Spring-Boot JAR, and ran it on 8081.
 
-______________________________________________________________________
+---
 
 ### 🏁 One-Sentence Takeaway
 
 > **Today you didn’t just learn tools—you assembled a production-grade workflow ready for real-world Java projects.**
 
-______________________________________________________________________
+---
 
 ### 🔜 Next-Step Roadmap
 
@@ -610,8 +610,8 @@ ______________________________________________________________________
 | Algorithms | LeetCode medium daily practice |
 | English | Tech résumé & interview Q&A in English |
 
-______________________________________________________________________
+---
 
 **Keep coding, keep shipping.** 🚀
 
-______________________________________________________________________
+---

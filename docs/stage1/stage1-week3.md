@@ -45,7 +45,7 @@
 
 # Week 3: Algorithm Enhancement and Preliminary Performance Optimization
 
-______________________________________________________________________
+---
 
 ## Day 1 → Day 3 Recap (Algorithms Track) 🏁
 
@@ -103,7 +103,7 @@ ______________________________________________________________________
 - Try **BitSet optimisation** for LCS & subset sum.
 - Extend backtracking to **N-Queens** with diagonals bitmasking to practise constraint pruning.
 
-______________________________________________________________________
+---
 
 ## Day 4 – JVM & GC
 
@@ -155,7 +155,7 @@ _Tuning flags_:
 - Double heap to **1 GB** and retest; expect Mixed GC ≈ 0.
 - Try **ZGC** (`-XX:+UseZGC`) on JDK 21 aiming for sub-100 ms pauses.
 
-______________________________________________________________________
+---
 
 ## Day 5 - JVM Performance-Tuning Report · task-manager
 
@@ -229,7 +229,7 @@ VisualVM still shows `byte[]` dominating allocations, indicating JSON serialisat
 Key lesson: **Measure → Analyse → Improve**—change one knob at a time, confirm with repeatable load tests, and always validate pauses, not just throughput.
 Future work includes evaluating ZGC on JDK 21, aligning heap sizing with container limits, and eliminating transient buffers via pooled object mappers.
 
-______________________________________________________________________
+---
 
 ## Day 6 - MySQL Advanced Indexing & Tuning
 
@@ -289,7 +289,7 @@ to 97 %, confirming fewer random reads.
 - Enable `performance_schema.events_statements_history_long` for
   continuous top-N query tracking.
 
-______________________________________________________________________
+---
 
 ## Week-3 Cheat Sheet 🗂️ (Algorithms · JVM · MySQL)
 
@@ -323,7 +323,7 @@ ______________________________________________________________________
 | Buffer-pool hit | `(read_requests - rnd_next) / read_requests` ≥ 95 % |
 | EXPLAIN rows | baseline 50 k → tuned < 2 k |
 
-______________________________________________________________________
+---
 
 ## Week-3 Engineering Digest
 
@@ -369,4 +369,4 @@ The goal for this sprint was two-fold: **sharpen algorithmic muscle memory** (DP
 
 **Ship fast, learn faster—Week 3 closed. 🚀**
 
-______________________________________________________________________
+---
