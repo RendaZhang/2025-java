@@ -25,6 +25,12 @@
     - [创建/校验 ECR 仓库并登录](#%E5%88%9B%E5%BB%BA%E6%A0%A1%E9%AA%8C-ecr-%E4%BB%93%E5%BA%93%E5%B9%B6%E7%99%BB%E5%BD%95)
     - [打标签并推送](#%E6%89%93%E6%A0%87%E7%AD%BE%E5%B9%B6%E6%8E%A8%E9%80%81)
     - [验证镜像已入库](#%E9%AA%8C%E8%AF%81%E9%95%9C%E5%83%8F%E5%B7%B2%E5%85%A5%E5%BA%93)
+  - [部署到 EKS 并验证](#%E9%83%A8%E7%BD%B2%E5%88%B0-eks-%E5%B9%B6%E9%AA%8C%E8%AF%81)
+    - [变量 & 上下文](#%E5%8F%98%E9%87%8F--%E4%B8%8A%E4%B8%8B%E6%96%87)
+    - [部署清单（Deployment + Service）](#%E9%83%A8%E7%BD%B2%E6%B8%85%E5%8D%95deployment--service)
+    - [应用并等待滚动完成](#%E5%BA%94%E7%94%A8%E5%B9%B6%E7%AD%89%E5%BE%85%E6%BB%9A%E5%8A%A8%E5%AE%8C%E6%88%90)
+    - [端到端验证（port-forward）](#%E7%AB%AF%E5%88%B0%E7%AB%AF%E9%AA%8C%E8%AF%81port-forward)
+    - [创建 Ingress（今天暂时跳过，ALB 控制器安装好后再做）](#%E5%88%9B%E5%BB%BA-ingress%E4%BB%8A%E5%A4%A9%E6%9A%82%E6%97%B6%E8%B7%B3%E8%BF%87alb-%E6%8E%A7%E5%88%B6%E5%99%A8%E5%AE%89%E8%A3%85%E5%A5%BD%E5%90%8E%E5%86%8D%E5%81%9A)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -594,3 +600,208 @@ aws ecr describe-images \
 - `docker build` 成功产出镜像（大小 ~百 MB 级别）。
 - `docker login` 显示 Login Succeeded。
 - `describe-images` 返回一串 sha256:... 的 digest。
+
+---
+
+## 部署到 EKS 并验证
+
+先用 Deployment + Service(ClusterIP) 完成集群内可用，再用 port-forward 做对外验证。
+
+是否创建 Ingress 取决于是否已装好 AWS Load Balancer Controller（若未装，今天先不做 Ingress）。
+
+### 变量 & 上下文
+
+```bash
+export PROFILE=phase2-sso
+export AWS_REGION=us-east-1
+export CLUSTER=dev
+export NS=svc-task
+export APP=task-api
+export ECR_REPO=task-api
+export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text --profile "$PROFILE")
+export REMOTE="$ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO"
+export DIGEST=sha256:927d20ca4cebedc14f81770e8e5e49259684723ba65b76e7c59f3003cc9a9741
+
+# 配置 kubectl 上下文
+aws eks update-kubeconfig \
+  --name "$CLUSTER" --region "$AWS_REGION" --profile "$PROFILE"
+
+# 命名空间
+kubectl get ns "$NS" >/dev/null 2>&1 || kubectl create ns "$NS"
+# 若已存在会报 AlreadyExists，无妨
+# 正常返回输出：
+# namespace/svc-task created
+```
+
+### 部署清单（Deployment + Service）
+
+在 renda-cloud-lab 项目根目录创建 `k8s.yaml`（或任何位置）：
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: task-api
+  namespace: svc-task
+spec:
+  replicas: 2
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels: { app: task-api }
+  template:
+    metadata:
+      labels: { app: task-api }
+    spec:
+      containers:
+        - name: task-api
+          # 通过 digest 锁定镜像，避免 tag 漂移
+          # 把镜像行里的 <ACCOUNT_ID> 替换成真实账号 ID
+          image: "<ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/task-api@sha256:927d20ca4cebedc14f81770e8e5e49259684723ba65b76e7c59f3003cc9a9741"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: task-api
+  namespace: svc-task
+spec:
+  selector: { app: task-api }
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+  type: ClusterIP
+```
+
+### 应用并等待滚动完成
+
+```bash
+kubectl -n "$NS" apply -f k8s.yaml
+# 输出：
+# deployment.apps/task-api created
+# service/task-api created
+
+kubectl -n "$NS" rollout status deploy/"$APP" --timeout=120s
+# 输出：
+# deployment "task-api" successfully rolled out
+
+kubectl -n "$NS" get pods -o wide
+# 输出：
+# NAME                        READY   STATUS    RESTARTS   AGE     IP             NODE                           NOMINATED NODE   READINESS GATES
+# task-api-59f8cc6cbf-4nh6w   1/1     Running   0          2m11s   10.0.128.148   ip-10-0-142-115.ec2.internal   <none>           <none>
+# task-api-59f8cc6cbf-bxv5z   1/1     Running   0          2m11s   10.0.131.175   ip-10-0-142-115.ec2.internal   <none>           <none>
+
+kubectl -n "$NS" get svc "$APP" -o wide
+# 输出：
+# NAME       TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE     SELECTOR
+# task-api   ClusterIP   172.20.173.60   <none>        8080/TCP   3m42s   app=task-api
+```
+
+预期：
+
+`rollout status` 显示 `successfully rolled ou`t，`READY`=`1/1`，`STATUS`=`Running`。
+
+### 端到端验证（port-forward）
+
+开一个终端做转发；另一个终端发请求验证：
+
+```bash
+# 终端 A（保持挂着）
+kubectl -n "$NS" port-forward svc/"$APP" 8080:8080
+
+# 终端 B
+curl -s "http://127.0.0.1:8080/api/hello?name=Renda"
+curl -s "http://127.0.0.1:8080/actuator/health"
+curl -s "http://127.0.0.1:8080/actuator/health/readiness"
+curl -s "http://127.0.0.1:8080/actuator/health/liveness"
+```
+
+预期：
+
+返回 `hello Renda` 与各健康检查 `{"status":"UP"}`。
+
+确认一下上下文确实是 EKS 集群（而非本地 kind/minikube）：
+
+```bash
+kubectl config current-context
+# 输出：
+# arn:aws:eks:us-east-1:563149051155:cluster/dev
+
+kubectl cluster-info
+# 输出：
+# Kubernetes control plane is running at https://4AAE5B95DE964204D59DE72344B7D657.gr7.us-east-1.eks.amazonaws.com
+# CoreDNS is running at https://4AAE5B95DE964204D59DE72344B7D657.gr7.us-east-1.eks.amazonaws.com/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
+
+# 看看 ProviderID/内网网段是否是 AWS/EKS 风格
+kubectl get nodes -o wide | awk '{print $1,$7,$8}'
+# 输出：
+# NAME EXTERNAL-IP OS-IMAGE
+# ip-10-0-142-115.ec2.internal <none> Amazon
+```
+
+### 创建 Ingress（今天暂时跳过，ALB 控制器安装好后再做）
+
+若此前已部署 AWS Load Balancer Controller 且给子网打好了标签，可以再加一个 Ingress：
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: task-api
+  namespace: svc-task
+  annotations:
+    # 选择公有还是私有子网（看子网标签）
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    # （可选）健康检查路径
+    alb.ingress.kubernetes.io/healthcheck-path: /actuator/health/readiness
+spec:
+  ingressClassName: alb
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: task-api
+                port:
+                  number: 8080
+```
+
+```bash
+kubectl -n "$NS" apply -f ingress.yaml
+kubectl -n "$NS" get ingress
+```
+
+预期：
+
+几分钟后出现 `ADDRESS`（ALB DNS 名）。
+
+若迟迟不出，重点排查：**子网标签**、**控制器权限**、**SG 端口**、**探针健康**。
