@@ -24,7 +24,7 @@
       - [KPI & 简历映射](#kpi--%E7%AE%80%E5%8E%86%E6%98%A0%E5%B0%84)
   - [Week 5 - Cloud-Native 微服务上云（EKS）](#week-5---cloud-native-%E5%BE%AE%E6%9C%8D%E5%8A%A1%E4%B8%8A%E4%BA%91eks)
     - [前置检查](#%E5%89%8D%E7%BD%AE%E6%A3%80%E6%9F%A5)
-    - [Day 1 - 应用骨架 + Docker 镜像 + 推送 ECR（最小可运行）· 复盘](#day-1---%E5%BA%94%E7%94%A8%E9%AA%A8%E6%9E%B6--docker-%E9%95%9C%E5%83%8F--%E6%8E%A8%E9%80%81-ecr%E6%9C%80%E5%B0%8F%E5%8F%AF%E8%BF%90%E8%A1%8C%C2%B7-%E5%A4%8D%E7%9B%98)
+    - [Day 1 - 复盘：应用骨架 + Docker 镜像 + 推送 ECR](#day-1---%E5%A4%8D%E7%9B%98%E5%BA%94%E7%94%A8%E9%AA%A8%E6%9E%B6--docker-%E9%95%9C%E5%83%8F--%E6%8E%A8%E9%80%81-ecr)
       - [今天做了什么（Done）](#%E4%BB%8A%E5%A4%A9%E5%81%9A%E4%BA%86%E4%BB%80%E4%B9%88done)
       - [关键决策与记录](#%E5%85%B3%E9%94%AE%E5%86%B3%E7%AD%96%E4%B8%8E%E8%AE%B0%E5%BD%95)
       - [明天计划（Next）](#%E6%98%8E%E5%A4%A9%E8%AE%A1%E5%88%92next)
@@ -237,7 +237,7 @@
 
 > 预期产物总表：源码仓（`task-api`）、ECR 镜像 tag、K8s YAML/Helm、ALB DNS 可访问截图、（可选）S3 读写验证。
 
-### Day 1 - 应用骨架 + Docker 镜像 + 推送 ECR（最小可运行）· 复盘
+### Day 1 - 复盘：应用骨架 + Docker 镜像 + 推送 ECR
 
 #### 今天做了什么（Done）
 
