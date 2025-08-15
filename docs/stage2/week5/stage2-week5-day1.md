@@ -17,6 +17,14 @@
       - [方式一：开发期推荐](#%E6%96%B9%E5%BC%8F%E4%B8%80%E5%BC%80%E5%8F%91%E6%9C%9F%E6%8E%A8%E8%8D%90)
       - [方式二：先打包 JAR 再运行](#%E6%96%B9%E5%BC%8F%E4%BA%8C%E5%85%88%E6%89%93%E5%8C%85-jar-%E5%86%8D%E8%BF%90%E8%A1%8C)
     - [验证](#%E9%AA%8C%E8%AF%81)
+  - [容器化 & 推送到 ECR](#%E5%AE%B9%E5%99%A8%E5%8C%96--%E6%8E%A8%E9%80%81%E5%88%B0-ecr)
+    - [设置本步变量：](#%E8%AE%BE%E7%BD%AE%E6%9C%AC%E6%AD%A5%E5%8F%98%E9%87%8F)
+    - [添加 `.dockerignore`](#%E6%B7%BB%E5%8A%A0-dockerignore)
+    - [创建多阶段 Dockerfile](#%E5%88%9B%E5%BB%BA%E5%A4%9A%E9%98%B6%E6%AE%B5-dockerfile)
+    - [本地构建镜像](#%E6%9C%AC%E5%9C%B0%E6%9E%84%E5%BB%BA%E9%95%9C%E5%83%8F)
+    - [创建/校验 ECR 仓库并登录](#%E5%88%9B%E5%BB%BA%E6%A0%A1%E9%AA%8C-ecr-%E4%BB%93%E5%BA%93%E5%B9%B6%E7%99%BB%E5%BD%95)
+    - [打标签并推送](#%E6%89%93%E6%A0%87%E7%AD%BE%E5%B9%B6%E6%8E%A8%E9%80%81)
+    - [验证镜像已入库](#%E9%AA%8C%E8%AF%81%E9%95%9C%E5%83%8F%E5%B7%B2%E5%85%A5%E5%BA%93)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -315,3 +323,272 @@ curl -s http://localhost:8080/actuator/health/readiness
 - `/api/hello` 返回 `hello Renda`
 - `/actuator/health` 返回 `{"status":"UP"}`（或含组件详情）
 - `liveness/readiness` 返回 `{"status":"UP"}`
+
+---
+
+## 容器化 & 推送到 ECR
+
+### 设置本步变量：
+
+```bash
+# 账号 ID（稍后打标签/推送要用）
+ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text --profile "$PROFILE")
+```
+
+### 添加 `.dockerignore`
+
+避免把无关文件打进镜像。
+
+新建 `./.dockerignore`：
+
+```bash
+.gitignore
+.gitattributes
+.git
+.pre-commit-config.yaml
+requirements.txt
+LICENSE
+venv/
+.venv/
+scripts/
+target/
+**/*.iml
+.mvn/
+.idea/
+.vscode/
+Dockerfile
+README*
+```
+
+### 创建多阶段 Dockerfile
+
+新建 `./Dockerfile`：
+
+```Dockerfile
+# ---------- Build stage ----------
+FROM maven:3.9.8-eclipse-temurin-21 AS build
+WORKDIR /build
+
+# 优化缓存：分步复制 pom.xml 和源码
+COPY pom.xml .
+RUN mvn -q -B -DskipTests dependency:go-offline
+
+# 构建完成后清理可能残留 Maven 缓存
+COPY src ./src
+RUN mvn -q -B -DskipTests package && \
+    rm -rf ~/.m2/repository
+
+# ---------- Runtime stage ----------
+# 使用 Alpine 版本 的 JRE 镜像以减少运行时镜像大小
+FROM eclipse-temurin:21-jre-alpine
+WORKDIR /app
+
+# 使用最小用户和权限
+# 多个命令放在一个 RUN 以减少镜像层数
+RUN apk add --no-cache shadow && \
+    useradd -r -u 10001 app && \
+    chown -R app /app && \
+    apk del shadow
+USER app
+
+# 复制构建产物（明确 JAR 名称）
+COPY --from=build /build/target/task-api-0.1.0.jar /app/app.jar
+
+EXPOSE 8080
+ENV JAVA_OPTS=""
+
+# 安装 curl 并添加健康检查
+# HEALTHCHECK 在 Kubernetes 中可能会被探针覆盖
+RUN apk add --no-cache curl
+HEALTHCHECK --interval=30s --timeout=3s --retries=3 \
+  CMD curl -s http://127.0.0.1:8080/actuator/health || exit 1
+
+ENTRYPOINT ["sh","-lc","exec java $JAVA_OPTS -jar /app/app.jar"]
+```
+
+说明：
+
+- 采用 **JDK 21** 构建、**JRE 21** 运行；
+- 以非 root 用户运行；
+- 先 `pom.xml` → `go-offline` 再拷源码，提升层缓存命中；
+- 运行层可以使用通配复制 jar，避免版本号改动时频繁改 Dockerfile。
+
+### 本地构建镜像
+
+```bash
+# 查看确认节点的信息
+kubectl get nodes -L kubernetes.io/arch,kubernetes.io/instance-type -o wide
+
+# 精确字段
+kubectl get nodes \
+  -o custom-columns=NAME:.metadata.name,ARCH:.status.nodeInfo.architecture,OS:.status.nodeInfo.operatingSystem,INSTANCE:.metadata.labels."node\.kubernetes\.io/instance-type"
+
+# 查看单个节点
+kubectl get node <NODE_NAME> -o jsonpath='{.status.nodeInfo.architecture}'; echo
+```
+
+> 如果 EKS 节点是 x86_64（最常见），固定平台为 `linux/amd64`；若是 Graviton/ARM 节点，改成 `linux/arm64`。
+
+```bash
+# 清理所有未使用的镜像、容器、网络和卷
+docker system prune -a
+
+# 正式构建镜像
+docker build --platform=linux/amd64 -t "$APP:$VERSION" .
+
+# 列出所有本地镜像及大小
+docker images
+# 输出：
+REPOSITORY     TAG       IMAGE ID       CREATED              SIZE
+task-api       0.1.0     a2fa74bac2dd   About a minute ago   229MB
+
+# 启动容器（暴露 8080 端口）
+docker run -d -p 8080:8080 --name my-task task-api:0.1.0
+# 交互式运行容器
+docker run -it task-api:0.1.0 /bin/bash
+# 查看容器启动状态
+docker ps
+# 测试 API 是否正常
+curl http://localhost:8080/actuator/health
+# 查看容器日志
+docker logs my-task
+# 停止容器
+docker stop my-task
+# 查看所有包括已经停止的容器
+docker ps -a
+# 删除容器
+docker rm my-task
+# 删除镜像
+# docker rmi task-api
+```
+
+### 创建/校验 ECR 仓库并登录
+
+```bash
+# 创建仓库（若已存在会跳过）
+aws ecr describe-repositories --repository-names "$ECR_REPO" --region "$AWS_REGION" --profile "$PROFILE" >/dev/null 2>&1 \
+  || aws ecr create-repository \
+       --repository-name "$ECR_REPO" \
+       --image-scanning-configuration scanOnPush=true \
+       --image-tag-mutability IMMUTABLE \
+       --region "$AWS_REGION" \
+       --profile "$PROFILE"
+
+# 返回输出：
+# {
+#     "repository": {
+#         "repositoryArn": "arn:aws:ecr:us-east-1:563149051155:repository/task-api",
+#         "registryId": "563149051155",
+#         "repositoryName": "task-api",
+#         "repositoryUri": "563149051155.dkr.ecr.us-east-1.amazonaws.com/task-api",
+#         "createdAt": "2025-08-16T00:52:26.200000+08:00",
+#         "imageTagMutability": "IMMUTABLE",
+#         "imageScanningConfiguration": {
+#             "scanOnPush": true
+#         },
+#         "encryptionConfiguration": {
+#             "encryptionType": "AES256"
+#         }
+#     }
+# }
+
+# 生命周期：仅保留最近 1 个 tag 且没有 tag 的一天就过期
+aws ecr put-lifecycle-policy \
+  --repository-name "$ECR_REPO" \
+  --lifecycle-policy-text '{
+    "rules": [
+      {
+        "rulePriority": 1,
+        "description": "expire untagged images older than 1 days",
+        "selection": {
+          "tagStatus": "untagged",
+          "countType": "sinceImagePushed",
+          "countUnit": "days",
+          "countNumber": 1
+        },
+        "action": { "type": "expire" }
+      },
+      {
+        "rulePriority": 2,
+        "description": "keep last 1 images (any tag status)",
+        "selection": {
+          "tagStatus": "any",
+          "countType": "imageCountMoreThan",
+          "countNumber": 1
+        },
+        "action": { "type": "expire" }
+      }
+    ]
+  }' \
+  --region "$AWS_REGION" \
+  --profile "$PROFILE"
+
+# 返回输出：
+# {
+#     "registryId": "563149051155",
+#     "repositoryName": "task-api",
+#     "lifecyclePolicyText": "{\"rules\":[{\"rulePriority\":1,\"description\":\"expire untagged images older than 1 days\",\"selection\":{\"tagStatus\":\"untagged\",\"countType\":\"sinceImagePushed\",\"countUnit\":\"days\",\"countNumber\":1},\"action\":{\"type\":\"expire\"}},{\"rulePriority\":2,\"description\":\"keep last 1 images (any tag status)\",\"selection\":{\"tagStatus\":\"any\",\"countType\":\"imageCountMoreThan\",\"countNumber\":1},\"action\":{\"type\":\"expire\"}}]}"
+# }
+
+# 登录 ECR
+aws ecr get-login-password --region "$AWS_REGION" --profile "$PROFILE" \
+| docker login --username AWS --password-stdin "$ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com"
+# 返回：
+# Login Succeeded
+```
+
+### 打标签并推送
+
+```bash
+REMOTE="$ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO"
+
+docker tag "$APP:$VERSION" "$REMOTE:$VERSION"
+# 方便手动拉取；生产以版本/commit 为准
+docker tag "$APP:$VERSION" "$REMOTE:latest"
+
+docker push "$REMOTE:$VERSION"
+# 返回输出：
+# The push refers to repository [563149051155.dkr.ecr.us-east-1.amazonaws.com/task-api]
+# 66d1157a40eb: Pushed
+# a737ea50e690: Pushed
+# 3f3a99dba9b6: Pushed
+# 880a6d9a5a59: Pushed
+# bb64f233ca86: Pushed
+# 1eb3de508cc3: Pushed
+# c2d2b55d55c7: Pushed
+# 418dccb7d85a: Pushed
+# 0.1.0: digest: sha256:927d20ca4cebedc14f81770e8e5e49259684723ba65b76e7c59f3003cc9a9741 size: 1994
+docker push "$REMOTE:latest"
+# 返回输出：
+# The push refers to repository [563149051155.dkr.ecr.us-east-1.amazonaws.com/task-api]
+# 66d1157a40eb: Layer already exists
+# a737ea50e690: Layer already exists
+# 3f3a99dba9b6: Layer already exists
+# 880a6d9a5a59: Layer already exists
+# bb64f233ca86: Layer already exists
+# 1eb3de508cc3: Layer already exists
+# c2d2b55d55c7: Layer already exists
+# 418dccb7d85a: Layer already exists
+# latest: digest: sha256:927d20ca4cebedc14f81770e8e5e49259684723ba65b76e7c59f3003cc9a9741 size: 1994
+```
+
+### 验证镜像已入库
+
+看到 digest 即成功。
+
+```bash
+aws ecr describe-images \
+  --repository-name "$ECR_REPO" \
+  --image-ids imageTag="$VERSION" \
+  --query 'imageDetails[0].imageDigest' \
+  --output text \
+  --region "$AWS_REGION" \
+  --profile "$PROFILE"
+# 返回输出：
+# sha256:927d20ca4cebedc14f81770e8e5e49259684723ba65b76e7c59f3003cc9a9741
+```
+
+预期结果：
+- `docker build` 成功产出镜像（大小 ~百 MB 级别）。
+- `docker login` 显示 Login Succeeded。
+- `describe-images` 返回一串 sha256:... 的 digest。
