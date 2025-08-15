@@ -24,7 +24,10 @@
       - [KPI & 简历映射](#kpi--%E7%AE%80%E5%8E%86%E6%98%A0%E5%B0%84)
   - [Week 5 - Cloud-Native 微服务上云（EKS）](#week-5---cloud-native-%E5%BE%AE%E6%9C%8D%E5%8A%A1%E4%B8%8A%E4%BA%91eks)
     - [前置检查](#%E5%89%8D%E7%BD%AE%E6%A3%80%E6%9F%A5)
-    - [Day 1 - 应用骨架 + Docker 镜像 + 推送 ECR（最小可运行）](#day-1---%E5%BA%94%E7%94%A8%E9%AA%A8%E6%9E%B6--docker-%E9%95%9C%E5%83%8F--%E6%8E%A8%E9%80%81-ecr%E6%9C%80%E5%B0%8F%E5%8F%AF%E8%BF%90%E8%A1%8C)
+    - [Day 1 - 应用骨架 + Docker 镜像 + 推送 ECR（最小可运行）· 复盘](#day-1---%E5%BA%94%E7%94%A8%E9%AA%A8%E6%9E%B6--docker-%E9%95%9C%E5%83%8F--%E6%8E%A8%E9%80%81-ecr%E6%9C%80%E5%B0%8F%E5%8F%AF%E8%BF%90%E8%A1%8C%C2%B7-%E5%A4%8D%E7%9B%98)
+      - [今天做了什么（Done）](#%E4%BB%8A%E5%A4%A9%E5%81%9A%E4%BA%86%E4%BB%80%E4%B9%88done)
+      - [关键决策与记录](#%E5%85%B3%E9%94%AE%E5%86%B3%E7%AD%96%E4%B8%8E%E8%AE%B0%E5%BD%95)
+      - [明天计划（Next）](#%E6%98%8E%E5%A4%A9%E8%AE%A1%E5%88%92next)
     - [Day 2 - K8s 基础对象（NS/SA/Config/Secret/Deployment/Service）](#day-2---k8s-%E5%9F%BA%E7%A1%80%E5%AF%B9%E8%B1%A1nssaconfigsecretdeploymentservice)
     - [Day 3 - Ingress（ALB）对外暴露 + HPA](#day-3---ingressalb%E5%AF%B9%E5%A4%96%E6%9A%B4%E9%9C%B2--hpa)
     - [Day 4 -（可选但高收益）S3 最小接入 + IRSA](#day-4--%E5%8F%AF%E9%80%89%E4%BD%86%E9%AB%98%E6%94%B6%E7%9B%8As3-%E6%9C%80%E5%B0%8F%E6%8E%A5%E5%85%A5--irsa)
@@ -234,36 +237,31 @@
 
 > 预期产物总表：源码仓（`task-api`）、ECR 镜像 tag、K8s YAML/Helm、ALB DNS 可访问截图、（可选）S3 读写验证。
 
-### Day 1 - 应用骨架 + Docker 镜像 + 推送 ECR（最小可运行）
+### Day 1 - 应用骨架 + Docker 镜像 + 推送 ECR（最小可运行）· 复盘
 
-**做什么**
+#### 今天做了什么（Done）
 
-1. 以 Spring Initializr 生成 `task-api`：Web、Actuator。
-2. 提供 2 个端点：`GET /healthz`（返回 `"ok"`）与 `GET /api/tasks`（返回内存列表）。
-3. `Dockerfile`（基于 `eclipse-temurin:21-jre`），本地构建，推到 ECR。
+* 起了一个最小 **Spring Boot 3 + Actuator** 服务（`/api/hello`、`/api/ping` 与 `/actuator/health{,/liveness,/readiness}`）。
+* 编写 **多阶段 Dockerfile**，本地构建镜像并推送到 **Amazon ECR（us-east-1）**。
+* 使用 **digest** 固定镜像版本：`sha256:927d20ca4cebedc14f81770e8e5e49259684723ba65b76e7c59f3003cc9a9741`。
+* 在 **EKS 集群 `dev` / 命名空间 `svc-task`** 部署 `Deployment+Service(ClusterIP)`，通过 `kubectl port-forward` 完成端到端验证（业务接口与健康探针均返回 `UP`）。
 
-**关键命令**
+#### 关键决策与记录
 
-```bash
-# 1) 创建 ECR（若你的 Terraform 已有可跳过）
-aws ecr create-repository --repository-name $ECR_REPO --region $AWS_REGION 2>/dev/null || true
+* **Region / Cluster / Repo**：`us-east-1` / `dev` / `task-api`。
+* **AWS 身份**：采用 **SSO Profile `phase2-sso`**；脚本已内置 `--profile` 支持。
+* **镜像标记策略**：推送 `:0.1.0` 与 `:latest`，**部署用 digest 锁定**（避免 tag 漂移）。
+* **ECR 生命周期策略**：当前设置“仅保留 1 个 tag + 未打标签 1 天过期”→ 成本低但**回滚空间极小**；建议后续调整为**至少保留最近 5–10 个 tag**。
 
-# 2) 登录 & 构建 & 推送
-aws ecr get-login-password --region $AWS_REGION \
-| docker login --username AWS --password-stdin $(aws sts get-caller-identity --query Account --output text).dkr.ecr.$AWS_REGION.amazonaws.com
+#### 明天计划（Next）
 
-docker build -t $ECR_REPO:0.1.0 ./task-api
-docker tag $ECR_REPO:0.1.0 $(aws sts get-caller-identity --query Account --output text).dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:0.1.0
-docker push $(aws sts get-caller-identity --query Account --output text).dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:0.1.0
-```
+* 安装 **AWS Load Balancer Controller**，为服务创建 **Ingress（ALB）**：
 
-**产物**：
-
-`task-api` 源码；`Dockerfile`；ECR 镜像 `:0.1.0` 截图
-
-**退路**：
-
-ECR 推送异常 → 暂用 Docker Hub 公有仓库（只改镜像前缀）。
+  * 校验子网标签 / Controller 权限 / 安全组放行；
+  * Ingress 健康检查指向 `/actuator/health/readiness`；
+  * 获取 **ALB DNS** 并完成公网访问验证与截图存证。
+* （可选）为 `task-api` 添加 **HPA（基于 CPU 60%）**，做一次轻压测观察扩缩。
+* 文档更新：在 README/计划文档中记录 **ALB DNS、发布步骤、探针路径** 与**一张流量路径草图**。
 
 ### Day 2 - K8s 基础对象（NS/SA/Config/Secret/Deployment/Service）
 
