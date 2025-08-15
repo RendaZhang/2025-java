@@ -3,8 +3,11 @@
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
 - [Stage 2 Week 5 Day 1 - 应用骨架 + Docker 镜像 + 推送 ECR（最小可运行）](#stage-2-week-5-day-1---%E5%BA%94%E7%94%A8%E9%AA%A8%E6%9E%B6--docker-%E9%95%9C%E5%83%8F--%E6%8E%A8%E9%80%81-ecr%E6%9C%80%E5%B0%8F%E5%8F%AF%E8%BF%90%E8%A1%8C)
-  - [本机工具自检](#%E6%9C%AC%E6%9C%BA%E5%B7%A5%E5%85%B7%E8%87%AA%E6%A3%80)
-  - [设置本周通用变量](#%E8%AE%BE%E7%BD%AE%E6%9C%AC%E5%91%A8%E9%80%9A%E7%94%A8%E5%8F%98%E9%87%8F)
+  - [前置检查 & 环境就绪](#%E5%89%8D%E7%BD%AE%E6%A3%80%E6%9F%A5--%E7%8E%AF%E5%A2%83%E5%B0%B1%E7%BB%AA)
+    - [本机工具自检](#%E6%9C%AC%E6%9C%BA%E5%B7%A5%E5%85%B7%E8%87%AA%E6%A3%80)
+    - [设置本周通用变量](#%E8%AE%BE%E7%BD%AE%E6%9C%AC%E5%91%A8%E9%80%9A%E7%94%A8%E5%8F%98%E9%87%8F)
+    - [校验 AWS 身份 & EKS 连通](#%E6%A0%A1%E9%AA%8C-aws-%E8%BA%AB%E4%BB%BD--eks-%E8%BF%9E%E9%80%9A)
+    - [预检 ECR 登录（为稍后推送做准备）](#%E9%A2%84%E6%A3%80-ecr-%E7%99%BB%E5%BD%95%E4%B8%BA%E7%A8%8D%E5%90%8E%E6%8E%A8%E9%80%81%E5%81%9A%E5%87%86%E5%A4%87)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -17,7 +20,9 @@
 
 ---
 
-## 本机工具自检
+## 前置检查 & 环境就绪
+
+### 本机工具自检
 
 在终端依次执行，有输出即可：
 
@@ -49,6 +54,40 @@ clientVersion:
   platform: linux/amd64
 ```
 
-## 设置本周通用变量
+### 设置本周通用变量
 
-TBD
+```bash
+export AWS_REGION=us-east-1
+export CLUSTER=dev
+export PROFILE=phase2-sso
+export ECR_REPO=task-manager
+export NS=svc-task
+export APP=task-api
+```
+
+### 校验 AWS 身份 & EKS 连通
+
+```bash
+# AWS SSO 登录
+aws sso login --profile "$PROFILE"
+
+# 身份应返回 Account / Arn
+aws sts get-caller-identity --profile "$PROFILE"
+{
+    "UserId": "AROAYGHSMSUJ476XGJ3BO:RendaZhang",
+    "Account": "563149051155",
+    "Arn": "arn:aws:sts::563149051155:assumed-role/AWSReservedSSO_AdministratorAccess_bb673747cef3fdeb/RendaZhang"
+}
+
+# 查看是否已有集群（没有也没关系，继续下一步）
+aws eks list-clusters --region "$AWS_REGION" --profile "$PROFILE" | grep -E "\"$CLUSTER\"" || echo "EKS not found (ok for now)"
+```
+
+### 预检 ECR 登录（为稍后推送做准备）
+
+```bash
+ACCOUNT_ID=$(aws sts get-caller-identity --profile "$PROFILE" --query Account --output text)
+aws ecr get-login-password --region "$AWS_REGION" --profile "$PROFILE" \
+| docker login --username AWS --password-stdin "$ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com"
+# 显示 Login Succeeded
+```

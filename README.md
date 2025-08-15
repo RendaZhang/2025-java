@@ -225,7 +225,7 @@
 - 若集群已销毁：执行现有 **一键重建**（半小时内可起）。
 - 设定本周通用变量（bash）：
   ```bash
-  export AWS_REGION=ap-southeast-1
+  export AWS_REGION=us-east-1
   export ECR_REPO=task-manager
   export NS=svc-task
   export APP=task-api
@@ -493,7 +493,7 @@ spec:
 10 分钟 完成：
 
 ```bash
-export AWS_REGION=ap-southeast-1
+export AWS_REGION=us-east-1
 export NS=svc-task          # 与 Week5 保持一致
 export APP=task-api
 export AMP_ALIAS=renda-lab
@@ -598,7 +598,7 @@ export AMP_ALIAS=renda-lab
            auth:
              authenticator: sigv4auth
            external_labels:
-             cluster: task-cluster
+             cluster: dev
            # 成本护栏
            remote_write_queue:
              max_samples_per_send: 10000
@@ -769,8 +769,8 @@ Chaos Mesh 不稳定 → **手动 `kubectl delete pod`** 替代表演自愈；�
 10 分钟完成：
 
 ```bash
-export AWS_REGION=ap-southeast-1
-export CLUSTER=task-cluster
+export AWS_REGION=us-east-1
+export CLUSTER=dev
 export NS=svc-task
 export APP=task-api
 export ECR_REPO=task-manager
@@ -856,10 +856,10 @@ export ECR_REPO=task-manager
        branches: [ "main" ]
      workflow_dispatch: {}
    env:
-     AWS_REGION: ap-southeast-1
+     AWS_REGION: us-east-1
      ECR_REPO: task-manager
      IMAGE_TAG: ${{ github.sha }}
-     CLUSTER: task-cluster
+     CLUSTER: dev
      NS: svc-task
      APP: task-api
 
@@ -1061,7 +1061,7 @@ spec:
 ```bash
 export NS=svc-task
 export APP=task-api
-export CLUSTER=task-cluster
+export CLUSTER=dev
 ```
 
 本周产物目录建议：
