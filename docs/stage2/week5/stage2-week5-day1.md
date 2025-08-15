@@ -175,6 +175,7 @@ cd ${WORK_DIR}/task-api
   </dependencies>
 
   <build>
+    <finalName>app</finalName>
     <plugins>
       <plugin>
         <groupId>org.springframework.boot</groupId>
@@ -279,13 +280,13 @@ mvn -q spring-boot:run
 
 #### 方式二：先打包 JAR 再运行
 
-确保 Spring Boot 插件段有 `repackage` 的 goal，否则会报错：`no main manifest attribute, in target/task-api-0.1.0.jar`。
+确保 Spring Boot 插件段有 `repackage` 的 goal，否则会报错：`no main manifest attribute, in target/app.jar`。
 
 重新构建：
 
 ```bash
 mvn -DskipTests clean package
-java -jar target/task-api-0.1.0.jar
+java -jar target/app.jar
 ```
 
 ### 验证
@@ -293,11 +294,11 @@ java -jar target/task-api-0.1.0.jar
 确认这是一个“Boot 可执行 JAR”：
 
 ```bash
-jar -tf target/task-api-0.1.0.jar | head -n 5
+jar -tf target/app.jar | head -n 5
 # 预期能看到 BOOT-INF/ 与 META-INF/ 目录
 
 # 看 MANIFEST 关键字段（Start-Class 会是你的主类）
-jar -xvf target/task-api-0.1.0.jar META-INF/MANIFEST.MF >/dev/null
+jar -xvf target/app.jar META-INF/MANIFEST.MF >/dev/null
 sed -n '1,40p' META-INF/MANIFEST.MF | egrep 'Main-Class|Start-Class'
 # 预期：
 # Main-Class: org.springframework.boot.loader.launch.JarLauncher
@@ -392,7 +393,7 @@ RUN apk add --no-cache shadow && \
 USER app
 
 # 复制构建产物（明确 JAR 名称）
-COPY --from=build /build/target/task-api-0.1.0.jar /app/app.jar
+COPY --from=build /build/target/app.jar /app/app.jar
 
 EXPOSE 8080
 ENV JAVA_OPTS=""
@@ -493,6 +494,7 @@ aws ecr describe-repositories --repository-names "$ECR_REPO" --region "$AWS_REGI
 # }
 
 # 生命周期：仅保留最近 1 个 tag 且没有 tag 的一天就过期
+# 建议后续至少保留最近 5~10 个 tag、untagged 保留 7d。
 aws ecr put-lifecycle-policy \
   --repository-name "$ECR_REPO" \
   --lifecycle-policy-text '{
