@@ -69,9 +69,10 @@ clientVersion:
 export AWS_REGION=us-east-1
 export CLUSTER=dev
 export PROFILE=phase2-sso
-export ECR_REPO=task-manager
+export ECR_REPO=task-api
 export NS=svc-task
 export APP=task-api
+export VERSION=0.1.0
 ```
 
 ### 校验 AWS 身份 & EKS 连通

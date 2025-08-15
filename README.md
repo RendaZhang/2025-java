@@ -226,19 +226,19 @@
 - 设定本周通用变量（bash）：
   ```bash
   export AWS_REGION=us-east-1
-  export ECR_REPO=task-manager
+  export ECR_REPO=task-api
   export CLUSTER=dev
   export NS=svc-task
   export APP=task-api
   ```
 
-> 预期产物总表：源码仓（子模块 `apps/task-api`）、ECR 镜像 tag、K8s YAML/Helm、ALB DNS 可访问截图、（可选）S3 读写验证。
+> 预期产物总表：源码仓（`task-api`）、ECR 镜像 tag、K8s YAML/Helm、ALB DNS 可访问截图、（可选）S3 读写验证。
 
 ### Day 1 - 应用骨架 + Docker 镜像 + 推送 ECR（最小可运行）
 
 **做什么**
 
-1. 以 Spring Initializr 生成 `apps/task-api`：Web、Actuator。
+1. 以 Spring Initializr 生成 `task-api`：Web、Actuator。
 2. 提供 2 个端点：`GET /healthz`（返回 `"ok"`）与 `GET /api/tasks`（返回内存列表）。
 3. `Dockerfile`（基于 `eclipse-temurin:21-jre`），本地构建，推到 ECR。
 
@@ -252,14 +252,14 @@ aws ecr create-repository --repository-name $ECR_REPO --region $AWS_REGION 2>/de
 aws ecr get-login-password --region $AWS_REGION \
 | docker login --username AWS --password-stdin $(aws sts get-caller-identity --query Account --output text).dkr.ecr.$AWS_REGION.amazonaws.com
 
-docker build -t $ECR_REPO:0.1.0 ./apps/task-api
+docker build -t $ECR_REPO:0.1.0 ./task-api
 docker tag $ECR_REPO:0.1.0 $(aws sts get-caller-identity --query Account --output text).dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:0.1.0
 docker push $(aws sts get-caller-identity --query Account --output text).dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:0.1.0
 ```
 
 **产物**：
 
-`apps/task-api` 源码；`Dockerfile`；ECR 镜像 `:0.1.0` 截图
+`task-api` 源码；`Dockerfile`；ECR 镜像 `:0.1.0` 截图
 
 **退路**：
 
@@ -299,7 +299,7 @@ data:
   APP_NAME: "task-api"
   STAGE: "dev"
 ---
-apiVersion: apps/v1
+apiVersion: v1
 kind: Deployment
 metadata: { name: ${APP}, namespace: ${NS} }
 spec:
@@ -382,7 +382,7 @@ apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata: { name: ${APP}-hpa, namespace: ${NS} }
 spec:
-  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: ${APP} }
+  scaleTargetRef: { apiVersion: v1, kind: Deployment, name: ${APP} }
   minReplicas: 1
   maxReplicas: 3
   metrics:
@@ -510,7 +510,7 @@ export AMP_ALIAS=renda-lab
 
 **做什么**
 
-1. 在 `apps/task-api` 开启 **Actuator + Prometheus**：
+1. 在 `task-api` 开启 **Actuator + Prometheus**：
    - `pom.xml` 增：`spring-boot-starter-actuator`、`micrometer-registry-prometheus`
    - `application.yml`：
      ```yaml
@@ -549,7 +549,7 @@ export AMP_ALIAS=renda-lab
    kind: Namespace
    metadata: { name: aws-observe }
    ---
-   apiVersion: apps/v1
+   apiVersion: v1
    kind: DaemonSet
    metadata: { name: adot, namespace: aws-observe, labels: { app: adot } }
    spec:
@@ -774,7 +774,7 @@ export AWS_REGION=us-east-1
 export CLUSTER=dev
 export NS=svc-task
 export APP=task-api
-export ECR_REPO=task-manager
+export ECR_REPO=task-api
 ```
 
 产物总表：
@@ -858,7 +858,7 @@ export ECR_REPO=task-manager
      workflow_dispatch: {}
    env:
      AWS_REGION: us-east-1
-     ECR_REPO: task-manager
+     ECR_REPO: task-api
      IMAGE_TAG: ${{ github.sha }}
      CLUSTER: dev
      NS: svc-task
@@ -896,7 +896,7 @@ export ECR_REPO=task-manager
            run: |
              ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
              IMAGE="$ACCOUNT_ID.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO}:${IMAGE_TAG}"
-             docker build -t "$IMAGE" ./apps/task-api
+             docker build -t "$IMAGE" ./task-api
              echo "IMAGE=$IMAGE" >> $GITHUB_ENV
 
          - name: Trivy scan (High/Critical only, fail on critical)
