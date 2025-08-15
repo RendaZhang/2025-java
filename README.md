@@ -227,6 +227,7 @@
   ```bash
   export AWS_REGION=us-east-1
   export ECR_REPO=task-manager
+  export CLUSTER=dev
   export NS=svc-task
   export APP=task-api
   ```
