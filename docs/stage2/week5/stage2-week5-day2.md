@@ -4,7 +4,7 @@
 
 - [Stage 2 Week 5 Day 2 - K8s 基础对象（NS/SA/Config/Secret/Deployment/Service）](#stage-2-week-5-day-2---k8s-%E5%9F%BA%E7%A1%80%E5%AF%B9%E8%B1%A1nssaconfigsecretdeploymentservice)
   - [目标](#%E7%9B%AE%E6%A0%87)
-  - [Step 1/5 — 规范化 `k8s/base`（并以 digest 锁定镜像）](#step-15--%E8%A7%84%E8%8C%83%E5%8C%96-k8sbase%E5%B9%B6%E4%BB%A5-digest-%E9%94%81%E5%AE%9A%E9%95%9C%E5%83%8F)
+  - [Step 1/5 - 规范化 `k8s/base`（并以 digest 锁定镜像）](#step-15---%E8%A7%84%E8%8C%83%E5%8C%96-k8sbase%E5%B9%B6%E4%BB%A5-digest-%E9%94%81%E5%AE%9A%E9%95%9C%E5%83%8F)
     - [目录与变量](#%E7%9B%AE%E5%BD%95%E4%B8%8E%E5%8F%98%E9%87%8F)
     - [Namespace + ServiceAccount（预留 IRSA 注解位）](#namespace--serviceaccount%E9%A2%84%E7%95%99-irsa-%E6%B3%A8%E8%A7%A3%E4%BD%8D)
     - [ConfigMap（按需给应用注入非敏感配置）](#configmap%E6%8C%89%E9%9C%80%E7%BB%99%E5%BA%94%E7%94%A8%E6%B3%A8%E5%85%A5%E9%9D%9E%E6%95%8F%E6%84%9F%E9%85%8D%E7%BD%AE)
@@ -48,7 +48,7 @@
 
 ---
 
-## Step 1/5 — 规范化 `k8s/base`（并以 digest 锁定镜像）
+## Step 1/5 - 规范化 `k8s/base`（并以 digest 锁定镜像）
 
 目标：把昨天的临时清单重构为可复用的目录结构，并用 **ECR digest** 固定镜像，便于在 `post-recreate.sh` 里一键重放。
 
