@@ -25,6 +25,11 @@
     - [写 Ingress 清单](#%E5%86%99-ingress-%E6%B8%85%E5%8D%95)
     - [等待 ALB 分配地址并冒烟验证](#%E7%AD%89%E5%BE%85-alb-%E5%88%86%E9%85%8D%E5%9C%B0%E5%9D%80%E5%B9%B6%E5%86%92%E7%83%9F%E9%AA%8C%E8%AF%81)
     - [把 Ingress 发布与等待写进 `post-recreate.sh`](#%E6%8A%8A-ingress-%E5%8F%91%E5%B8%83%E4%B8%8E%E7%AD%89%E5%BE%85%E5%86%99%E8%BF%9B-post-recreatesh)
+- [Step 4/5 — 给 `task-api` 加 HPA（CPU=60%）+ 压测验证 + 纳入 `post-recreate.sh`](#step-45--%E7%BB%99-task-api-%E5%8A%A0-hpacpu60%25-%E5%8E%8B%E6%B5%8B%E9%AA%8C%E8%AF%81--%E7%BA%B3%E5%85%A5-post-recreatesh)
+    - [安装/确认 metrics-server（Helm）](#%E5%AE%89%E8%A3%85%E7%A1%AE%E8%AE%A4-metrics-serverhelm)
+    - [创建 HPA（autoscaling/v2）](#%E5%88%9B%E5%BB%BA-hpaautoscalingv2)
+    - [触发一次扩容](#%E8%A7%A6%E5%8F%91%E4%B8%80%E6%AC%A1%E6%89%A9%E5%AE%B9)
+    - [写入 `post-recreate.sh`（平台组件 & 业务段）](#%E5%86%99%E5%85%A5-post-recreatesh%E5%B9%B3%E5%8F%B0%E7%BB%84%E4%BB%B6--%E4%B8%9A%E5%8A%A1%E6%AE%B5)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -818,10 +823,10 @@ install_albc_controller
 
 已经确保：
 
-* **版本固定**：`ALBC_CHART_VERSION` 与 `ALBC_IMAGE_TAG` 固定，确保每日重建结果一致。
-* **CRDs 先行**：`kubectl apply -f "$tmp_dir/${ALBC_CHART_NAME}/crds"` 解决升级场景下 CRDs 不更新的问题。
-* **不创建 SA**：`serviceAccount.create=false`，避免与 Terraform 管理的 SA 冲突。
-* **就绪等待**：`rollout status` 保障后续 Ingress 创建不“撞墙”。
+- **版本固定**：`ALBC_CHART_VERSION` 与 `ALBC_IMAGE_TAG` 固定，确保每日重建结果一致。
+- **CRDs 先行**：`kubectl apply -f "$tmp_dir/${ALBC_CHART_NAME}/crds"` 解决升级场景下 CRDs 不更新的问题。
+- **不创建 SA**：`serviceAccount.create=false`，避免与 Terraform 管理的 SA 冲突。
+- **就绪等待**：`rollout status` 保障后续 Ingress 创建不“撞墙”。
 
 ### 验证
 
@@ -843,6 +848,7 @@ Deployment 可用副本就绪，日志结尾无报错（若有子网标签/权�
 ```bash
 $ kubectl -n kube-system logs deploy/aws-load-balancer-controller | grep error
 Found 2 pods, using pod/aws-load-balancer-controller-8574d469c6-b4cr9
+
 $ kubectl -n kube-system logs deploy/aws-load-balancer-controller | grep warning
 Found 2 pods, using pod/aws-load-balancer-controller-8574d469c6-b4cr9
 W0816 20:21:19.838633       1 warnings.go:70] v1 Endpoints is deprecated in v1.33+; use discovery.k8s.io/v1 EndpointSlice
@@ -1015,3 +1021,268 @@ deploy_taskapi_ingress
 > 并把 `listen-ports` 改为 `[{"HTTP":80},{"HTTPS":443}]`，再在 `spec.tls` 中声明主机名。
 
 ---
+
+# Step 4/5 — 给 `task-api` 加 HPA（CPU=60%）+ 压测验证 + 纳入 `post-recreate.sh`
+
+目标：
+
+安装/确认 **metrics-server** → 创建 **HPA (autoscaling/v2)** → 触发一次**扩容/回收**演示 → 把这一步写进每日重建脚本。
+
+### 安装/确认 metrics-server（Helm）
+
+> 说明：
+> - `helm upgrade --install` 可重复执行；
+> - `--kubelet-insecure-tls` 兼容部分集群证书场景，如已验证不需要可去掉。
+
+```bash
+export AWS_PROFILE=phase2-sso
+export AWS_REGION=us-east-1
+export CLUSTER=dev
+
+helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server/ >/dev/null 2>&1 || true
+helm repo update >/dev/null
+
+helm upgrade --install metrics-server metrics-server/metrics-server \
+  --namespace kube-system \
+  --version 3.12.1 \
+  --set args={--kubelet-insecure-tls}
+
+kubectl -n kube-system rollout status deploy/metrics-server --timeout=180s
+
+# 验证能取到指标
+
+kubectl top nodes
+# 输出：
+# NAME                           CPU(cores)   CPU(%)   MEMORY(bytes)   MEMORY(%)
+# ip-10-0-132-148.ec2.internal   35m          1%       1076Mi          75%
+
+kubectl -n svc-task top pods
+# 输出：
+# NAME                        CPU(cores)   MEMORY(bytes)
+# task-api-748665bf8d-gq7n4   2m           135Mi
+# task-api-748665bf8d-pjcp5   2m           137Mi
+```
+
+**预期**：
+
+能看到节点/Pod 的 CPU/内存用量（若刚启动为空，等 10–20 秒再执行）。
+
+### 创建 HPA（autoscaling/v2）
+
+> 文件：`${WORK_DIR}/task-api/k8s/hpa.yaml`
+
+```yaml
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: task-api
+  namespace: svc-task
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: task-api
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 60
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+        - type: Percent
+          value: 100
+          periodSeconds: 60
+    scaleDown:
+      stabilizationWindowSeconds: 120
+      policies:
+        - type: Percent
+          value: 50
+          periodSeconds: 60
+```
+
+应用与检查：
+
+```bash
+$ kubectl apply -f "${WORK_DIR}/task-api/k8s/hpa.yaml"
+# 输出：
+# horizontalpodautoscaler.autoscaling/task-api created
+
+$ kubectl -n svc-task describe hpa task-api
+# 输出：
+Name:                                                  task-api
+Namespace:                                             svc-task
+Labels:                                                <none>
+Annotations:                                           <none>
+CreationTimestamp:                                     Sun, 17 Aug 2025 06:23:18 +0800
+Reference:                                             Deployment/task-api
+Metrics:                                               ( current / target )
+  resource cpu on pods  (as a percentage of request):  2% (2m) / 60%
+Min replicas:                                          2
+Max replicas:                                          10
+Behavior:
+  Scale Up:
+    Stabilization Window: 0 seconds
+    Select Policy: Max
+    Policies:
+      - Type: Percent  Value: 100  Period: 60 seconds
+  Scale Down:
+    Stabilization Window: 120 seconds
+    Select Policy: Max
+    Policies:
+      - Type: Percent  Value: 50  Period: 60 seconds
+Deployment pods:       2 current / 2 desired
+Conditions:
+  Type            Status  Reason            Message
+  ----            ------  ------            -------
+  AbleToScale     True    ReadyForNewScale  recommended size matches current size
+  ScalingActive   True    ValidMetricFound  the HPA was able to successfully calculate a replica count from cpu resource utilization (percentage of request)
+  ScalingLimited  True    TooFewReplicas    the desired replica count is less than the minimum replica count
+Events:           <none>
+```
+
+**预期**：
+
+- `ScalingActive=True`；
+- 目标 CPU=60%，`MinPods=2/MaxPods=10`。
+
+> 提示：
+> - HPA 按“实际 CPU 用量 / requests.cpu”计算百分比。
+> - 我们 Deployment 已设置 `requests.cpu: 100m`，若后端负载太轻，可先演示触发一次扩容再恢复。
+
+### 触发一次扩容
+
+```bash
+# 连到 ClusterIP，避免流量经外网
+# 使用 hey 直接打 Service 的内网 DNS（:8080 是后端容器端口）
+kubectl -n svc-task run hey --image=williamyeh/hey:latest --restart=Never -- \
+  -z 2m -c 50 -q 0 "http://task-api.svc-task.svc.cluster.local:8080/api/hello?name=HPA"
+
+# 输出：
+# pod/hey created
+
+# 观察扩缩：每 5 秒刷新
+watch -n 5 'kubectl -n svc-task get hpa,deploy,pods -o wide'
+# 输出：
+Every 5.0s: kubectl -n svc-task get hpa,deploy,pods -o wide                                                                           RendaZhangComputer: Sun Aug 17 07:26:03 2025
+NAME                                           REFERENCE             TARGETS         MINPODS   MAXPODS   REPLICAS   AGE
+horizontalpodautoscaler.autoscaling/task-api   Deployment/task-api   cpu: 496%/60%   2         10        8          62m
+
+NAME                       READY   UP-TO-DATE   AVAILABLE   AGE   CONTAINERS   IMAGES
+                             SELECTOR
+deployment.apps/task-api   8/8     8            8           8h    task-api     563149051155.dkr.ecr.us-east-1.amazonaws.com/task-api@sha256:927d20ca4cebedc14f81770e8e5e49259684723ba65b76e7c59f3003cc9a9741   app=task-api
+
+NAME                            READY   STATUS      RESTARTS   AGE     IP             NODE                           NOMINATED NODE   READINESS GATES
+pod/hey                         0/1     Completed   0          2m29s   10.0.133.127   ip-10-0-132-148.ec2.internal   <none>           <none>
+pod/task-api-748665bf8d-8dr4z   1/1     Running     0          45s     10.0.150.222   ip-10-0-151-2.ec2.internal     <none>           <none>
+pod/task-api-748665bf8d-ffx87   1/1     Running     0          45s     10.0.154.90    ip-10-0-151-2.ec2.internal     <none>           <none>
+pod/task-api-748665bf8d-gbw8d   1/1     Running     0          45s     10.0.144.158   ip-10-0-151-2.ec2.internal     <none>           <none>
+pod/task-api-748665bf8d-gq7n4   1/1     Running     0          8h      10.0.139.94    ip-10-0-132-148.ec2.internal   <none>           <none>
+pod/task-api-748665bf8d-pjcp5   1/1     Running     0          8h      10.0.131.88    ip-10-0-132-148.ec2.internal   <none>           <none>
+pod/task-api-748665bf8d-rjg6s   1/1     Running     0          105s    10.0.149.49    ip-10-0-151-2.ec2.internal     <none>           <none>
+pod/task-api-748665bf8d-wr6cg   1/1     Running     0          105s    10.0.146.219   ip-10-0-151-2.ec2.internal     <none>           <none>
+pod/task-api-748665bf8d-wsr7k   1/1     Running     0          45s     10.0.159.84    ip-10-0-151-2.ec2.internal     <none>           <none>
+
+# 查看所有 pod
+kubectl -n svc-task get pod
+
+# 查看 pod 日志
+kubectl -n svc-task logs hey
+# 输出
+Summary:
+  Total:        120.0435 secs
+  Slowest:      1.2815 secs
+  Fastest:      0.0001 secs
+  Average:      0.0093 secs
+  Requests/sec: 5371.6614
+
+  Total data:   5803497 bytes
+  Size/request: 9 bytes
+
+Response time histogram:
+  0.000 [1]     |
+  0.128 [644337]        |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+  0.256 [387]   |
+  0.385 [52]    |
+  0.513 [11]    |
+  0.641 [9]     |
+  0.769 [11]    |
+  0.897 [11]    |
+  1.025 [3]     |
+  1.153 [1]     |
+  1.282 [10]    |
+
+
+Latency distribution:
+  10% in 0.0007 secs
+  25% in 0.0014 secs
+  50% in 0.0031 secs
+  75% in 0.0078 secs
+  90% in 0.0315 secs
+  95% in 0.0444 secs
+  99% in 0.0652 secs
+
+Details (average, fastest, slowest):
+  DNS+dialup:   0.0000 secs, 0.0001 secs, 1.2815 secs
+  DNS-lookup:   0.0001 secs, 0.0000 secs, 0.0647 secs
+  req write:    0.0000 secs, 0.0000 secs, 0.4086 secs
+  resp wait:    0.0090 secs, 0.0001 secs, 0.5966 secs
+  resp read:    0.0002 secs, 0.0000 secs, 0.6852 secs
+
+Status code distribution:
+  [200] 644833 responses
+```
+
+**停止压测**
+
+```bash
+# 删除 pod
+kubectl -n svc-task delete pod hey
+```
+
+> 如果迟迟不触发扩容：
+>
+> - 临时把 HPA 的 `averageUtilization` 降到 **20–30** 再试；
+> - 或把 Deployment 的 `requests.cpu` 降到 **50m**（演示时更容易“过线”）：
+>
+>   ```bash
+>   kubectl -n svc-task patch deploy task-api \
+>     --type='json' \
+>     -p='[{"op":"replace","path":"/spec/template/spec/containers/0/resources/requests/cpu","value":"50m"}]'
+>   ```
+
+### 写入 `post-recreate.sh`（平台组件 & 业务段）
+
+在你脚本里（ALBC 安装之后）追加两段：**metrics-server 安装**与**HPA 发布/体检**。
+
+```bash
+### ---- metrics-server (Helm) ----
+deploy_metrics_server() {
+  log "📦 Installing metrics-server ..."
+  helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server/ >/dev/null 2>&1 || true
+  helm repo update >/dev/null
+  helm upgrade --install metrics-server metrics-server/metrics-server \
+    --namespace kube-system \
+    --version 3.12.1 \
+    --set args={--kubelet-insecure-tls}
+  kubectl -n kube-system rollout status deploy/metrics-server --timeout=180s
+}
+
+### ---- HPA for task-api ----
+deploy_taskapi_hpa() {
+  HPA_FILE="${WORK_DIR}/task-api/k8s/hpa.yaml"
+  log "📦 Apply HPA for task-api ..."
+  kubectl apply -f "$HPA_FILE"
+  log "🔎 Describe HPA"
+  kubectl -n svc-task describe hpa task-api | sed -n '1,60p' || true
+}
+
+# 在主流程中调用（在 Deployment/Service/Ingress 之后）
+deploy_metrics_server
+deploy_taskapi_hpa
+```
