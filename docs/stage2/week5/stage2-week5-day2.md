@@ -13,6 +13,13 @@
       - [渲染模板](#%E6%B8%B2%E6%9F%93%E6%A8%A1%E6%9D%BF)
       - [应用并覆盖昨天的临时资源](#%E5%BA%94%E7%94%A8%E5%B9%B6%E8%A6%86%E7%9B%96%E6%98%A8%E5%A4%A9%E7%9A%84%E4%B8%B4%E6%97%B6%E8%B5%84%E6%BA%90)
     - [快速冒烟（集群内）](#%E5%BF%AB%E9%80%9F%E5%86%92%E7%83%9F%E9%9B%86%E7%BE%A4%E5%86%85)
+  - [Step 2/5 - IRSA 用 Terraform，ALB Controller 用 Helm（进 `post-recreate.sh`）](#step-25---irsa-%E7%94%A8-terraformalb-controller-%E7%94%A8-helm%E8%BF%9B-post-recreatesh)
+    - [Terraform：创建 IRSA（Role + Policy + SA 注解）](#terraform%E5%88%9B%E5%BB%BA-irsarole--policy--sa-%E6%B3%A8%E8%A7%A3)
+      - [准备官方策略（放文件，便于以后升级替换）](#%E5%87%86%E5%A4%87%E5%AE%98%E6%96%B9%E7%AD%96%E7%95%A5%E6%94%BE%E6%96%87%E4%BB%B6%E4%BE%BF%E4%BA%8E%E4%BB%A5%E5%90%8E%E5%8D%87%E7%BA%A7%E6%9B%BF%E6%8D%A2)
+      - [HCL 代码（IRSA + SA 注解）](#hcl-%E4%BB%A3%E7%A0%81irsa--sa-%E6%B3%A8%E8%A7%A3)
+      - [使用 Terraform 执行变更：](#%E4%BD%BF%E7%94%A8-terraform-%E6%89%A7%E8%A1%8C%E5%8F%98%E6%9B%B4)
+    - [Helm 安装/升级 + CRDs：更新 `post-recreate.sh`](#helm-%E5%AE%89%E8%A3%85%E5%8D%87%E7%BA%A7--crds%E6%9B%B4%E6%96%B0-post-recreatesh)
+    - [验证](#%E9%AA%8C%E8%AF%81)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -28,8 +35,8 @@
    - 顺手加一个 **HPA（CPU=60%）** 做最小扩缩演示。
 3. **纳入每日重建/销毁体系**
    - 所有新增内容都要能随着 `make start-all / stop-all` 循环重放：
-     - 基础设施仍由 **Terraform** 管理；
-     - 控制器与业务清单，通过 **post-recreate.sh** 自动部署与验活（或将 ALB Controller 以 Terraform/Helm 资源声明化；二选一我们稍后定）。
+     - Terraform 仅负责 IAM 角色与 ServiceAccount；
+     - 控制器本身通过 **post-recreate.sh** 的 Helm 安装。
 
 验收清单：
 
@@ -384,6 +391,459 @@ kill $PF >/dev/null 2>&1 || true
 ps aux | grep kubectl
 # 输出：
 # [1]+  Terminated              kubectl -n "$NS" port-forward svc/"$APP" 8080:8080 > /dev/null 2>&1
+```
+
+---
+
+## Step 2/5 - IRSA 用 Terraform，ALB Controller 用 Helm（进 `post-recreate.sh`）
+
+**目标**：
+
+1. 用 Terraform 创建 **ALBC 的 IRSA**（IAM Role + Policy + 绑定到 `kube-system/aws-load-balancer-controller` SA）；
+2. 在 `post-recreate.sh` 里用 Helm 安装/升级 **AWS Load Balancer Controller**，并**等待就绪**；
+3. 固定 Chart / 镜像版本 + 处理 **CRDs 升级**。
+
+### Terraform：创建 IRSA（Role + Policy + SA 注解）
+
+**目录建议**：把新增的 HCL 文件放到 `infra/aws/modules/irsa_albc` 目录下。
+
+#### 准备官方策略（放文件，便于以后升级替换）
+
+`infra/aws/modules/irsa_albc/policy.json`
+
+> 内容使用 AWS 官方提供的 ALBC IAM Policy JSON（体量较大，这里不粘贴）。
+> 第一次可以手动下载放入该路径；后续升级只需更新这个文件并 `terraform apply`。
+
+#### HCL 代码（IRSA + SA 注解）
+
+新增 `infra/aws/modules/irsa_albc/main.tf` 文件：
+
+```hcl
+// ---------------------------
+// IRSA 模块：为 Kubernetes ServiceAccount 绑定 IAM 角色
+// 用于 AWS Load Balancer Controller 访问 AWS API
+// ---------------------------
+
+resource "aws_iam_role" "aws_load_balancer_controller" {
+  name        = var.name                                                            # IAM 角色名称
+  description = "IRSA role for AWS Load Balancer Controller in ${var.cluster_name}" # 角色描述
+  assume_role_policy = jsonencode(
+    {
+      Version = "2012-10-17"
+      Statement = [
+        {
+          Action = "sts:AssumeRoleWithWebIdentity"
+          Effect = "Allow"
+          Principal = {
+            Federated = var.oidc_provider_arn # EKS OIDC Provider ARN
+          }
+          Condition = {
+            StringEquals = {
+              "${var.oidc_provider_url_without_https}:sub" = "system:serviceaccount:${var.namespace}:${var.service_account_name}"
+            }
+          }
+        }
+      ]
+    }
+  )
+
+  lifecycle {
+    create_before_destroy = true # 先创建新角色再销毁旧角色
+  }
+}
+
+# 创建 AWS Load Balancer Controller IAM 策略
+resource "aws_iam_policy" "albc" {
+  name        = "${var.cluster_name}-AWSLoadBalancerControllerPolicy"
+  description = "Policy for AWS Load Balancer Controller"
+
+  # 官方推荐的权限策略
+  policy = file("${path.module}/policy.json")
+}
+
+resource "aws_iam_role_policy_attachment" "albc_attach" {
+  role       = aws_iam_role.aws_load_balancer_controller.name # 关联的 IAM 角色
+  policy_arn = aws_iam_policy.albc.arn                        # IAM 策略 ARN
+
+  depends_on = [
+    aws_iam_role.aws_load_balancer_controller,
+    aws_iam_policy.albc
+  ]
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+```
+
+新增 `infra/aws/modules/irsa_albc/outputs.tf` 文件：
+
+```hcl
+// 输出 AWS Load Balancer Controller 所使用的 IAM 角色 ARN
+output "albc_role_arn" {
+  description = "IAM Role ARN for the AWS Load Balancer Controller"
+  value       = aws_iam_role.aws_load_balancer_controller.arn
+}
+```
+
+新增 `infra/aws/modules/irsa_albc/variables.tf` 文件：
+
+```hcl
+// AWS Load Balancer Controller IRSA 模块所需的变量定义
+variable "name" {
+  description = "Name of the IRSA Role"
+  type        = string
+}
+
+variable "cluster_name" {
+  description = "Name of the EKS cluster"
+  type        = string
+}
+
+variable "namespace" {
+  description = "K8s Namespace of the ServiceAccount"
+  type        = string
+}
+
+variable "service_account_name" {
+  description = "Name of the ServiceAccount in Kubernetes"
+  type        = string
+}
+
+variable "oidc_provider_arn" {
+  description = "ARN of the OIDC provider for the EKS cluster"
+  type        = string
+}
+
+variable "oidc_provider_url_without_https" {
+  description = "OIDC provider URL (without https://)"
+  type        = string
+}
+```
+
+新增 `infra/aws/modules/irsa_albc/versions.tf` 文件：
+
+```hcl
+// 模块使用的 Terraform 及 provider 版本
+terraform {
+  required_version = "~> 1.12"
+
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 6.0"
+    }
+  }
+}
+```
+
+更新 `infra/aws/main.tf`：
+
+```hcl
+# 新增如下内容
+
+module "irsa_albc" {
+  source                          = "./modules/irsa_albc"                      # IRSA 模块，为 ALBC 创建角色
+  count                           = var.create_eks ? 1 : 0                     # 仅在创建 EKS 时启用
+  name                            = var.albc_irsa_role_name                    # ALBC IAM 角色名称
+  namespace                       = var.albc_namespace                         # ALBC 所在命名空间
+  cluster_name                    = var.cluster_name                           # 集群名称
+  service_account_name            = var.albc_service_account_name              # ALBC ServiceAccount 名称
+  oidc_provider_arn               = module.eks.oidc_provider_arn               # OIDC Provider ARN
+  oidc_provider_url_without_https = module.eks.oidc_provider_url_without_https # OIDC URL（无 https）
+  depends_on                      = [module.eks]                               # 依赖 EKS 模块
+}
+
+resource "kubernetes_service_account" "aws_load_balancer_controller" {
+  count = var.create_eks ? 1 : 0
+
+  metadata {
+    name      = var.albc_service_account_name
+    namespace = var.albc_namespace
+    annotations = {
+      "eks.amazonaws.com/role-arn" = module.irsa_albc[0].albc_role_arn
+    }
+  }
+}
+```
+
+更新 `infra/aws/outputs.tf`：
+
+```hcl
+# 新增如下内容
+output "albc_role_arn" {
+  description = "AWS Load Balancer Controller 使用的 IAM 角色 ARN"
+  value       = var.create_eks ? module.irsa_albc[0].albc_role_arn : null
+}
+```
+
+更新 `infra/aws/provider.tf`：
+
+```hcl
+# 新增如下内容
+provider "kubernetes" {
+  config_path = "~/.kube/config" # 与 helm 共用 kubeconfig
+}
+```
+
+更新 `infra/aws/terraform.tfvars`：
+
+```hcl
+# 新增如下内容
+# ALBC IRSA 配置
+albc_irsa_role_name       = "aws-load-balancer-controller" # ALBC IRSA 角色名称
+albc_service_account_name = "aws-load-balancer-controller" # ALBC ServiceAccount 名称
+albc_namespace            = "kube-system"                  # ALBC 所在命名空间
+```
+
+更新 `infra/aws/variables.tf`：
+
+```hcl
+# 新增如下内容
+
+variable "albc_irsa_role_name" {
+  description = "Name of the IRSA role for AWS Load Balancer Controller"
+  type        = string
+  default     = "aws-load-balancer-controller"
+}
+
+variable "albc_service_account_name" {
+  description = "Kubernetes ServiceAccount name for AWS Load Balancer Controller"
+  type        = string
+  default     = "aws-load-balancer-controller"
+}
+
+variable "albc_namespace" {
+  description = "Namespace for AWS Load Balancer Controller ServiceAccount"
+  type        = string
+  default     = "kube-system"
+}
+```
+
+更新 `infra/aws/versions.tf`，新增如下内容：
+
+```hcl
+terraform {
+  required_version = "~> 1.12" # Terraform CLI 版本要求
+  required_providers {
+  ...
+    # 新增 kubernetes
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+      version = "~> 2.23"
+    }
+  ...
+  }
+}
+```
+
+#### 使用 Terraform 执行变更：
+
+```bash
+cd ${WORK_DIR}
+
+terraform -chdir=infra/aws init -reconfigure
+terraform -chdir=infra/aws apply -auto-approve -input=false \
+        -var="region=us-east-1" \
+        -var="create_nat=true" \
+        -var="create_alb=true" \
+        -var="create_eks=true"
+# 输出
+# Apply complete! Resources: 4 added, 0 changed, 0 destroyed.
+# Outputs:
+# alb_dns = "alb-demo-293119581.us-east-1.elb.amazonaws.com"
+# albc_role_arn = "arn:aws:iam::563149051155:role/aws-load-balancer-controller"
+# autoscaler_role_arn = "arn:aws:iam::563149051155:role/eks-cluster-autoscaler"
+# private_subnet_ids = [
+#   "subnet-0422bec13e7eec9e6",
+#   "subnet-00630bdad3664ee18",
+# ]
+# public_subnet_ids = [
+#   "subnet-066a65e68e06df5db",
+#   "subnet-08ca22e6d15635564",
+# ]
+# vpc_id = "vpc-0b06ba5bfab99498b"
+```
+
+查看新建的 IAM Role：
+
+```bash
+# 使用命令检查角色的 ARN
+aws iam list-roles \
+  --query "Roles[?RoleName == 'aws-load-balancer-controller'].Arn" \
+  --output text
+# 输出：
+# arn:aws:iam::563149051155:role/aws-load-balancer-controller
+
+# 检查角色被授予的权限策略
+aws iam list-attached-role-policies --role-name aws-load-balancer-controller
+# 输出：
+# {
+#     "AttachedPolicies": [
+#         {
+#             "PolicyName": "dev-AWSLoadBalancerControllerPolicy",
+#             "PolicyArn": "arn:aws:iam::563149051155:policy/dev-AWSLoadBalancerControllerPolicy"
+#         }
+#     ]
+# }
+```
+
+查看 ServiceAccount 的详细信息：
+
+```bash
+kubectl -n kube-system describe serviceaccount aws-load-balancer-controller
+# 输出：
+# Name:                aws-load-balancer-controller
+# Namespace:           kube-system
+# Labels:              <none>
+# Annotations:         eks.amazonaws.com/role-arn: arn:aws:iam::563149051155:role/aws-load-balancer-controller
+# Image pull secrets:  <none>
+# Mountable secrets:   <none>
+# Tokens:              <none>
+# Events:              <none>
+```
+
+已经确认：
+
+- 生成了 IAM Role `aws-load-balancer-controller` 并附加策略 `dev-AWSLoadBalancerControllerPolicy`；
+- `kube-system` 下出现了 SA `aws-load-balancer-controller`，并带有 `eks.amazonaws.com/role-arn` 注解。
+
+### Helm 安装/升级 + CRDs：更新 `post-recreate.sh`
+
+在 `scripts/post-recreate.sh` 里新增如下代码：
+
+```sh
+...
+
+# AWS Load Balancer Controller settings
+ALBC_CHART_NAME="aws-load-balancer-controller"
+ALBC_RELEASE_NAME=${ALBC_CHART_NAME}
+ALBC_SERVICE_ACCOUNT_NAME=${ALBC_CHART_NAME}
+ALBC_CHART_VERSION="1.8.1"
+ALBC_IMAGE_TAG="v2.8.1"
+ALBC_IMAGE_REPO="602401143452.dkr.ecr.${REGION}.amazonaws.com/amazon/aws-load-balancer-controller"
+ALBC_HELM_REPO_NAME="eks"
+ALBC_HELM_REPO_URL="https://aws.github.io/eks-charts"
+POD_ALBC_LABEL="app.kubernetes.io/name=${ALBC_RELEASE_NAME}"
+
+...
+
+# 检查 AWS Load Balancer Controller 部署状态
+check_albc_status() {
+  if ! kubectl -n $KUBE_DEFAULT_NAMESPACE get deployment $ALBC_RELEASE_NAME >/dev/null 2>&1; then
+    echo "missing"
+    return
+  fi
+  if kubectl -n $KUBE_DEFAULT_NAMESPACE get pod -l $POD_ALBC_LABEL \
+      --no-headers 2>/dev/null | grep -v Running >/dev/null; then
+    echo "unhealthy"
+  else
+    echo "healthy"
+  fi
+}
+
+...
+
+# 安装或升级 AWS Load Balancer Controller
+install_albc_controller() {
+  local status
+  status=$(check_albc_status)
+  case "$status" in
+    healthy)
+      log "✅ AWS Load Balancer Controller 已正常运行, 执行 Helm 升级以确保版本一致"
+      ;;
+    missing)
+      log "⚙️  检测到 AWS Load Balancer Controller 未部署, 开始安装"
+      ;;
+    unhealthy)
+      log "❌ 检测到 AWS Load Balancer Controller 状态异常, 删除旧 Pod 后重新部署"
+      kubectl -n $KUBE_DEFAULT_NAMESPACE delete pod -l $POD_ALBC_LABEL --ignore-not-found
+      ;;
+    *)
+      log "⚠️  未知的 AWS Load Balancer Controller 状态, 继续尝试安装"
+      ;;
+  esac
+
+  if ! helm repo list | grep -q "^${ALBC_HELM_REPO_NAME}\b"; then
+    log "🔧 添加 ${ALBC_HELM_REPO_NAME} Helm 仓库"
+    helm repo add ${ALBC_HELM_REPO_NAME} ${ALBC_HELM_REPO_URL}
+  fi
+  helm repo update
+
+  log "📦 应用 AWS Load Balancer Controller CRDs (version ${ALBC_CHART_VERSION})"
+  tmp_dir=$(mktemp -d)
+  helm pull ${ALBC_HELM_REPO_NAME}/${ALBC_CHART_NAME} --version ${ALBC_CHART_VERSION} --untar -d "$tmp_dir"
+  kubectl apply -f "$tmp_dir/${ALBC_CHART_NAME}/crds"
+  rm -rf "$tmp_dir"
+
+  VPC_ID=$(aws eks describe-cluster --name "$CLUSTER_NAME" --region "$REGION" --profile "$PROFILE" --query "cluster.resourcesVpcConfig.vpcId" --output text)
+
+  log "🚀 正在通过 Helm 安装或升级 AWS Load Balancer Controller..."
+  helm upgrade --install ${ALBC_RELEASE_NAME} ${ALBC_HELM_REPO_NAME}/${ALBC_CHART_NAME} \
+    -n $KUBE_DEFAULT_NAMESPACE \
+    --version ${ALBC_CHART_VERSION} \
+    --set clusterName=$CLUSTER_NAME \
+    --set region=$REGION \
+    --set vpcId=$VPC_ID \
+    --set serviceAccount.create=false \
+    --set serviceAccount.name=${ALBC_SERVICE_ACCOUNT_NAME} \
+    --set image.repository=${ALBC_IMAGE_REPO} \
+    --set image.tag=${ALBC_IMAGE_TAG}
+
+  log "🔍 等待 AWS Load Balancer Controller 就绪"
+  kubectl -n $KUBE_DEFAULT_NAMESPACE rollout status deployment/${ALBC_RELEASE_NAME} --timeout=180s
+  kubectl -n $KUBE_DEFAULT_NAMESPACE get pod -l $POD_ALBC_LABEL
+}
+
+...
+
+# 进行基础资源检查
+perform_health_checks() {
+  ...
+  log "🔍 检查 AWS Load Balancer Controller 部署状态"
+  albc_status=$(check_albc_status)
+  log "AWS Load Balancer Controller status: $albc_status"
+  ...
+}
+
+...
+
+install_albc_controller
+```
+
+已经确保：
+
+* **版本固定**：`ALBC_CHART_VERSION` 与 `ALBC_IMAGE_TAG` 固定，确保每日重建结果一致。
+* **CRDs 先行**：`kubectl apply -f "$tmp_dir/${ALBC_CHART_NAME}/crds"` 解决升级场景下 CRDs 不更新的问题。
+* **不创建 SA**：`serviceAccount.create=false`，避免与 Terraform 管理的 SA 冲突。
+* **就绪等待**：`rollout status` 保障后续 Ingress 创建不“撞墙”。
+
+### 验证
+
+执行 `bash scripts/post-recreate.sh` 完成控制器安装。
+
+验证：
+
+```bash
+kubectl -n kube-system rollout status deploy/aws-load-balancer-controller
+kubectl -n kube-system get deploy aws-load-balancer-controller
+kubectl -n kube-system get pod -l app.kubernetes.io/name=aws-load-balancer-controller
+kubectl -n kube-system logs deploy/aws-load-balancer-controller | tail -n 100
+```
+
+验证结果：
+
+Deployment 可用副本就绪，日志结尾无报错（若有子网标签/权限问题，日志会即时提示）。
+
+```bash
+$ kubectl -n kube-system logs deploy/aws-load-balancer-controller | grep error
+Found 2 pods, using pod/aws-load-balancer-controller-8574d469c6-b4cr9
+$ kubectl -n kube-system logs deploy/aws-load-balancer-controller | grep warning
+Found 2 pods, using pod/aws-load-balancer-controller-8574d469c6-b4cr9
+W0816 20:21:19.838633       1 warnings.go:70] v1 Endpoints is deprecated in v1.33+; use discovery.k8s.io/v1 EndpointSlice
+W0816 20:21:19.840303       1 warnings.go:70] v1 Endpoints is deprecated in v1.33+; use discovery.k8s.io/v1 EndpointSlice
+W0816 20:28:47.843007       1 warnings.go:70] v1 Endpoints is deprecated in v1.33+; use discovery.k8s.io/v1 EndpointSlice
+W0816 20:34:04.845735       1 warnings.go:70] v1 Endpoints is deprecated in v1.33+; use discovery.k8s.io/v1 EndpointSlice
 ```
 
 ---
