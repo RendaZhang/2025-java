@@ -28,8 +28,10 @@
       - [今天做了什么（Done）](#%E4%BB%8A%E5%A4%A9%E5%81%9A%E4%BA%86%E4%BB%80%E4%B9%88done)
       - [关键决策与记录](#%E5%85%B3%E9%94%AE%E5%86%B3%E7%AD%96%E4%B8%8E%E8%AE%B0%E5%BD%95)
       - [明天计划（Next）](#%E6%98%8E%E5%A4%A9%E8%AE%A1%E5%88%92next)
-    - [Day 2 - K8s 基础对象（NS/SA/Config/Secret/Deployment/Service）](#day-2---k8s-%E5%9F%BA%E7%A1%80%E5%AF%B9%E8%B1%A1nssaconfigsecretdeploymentservice)
-    - [Day 3 - Ingress（ALB）对外暴露 + HPA](#day-3---ingressalb%E5%AF%B9%E5%A4%96%E6%9A%B4%E9%9C%B2--hpa)
+    - [Day 2 + Day 3 复盘：K8s 基础对象、ALB 暴露、HPA 弹性](#day-2--day-3-%E5%A4%8D%E7%9B%98k8s-%E5%9F%BA%E7%A1%80%E5%AF%B9%E8%B1%A1alb-%E6%9A%B4%E9%9C%B2hpa-%E5%BC%B9%E6%80%A7)
+      - [今天做了什么（Done）](#%E4%BB%8A%E5%A4%A9%E5%81%9A%E4%BA%86%E4%BB%80%E4%B9%88done-1)
+      - [常见坑与退路](#%E5%B8%B8%E8%A7%81%E5%9D%91%E4%B8%8E%E9%80%80%E8%B7%AF)
+      - [明天计划（Next · Day 4）](#%E6%98%8E%E5%A4%A9%E8%AE%A1%E5%88%92next-%C2%B7-day-4)
     - [Day 4 -（可选但高收益）S3 最小接入 + IRSA](#day-4--%E5%8F%AF%E9%80%89%E4%BD%86%E9%AB%98%E6%94%B6%E7%9B%8As3-%E6%9C%80%E5%B0%8F%E6%8E%A5%E5%85%A5--irsa)
     - [Day 5 - 收尾硬化 + 文档化 + 指标留痕](#day-5---%E6%94%B6%E5%B0%BE%E7%A1%AC%E5%8C%96--%E6%96%87%E6%A1%A3%E5%8C%96--%E6%8C%87%E6%A0%87%E7%95%99%E7%97%95)
     - [常见问题与 20 分钟退路](#%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98%E4%B8%8E-20-%E5%88%86%E9%92%9F%E9%80%80%E8%B7%AF)
@@ -263,147 +265,75 @@
 * （可选）为 `task-api` 添加 **HPA（基于 CPU 60%）**，做一次轻压测观察扩缩。
 * 文档更新：在 README/计划文档中记录 **ALB DNS、发布步骤、探针路径** 与**一张流量路径草图**。
 
-### Day 2 - K8s 基础对象（NS/SA/Config/Secret/Deployment/Service）
+### Day 2 + Day 3 复盘：K8s 基础对象、ALB 暴露、HPA 弹性
 
-**做什么**
+#### 今天做了什么（Done）
 
-1. 建命名空间与 **IRSA** ServiceAccount（后续可接 S3）。
-2. 写最小化 Deployment + ClusterIP Service；加 liveness/readiness probes。
-3. 用 ConfigMap 注入 `APP_NAME`、`STAGE=dev` 等。
+1. **K8s 基础对象规范化（k8s/base）**
+   * `Namespace`：`svc-task`
+   * `ServiceAccount`：`task-api`（预留 IRSA 注解位，Day 4 再绑定 IAM Role）
+   * `ConfigMap`：`task-api-config`（示例：`APP_NAME` / `WELCOME_MSG`）
+   * `Deployment + Service(ClusterIP)`：
+     * 镜像以 **ECR Digest** 固定（避免 tag 漂移）。
+     * 配置 `readiness/liveness` → `/actuator/health/{readiness,liveness}`。
+     * 资源水位：`requests: cpu 100m / mem 128Mi`，`limits: cpu 500m / mem 512Mi`。
+2. **AWS Load Balancer Controller（ALBC）上线**
+   * **IRSA** 用 Terraform 创建：IAM Policy + Role + 信任策略 + `kube-system/aws-load-balancer-controller` SA 注解。
+   * **控制器本体**用 Helm 写进 `post-recreate.sh`：
+     * 固定 `chart` 与 `image.tag`；
+     * 升级前显式 `kubectl apply -k .../config/crd?ref=<controller-version>` 处理 CRDs；
+     * `serviceAccount.create=false`（复用 TF 管理的 SA）；
+     * `rollout status` 等待就绪并打印末尾日志。
+3. **Ingress → 公网 ALB**
+   * `ingressClassName: alb`，关键注解：
+     * `alb.ingress.kubernetes.io/scheme: internet-facing`
+     * `alb.ingress.kubernetes.io/target-type: ip`
+     * `alb.ingress.kubernetes.io/healthcheck-path: /actuator/health/readiness`
+     * `alb.ingress.kubernetes.io/healthcheck-port: traffic-port`
+   * ALB DNS 已分配；根路径无资源返回 `404`，健康检查 `UP`，**公网可达**验证通过。
+4. **弹性扩缩（HPA, autoscaling/v2）**
+   * 目标：CPU **60%**，`min=2 / max=10`，配置了 `behavior` 的放大/回落策略。
+   * 安装/确认 `metrics-server`（Helm，`--kubelet-insecure-tls` 以增强兼容性）。
+   * **压测**（集群内流量，直打 ClusterIP）：
+     * 修正后的内网域名：`http://task-api.svc-task.svc.cluster.local:8080/...`
+     * 使用镜像：`williamyeh/hey:latest`
+     * 命令示例：
+       ```bash
+       kubectl -n svc-task run hey --image=williamyeh/hey:latest --restart=Never -- \
+         -z 2m -c 50 -q 0 "http://task-api.svc-task.svc.cluster.local:8080/api/hello?name=HPA"
+       ```
+     * 观察结果：`cpu: 496%/60%`，`Pods: 2 → 8`；压测结束后约 1 分钟回落到 `cpu: 2%/60%` 与 `Pods: 2`。
+5. **每日重建脚本已更新**
+   * `post-recreate.sh` 已集成：ALBC 安装/升级（含 CRDs）、Ingress 发布与等待、metrics-server 安装、HPA 发布、冒烟验证。
+   * 与 `infra/aws` 的 Terraform 模块对齐（IRSA 在 HCL，控制器在脚本）。
 
-**YAML 示范（可直接落库 `k8s/base/`）**
+> 环境锚点：`AWS_REGION=us-east-1`、`CLUSTER=dev`、`NS=svc-task`、`ECR_REPO=task-api`。
+> 说明：ECR 仍采用 **digest 部署**（今日 digest 已记录）；ECR 生命周期目前“只保留 1 个 tag + 1 天清理 untagged”，可节省成本但**回滚空间非常小**，后续建议调大保留窗口（例如最近 5–10 个 tag）。
 
-```yaml
-# ns-sa.yaml
-apiVersion: v1
-kind: Namespace
-metadata: { name: ${NS} }
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: ${APP}-sa
-  namespace: ${NS}
-  annotations:
-    eks.amazonaws.com/role-arn: arn:aws:iam::<ACCOUNT_ID>:role/${APP}-irsa # 暂可留空，Day4 再补
-```
+#### 常见坑与退路
 
-```yaml
-# deploy-svc.yaml
-apiVersion: v1
-kind: ConfigMap
-metadata: { name: ${APP}-cm, namespace: ${NS} }
-data:
-  APP_NAME: "task-api"
-  STAGE: "dev"
----
-apiVersion: v1
-kind: Deployment
-metadata: { name: ${APP}, namespace: ${NS} }
-spec:
-  replicas: 1
-  selector: { matchLabels: { app: ${APP} } }
-  template:
-    metadata: { labels: { app: ${APP} } }
-    spec:
-      serviceAccountName: ${APP}-sa
-      containers:
-      - name: ${APP}
-        image: <ECR_URI>/${ECR_REPO}:0.1.0
-        ports: [{ containerPort: 8080 }]
-        envFrom: [{ configMapRef: { name: ${APP}-cm } }]
-        readinessProbe: { httpGet: { path: /actuator/health/readiness, port: 8080 }, initialDelaySeconds: 10, periodSeconds: 5 }
-        livenessProbe:  { httpGet: { path: /actuator/health/liveness,  port: 8080 }, initialDelaySeconds: 30, periodSeconds: 10 }
----
-apiVersion: v1
-kind: Service
-metadata: { name: ${APP}-svc, namespace: ${NS} }
-spec:
-  type: ClusterIP
-  selector: { app: ${APP} }
-  ports: [{ port: 80, targetPort: 8080 }]
-```
+* **Ingress 没地址**：先看 ALBC 是否就绪、子网/集群标签是否正确、SA 注解的 IAM Role 是否匹配。
+* **ALB 健康检查失败**：确认探针路径与端口，应用冷启动时适当调大 `initialDelaySeconds`。
+* **HPA 不触发**：降低 `averageUtilization`（如 30%）、或把 `requests.cpu` 临时降到 `50m`，或加大压测并发/时长。
+* **镜像/架构不匹配**：节点是 ARM64 时本地构建需指定 `--platform=linux/arm64`。
 
-**关键命令**
+#### 明天计划（Next · Day 4）
 
-```bash
-ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
-sed -e "s|\${NS}|$NS|g" -e "s|\${APP}|$APP|g" \
-    -e "s|\${ECR_REPO}|$ECR_REPO|g" \
-    -e "s|\<ACCOUNT_ID\>|$ACCOUNT|g" \
-    -e "s|\<ECR_URI\>|$ACCOUNT.dkr.ecr.$AWS_REGION.amazonaws.com|g" \
-    k8s/base/*.yaml | kubectl apply -f -
-kubectl get pod -n $NS -w
-```
+1. **IRSA for App（与最小 S3 演示）**
+   * 创建 S3 桶与最小权限策略（限定前缀：`arn:aws:s3:::<bucket>/${APP}/*`）；
+   * 为 `svc-task/task-api` 的 SA 绑定 **IAM Role（IRSA）**；
+   * 应用侧小改动：加入一个简单的“写入/读取”或“列举前缀”的 API（或用 CLI 容器验证 STS 权限）。
+   * 冒烟：在 Pod 内执行一次 `curl`/应用接口验证 403→200 的权限变化。
+2. **运行时加固与可靠性**
+   * `securityContext`：`runAsNonRoot`, `runAsUser`, `readOnlyRootFilesystem`；
+   * `PodDisruptionBudget`（维持最少可用副本）；
+   * `requests/limits` 微调与 `probe` 阈值优化；
+   * Ingress 开启 **HTTPS**（ACM 证书）与基础安全头。
+3. **可观测性（若时间允许，先达成“最小闭环”）**
+   * 部署 ADOT Collector（DaemonSet 或 Sidecar）→ 将指标推到 **AMP**，或先把日志集中到 **CloudWatch Logs**；
+   * Grafana 看板骨架与一条告警样例（例如 5xx 比例或 P95 延迟）。
 
-**产物**：
-
-`kubectl get deploy,svc -n $NS` 截图；就绪 1/1。
-
-**退路**：
-
-Probe 失败 → 暂时改为 `/actuator/health`；或放宽 `initialDelaySeconds`。
-
-### Day 3 - Ingress（ALB）对外暴露 + HPA
-
-**做什么**
-
-1. **若尚未安装 AWS Load Balancer Controller**，用已有脚本/Helm 安装（与 OIDC 角色绑定）。
-2. 配置 Ingress，自动创建 ALB；设置 HPA 基于 CPU 60%。
-
-**Ingress 示例（`k8s/ingress.yaml`）**
-
-```yaml
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: ${APP}-ing
-  namespace: ${NS}
-  annotations:
-    kubernetes.io/ingress.class: alb
-    alb.ingress.kubernetes.io/scheme: internet-facing
-    alb.ingress.kubernetes.io/target-type: ip
-    alb.ingress.kubernetes.io/healthcheck-path: /actuator/health/readiness
-spec:
-  rules:
-  - http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend: { service: { name: ${APP}-svc, port: { number: 80 } } }
-```
-
-**HPA 示例**
-
-```yaml
-apiVersion: autoscaling/v2
-kind: HorizontalPodAutoscaler
-metadata: { name: ${APP}-hpa, namespace: ${NS} }
-spec:
-  scaleTargetRef: { apiVersion: v1, kind: Deployment, name: ${APP} }
-  minReplicas: 1
-  maxReplicas: 3
-  metrics:
-  - type: Resource
-    resource: { name: cpu, target: { type: Utilization, averageUtilization: 60 } }
-```
-
-**关键命令**
-
-```bash
-kubectl apply -f k8s/ingress.yaml
-kubectl apply -f k8s/hpa.yaml
-# 等待 ALB 创建完成，获取 DNS
-kubectl get ingress -n $NS
-```
-
-**产物**：
-
-ALB DNS 可访问首页/健康检查截图；`kubectl describe hpa` 输出。
-
-**退路**：
-
-ALB 迟迟不出 → 检查子网 tag / sg；临时改为 `kubectl port-forward` 验证服务可用性。
+> 产出物：IRSA HCL（或沿用你现有模块输出）、`k8s` 侧 SA 注解更新、最小 S3 演示说明、加固与 PDB 的 YAML、（可选）HTTPS Ingress 与证书记录。
 
 ### Day 4 -（可选但高收益）S3 最小接入 + IRSA
 
