@@ -20,6 +20,11 @@
       - [使用 Terraform 执行变更：](#%E4%BD%BF%E7%94%A8-terraform-%E6%89%A7%E8%A1%8C%E5%8F%98%E6%9B%B4)
     - [Helm 安装/升级 + CRDs：更新 `post-recreate.sh`](#helm-%E5%AE%89%E8%A3%85%E5%8D%87%E7%BA%A7--crds%E6%9B%B4%E6%96%B0-post-recreatesh)
     - [验证](#%E9%AA%8C%E8%AF%81)
+  - [Step 3/5 — 创建 Ingress（生成 ALB）+ 公网验证 + 写入 `post-recreate.sh`](#step-35--%E5%88%9B%E5%BB%BA-ingress%E7%94%9F%E6%88%90-alb-%E5%85%AC%E7%BD%91%E9%AA%8C%E8%AF%81--%E5%86%99%E5%85%A5-post-recreatesh)
+    - [预检查（子网标签是否 OK）](#%E9%A2%84%E6%A3%80%E6%9F%A5%E5%AD%90%E7%BD%91%E6%A0%87%E7%AD%BE%E6%98%AF%E5%90%A6-ok)
+    - [写 Ingress 清单](#%E5%86%99-ingress-%E6%B8%85%E5%8D%95)
+    - [等待 ALB 分配地址并冒烟验证](#%E7%AD%89%E5%BE%85-alb-%E5%88%86%E9%85%8D%E5%9C%B0%E5%9D%80%E5%B9%B6%E5%86%92%E7%83%9F%E9%AA%8C%E8%AF%81)
+    - [把 Ingress 发布与等待写进 `post-recreate.sh`](#%E6%8A%8A-ingress-%E5%8F%91%E5%B8%83%E4%B8%8E%E7%AD%89%E5%BE%85%E5%86%99%E8%BF%9B-post-recreatesh)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -845,5 +850,168 @@ W0816 20:21:19.840303       1 warnings.go:70] v1 Endpoints is deprecated in v1.3
 W0816 20:28:47.843007       1 warnings.go:70] v1 Endpoints is deprecated in v1.33+; use discovery.k8s.io/v1 EndpointSlice
 W0816 20:34:04.845735       1 warnings.go:70] v1 Endpoints is deprecated in v1.33+; use discovery.k8s.io/v1 EndpointSlice
 ```
+
+---
+
+## Step 3/5 — 创建 Ingress（生成 ALB）+ 公网验证 + 写入 `post-recreate.sh`
+
+目标：
+
+用 **AWS Load Balancer Controller** 为 `task-api` 生成公网 **ALB**，健康检查走 `/actuator/health/readiness`，并把这一步自动化进你的每日重建脚本。
+
+### 预检查（子网标签是否 OK）
+
+```bash
+export PROFILE=phase2-sso
+export AWS_PROFILE=$PROFILE
+export AWS_REGION=us-east-1
+export CLUSTER=dev
+
+VPC_ID=$(aws eks describe-cluster --name "$CLUSTER" --region "$AWS_REGION" \
+  --query 'cluster.resourcesVpcConfig.vpcId' --output text)
+
+aws ec2 describe-subnets --filters "Name=vpc-id,Values=$VPC_ID" \
+  --query 'Subnets[].{Id:SubnetId,Pub:MapPublicIpOnLaunch,Tags:Tags}' --output table
+
+# 看看公有子网是否有 kubernetes.io/role/elb=1、私有子网是否有 kubernetes.io/role/internal-elb=1
+# 以及所有参与子网有 kubernetes.io/cluster/dev = shared/owned
+```
+
+### 写 Ingress 清单
+
+> 文件：`${WORK_DIR}/task-api/k8s/ingress.yaml`
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: task-api
+  namespace: svc-task
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing      # 公网 ALB；若走内网改: internal
+    alb.ingress.kubernetes.io/target-type: ip              # 直连 Pod（推荐）
+    alb.ingress.kubernetes.io/healthcheck-path: /actuator/health/readiness
+    alb.ingress.kubernetes.io/healthcheck-port: traffic-port
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80}]'
+    # 如需 X-Forwarded-* 保留：
+    alb.ingress.kubernetes.io/load-balancer-attributes: routing.http.xff_header_processing.mode=preserve
+spec:
+  ingressClassName: alb
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: task-api
+                port:
+                  number: 8080
+```
+
+应用：
+
+```bash
+kubectl apply -f "${WORK_DIR}/task-api/k8s/ingress.yaml"
+# 输出：
+# ingress.networking.k8s.io/task-api created
+kubectl -n svc-task get ingress task-api
+# 输出：
+# NAME       CLASS   HOSTS   ADDRESS                                                                PORTS   AGE
+# task-api   alb     *       k8s-svctask-taskapi-c91e97499e-281967989.us-east-1.elb.amazonaws.com   80      13s
+```
+
+### 等待 ALB 分配地址并冒烟验证
+
+```bash
+# 等待 ALB DNS 出现
+for i in {1..30}; do
+  ALB_DNS=$(kubectl -n svc-task get ing task-api -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+  [[ -n "$ALB_DNS" ]] && echo "ALB_DNS=$ALB_DNS" && break
+  echo "waiting ALB..."; sleep 10
+done
+[[ -z "$ALB_DNS" ]] && echo "ALB 未就绪，请检查 Controller/子网标签/权限" && exit 1
+
+# 输出：
+# ALB_DNS=k8s-svctask-taskapi-c91e97499e-281967989.us-east-1.elb.amazonaws.com
+
+# 冒烟
+curl -s "http://$ALB_DNS/api/hello?name=Renda"; echo
+# 输出：
+# hello Renda
+curl -s "http://$ALB_DNS/actuator/health"; echo
+# 输出：
+# {"status":"UP","groups":["liveness","readiness"]}
+curl -sI "http://$ALB_DNS/" | sed -n '1,10p'
+# 输出：
+HTTP/1.1 404
+Date: Sat, 16 Aug 2025 21:36:23 GMT
+Content-Type: application/json
+Connection: keep-alive
+Vary: Origin
+Vary: Access-Control-Request-Method
+Vary: Access-Control-Request-Headers
+```
+
+**预期：**
+
+`/api/hello` 返回 `hello Renda`，健康检查 `{"status":"UP"}`；`curl -I` 首行 `HTTP/1.1 200 OK` 或 `HTTP/1.1 404` 或 302 取决于根路径是否有资源，但重要的是可达）。
+
+### 把 Ingress 发布与等待写进 `post-recreate.sh`
+
+> 新增以下函数与调用：
+
+```bash
+# ---- Ingress for task-api ----
+ING_FILE="${ROOT_DIR}/task-api/k8s/ingress.yaml"
+
+# 部署 taskapi ingress
+deploy_taskapi_ingress() {
+  set -euo pipefail
+  local outdir="${SCRIPT_DIR}/.out"; mkdir -p "$outdir"
+
+  log "📦 Apply Ingress (${APP}) ..."
+  # 若无变更就不 apply（0=无差异，1=有差异，>1=出错）
+  if kubectl -n "$NS" diff -f "$ING_FILE" >/dev/null 2>&1; then
+    log "≡ No changes"
+  else
+    kubectl apply -f "$ING_FILE"
+  fi
+
+  # 如果已经有 ALB，就直接复用并返回
+  local dns
+  dns=$(kubectl -n "$NS" get ing "$APP" -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || true)
+  if [[ -n "${dns}" ]]; then
+    log "✅ ALB ready: http://${dns}"
+    echo "${dns}" > "${outdir}/alb_${APP}_dns"
+    return 0
+  fi
+
+  log "⏳ Waiting for ALB to be provisioned ..."
+  local t=0; local timeout=600
+  while [[ $t -lt $timeout ]]; do
+    dns=$(kubectl -n "$NS" get ing "$APP" -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || true)
+    [[ -n "${dns}" ]] && break
+    sleep 5; t=$((t+5))
+  done
+  [[ -z "${dns}" ]] && { log "❌ Timeout waiting ALB"; return 1; }
+
+  log "✅ ALB ready: http://${dns}"
+  echo "${dns}" > "${outdir}/alb_${APP}_dns"
+
+  log "🧪 Smoke"
+  curl -s "http://${dns}/api/hello?name=Renda" | sed -n '1p'
+  curl -s "http://${dns}/actuator/health" | sed -n '1p'
+}
+
+# 在脚本主流程合适位置调用（在 ALBC 安装完成之后）
+deploy_taskapi_ingress
+```
+
+> 提醒：若后续要启用 HTTPS，只需在 Ingress 上加证书 ARN：
+>
+> `alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:<ACCOUNT_ID>:certificate/<ID>`
+>
+> 并把 `listen-ports` 改为 `[{"HTTP":80},{"HTTPS":443}]`，再在 `spec.tls` 中声明主机名。
 
 ---
