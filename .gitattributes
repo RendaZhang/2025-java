@@ -36,7 +36,7 @@ Dockerfile text
 
 # Documentation directories
 notes/** linguist-documentation
-Algorithm/** linguist-documentation
+docs/** linguist-documentation
 
 # Generated or vendored directories (none currently)
 

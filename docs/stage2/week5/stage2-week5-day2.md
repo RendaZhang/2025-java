@@ -55,8 +55,9 @@
 ### 目录与变量
 
 ```bash
-mkdir -p ~/work/task-api/k8s/base
-cd ~/work/task-api
+WORK_DIR=/mnt/d/0Repositories/CloudNative
+mkdir -p ${WORK_DIR}/task-api/k8s/base
+cd ${WORK_DIR}/task-api
 
 # 你的环境（可直接复制）
 export PROFILE=phase2-sso
@@ -101,7 +102,7 @@ metadata:
 #    eks.amazonaws.com/role-arn: arn:aws:iam::<ACCOUNT_ID>:role/<ROLE_NAME>
 ```
 
-> 现在先不填 `role-arn`，避免无意义的 403；Day 4 做 IRSA 时再打开。
+> 现在先不填 `role-arn`，避免无意义的 403；等明天做 IRSA 时再打开。
 
 ### ConfigMap（按需给应用注入非敏感配置）
 
@@ -189,12 +190,13 @@ spec:
 
 ### 渲染模板并应用（会覆盖昨天的临时资源）
 
-> macOS/Linux 如无 `envsubst` 也可用 `sed`，我两种都给出。任选其一执行即可。
+> macOS/Linux 如无 `envsubst` 也可用 `sed`，两种都给出。
+> 任选其一执行即可。
 
 **方式 A：envsubst**
 
 ```bash
-cd ~/work/task-api
+cd ${WORK_DIR}/task-api
 envsubst < k8s/base/deploy-svc.tmpl.yaml > k8s/base/deploy-svc.yaml
 ```
 
