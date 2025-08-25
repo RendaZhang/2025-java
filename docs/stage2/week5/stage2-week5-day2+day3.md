@@ -57,7 +57,6 @@
 - **post-recreate.sh**：
   - 追加/调整安装与发布逻辑，使它能 **自动更新 Deployment 的镜像为 ECR digest**、等待 `rollout`、在集群内做冒烟，
   - 并安装/升级 ALB Controller。
-- 文档：在 `云原生计划` 的小节补齐“做什么/关键命令/产物”与退路记录。
 
 补充：
 
