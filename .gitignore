@@ -41,3 +41,6 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+
+# Pre-commit
+.ruff_cache/
