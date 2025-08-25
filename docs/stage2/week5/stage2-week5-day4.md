@@ -642,7 +642,30 @@ export S3_PREFIX="task-api/"
 新增如下内容：
 
 ```bash
+...
 
+# 确保 task-api 的 ServiceAccount 存在并带 IRSA 注解
+ensure_task_api_service_account() {
+  log "🛠️ 确保 task-api ServiceAccount ${TASK_API_SERVICE_ACCOUNT_NAME} 存在并带 IRSA 注解"
+  if ! kubectl -n $NS get sa $TASK_API_SERVICE_ACCOUNT_NAME >/dev/null 2>&1; then
+    log "创建 ServiceAccount ${TASK_API_SERVICE_ACCOUNT_NAME}"
+    kubectl -n ${NS} create serviceaccount ${TASK_API_SERVICE_ACCOUNT_NAME}
+  fi
+  # 写入/覆盖 IRSA 注解
+  kubectl -n ${NS} annotate sa ${TASK_API_SERVICE_ACCOUNT_NAME} \
+    "eks.amazonaws.com/role-arn=${TASK_API_ROLE_ARN}" --overwrite
+}
+
+# === 部署 task-api 到 EKS（幂等）===
+deploy_task_api() {
+  ...
+  kubectl -n "${NS}" apply -f "${K8S_BASE_DIR}/ns-sa.yaml"
+  # 在这里调用从而 确保应用级 SA 带 IRSA 注解
+  ensure_task_api_service_account
+  ...
+}
+
+...
 ```
 
 ### 注入 S3 相关变量（复用已有的 ConfigMap/envFrom）
