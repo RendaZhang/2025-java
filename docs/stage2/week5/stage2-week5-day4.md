@@ -26,6 +26,10 @@
     - [注入 S3 相关变量（复用已有的 ConfigMap/envFrom）](#%E6%B3%A8%E5%85%A5-s3-%E7%9B%B8%E5%85%B3%E5%8F%98%E9%87%8F%E5%A4%8D%E7%94%A8%E5%B7%B2%E6%9C%89%E7%9A%84-configmapenvfrom)
     - [应用并更新](#%E5%BA%94%E7%94%A8%E5%B9%B6%E6%9B%B4%E6%96%B0)
     - [基本自检](#%E5%9F%BA%E6%9C%AC%E8%87%AA%E6%A3%80)
+  - [Step 3/4 — 集群内用 aws-cli 做 STS/S3 最小闭环验证（含越权被拒）](#step-34--%E9%9B%86%E7%BE%A4%E5%86%85%E7%94%A8-aws-cli-%E5%81%9A-stss3-%E6%9C%80%E5%B0%8F%E9%97%AD%E7%8E%AF%E9%AA%8C%E8%AF%81%E5%90%AB%E8%B6%8A%E6%9D%83%E8%A2%AB%E6%8B%92)
+    - [写 Job 清单](#%E5%86%99-job-%E6%B8%85%E5%8D%95)
+    - [运行与查看结果](#%E8%BF%90%E8%A1%8C%E4%B8%8E%E6%9F%A5%E7%9C%8B%E7%BB%93%E6%9E%9C)
+    - [更新 `scripts/post-recreate.sh` 脚本](#%E6%9B%B4%E6%96%B0-scriptspost-recreatesh-%E8%84%9A%E6%9C%AC)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -731,6 +735,232 @@ $ kubectl -n "$NS" exec "$POD" -- sh -lc 'ls -l /var/run/secrets/eks.amazonaws.c
 total 0
 lrwxrwxrwx 1 root root 12 Aug 25 17:56 token -> ..data/token
 token OK
+```
+
+---
+
+## Step 3/4 — 集群内用 aws-cli 做 STS/S3 最小闭环验证（含越权被拒）
+
+在集群里起一个一次性 **aws-cli Job**，使用 `serviceAccountName: task-api`（已绑定 IRSA）完成：
+
+1. 取 STS 身份；
+2. 在**允许的前缀**写入/列举/读取；
+3. 在**不允许的前缀**尝试写入并确认被拒。
+
+### 写 Job 清单
+
+> 前面已经把 `S3_BUCKET/S3_PREFIX/AWS_REGION` 放在 `ConfigMap task-api-config`，这里直接 `envFrom` 复用。
+
+新建文件：`$WORK_DIR/task-api/k8s/awscli-smoke.yaml`
+
+```yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: awscli-smoke
+  namespace: svc-task
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      serviceAccountName: task-api
+      restartPolicy: Never
+      containers:
+        - name: awscli
+          image: amazon/aws-cli:2.17.33
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: task-api-config
+          command: ["sh","-lc"]
+          args:
+            - |
+              set -euo pipefail
+              echo "== STS get-caller-identity =="
+              aws sts get-caller-identity --output json
+
+              TS=$(date +%s)
+              KEY_OK="${S3_PREFIX%/}/smoke/${TS}.txt"      # 允许的前缀
+              KEY_DENY="not-allowed/${TS}.txt"             # 不允许的前缀（应被拒）
+              echo "hello from IRSA $(date -Iseconds)" > /tmp/x.txt
+
+              echo "== Put to allowed prefix =="
+              aws s3 cp /tmp/x.txt "s3://${S3_BUCKET}/${KEY_OK}"
+
+              echo "== List allowed prefix (top 5) =="
+              aws s3 ls "s3://${S3_BUCKET}/${S3_PREFIX%/}/smoke/" | head -n 5 || true
+
+              echo "== Get just uploaded object =="
+              aws s3 cp "s3://${S3_BUCKET}/${KEY_OK}" - | head -c 80; echo
+
+              echo "== Negative test: put to DISALLOWED prefix (should fail) =="
+              if aws s3 cp /tmp/x.txt "s3://${S3_BUCKET}/${KEY_DENY}"; then
+                echo "UNEXPECTED: write to disallowed prefix succeeded"; exit 2
+              else
+                echo "EXPECTED: AccessDenied on disallowed prefix"
+              fi
+
+              echo "ALL OK"
+```
+
+### 运行与查看结果
+
+```bash
+$ kubectl apply -f "$WORK_DIR/task-api/k8s/awscli-smoke.yaml"
+# 输出：
+job.batch/awscli-smoke created
+
+# 等待完成（成功或失败都会结束）
+$ kubectl -n svc-task wait --for=condition=complete job/awscli-smoke --timeout=180s || true
+# 输出：
+job.batch/awscli-smoke condition met
+
+# 查看日志（应包含 STS 信息、Put/List/Get 成功，以及对 not-allowed 前缀的 AccessDenied）
+$ kubectl -n svc-task logs job/awscli-smoke
+
+# 输出：
+# `aws sts get-caller-identity` 返回 `Account/Arn`（说明 IRSA 生效）
+# 允许前缀的 `cp/ls/cp` 成功。
+# 不允许前缀写入显示 **AccessDenied** 或类似拒绝信息，并打印 `EXPECTED: AccessDenied`。
+
+== STS get-caller-identity ==
+{
+    "UserId": "AROAYGHSMSUJ2PGBBJHBY:botocore-session-1756147736",
+    "Account": "563149051155",
+    "Arn": "arn:aws:sts::563149051155:assumed-role/dev-task-api-irsa/botocore-session-1756147736"
+}
+== Put to allowed prefix ==
+upload: ../tmp/x.txt to s3://dev-task-api-welcomed-anteater/task-api/smoke/1756147736.txt
+== List allowed prefix (top 5) ==
+2025-08-25 18:48:58         41 1756147736.txt
+== Get just uploaded object ==
+hello from IRSA 2025-08-25T18:48:56+0000
+
+== Negative test: put to DISALLOWED prefix (should fail) ==
+upload failed: ../tmp/x.txt to s3://dev-task-api-welcomed-anteater/not-allowed/1756147736.txt An error occurred (AccessDenied) when calling the PutObject operation: User: arn:aws:sts::563149051155:assumed-role/dev-task-api-irsa/botocore-session-1756147736 is not authorized to perform: s3:PutObject on resource: "arn:aws:s3:::dev-task-api-welcomed-anteater/not-allowed/1756147736.txt" because no identity-based policy allows the s3:PutObject action
+EXPECTED: AccessDenied on disallowed prefix
+ALL OK
+
+# 验证后清理
+$ kubectl -n svc-task delete job awscli-smoke --ignore-not-found
+# 输出：
+job.batch "awscli-smoke" deleted
+```
+
+### 更新 `scripts/post-recreate.sh` 脚本
+
+新增如下内容：
+
+```sh
+...
+
+# ---- aws-cli IRSA smoke test ----
+# Launches a temporary aws-cli Job (serviceAccount=task-api) to:
+#   1) call STS get-caller-identity
+#   2) write/list/read under the allowed S3 prefix
+#   3) verify writes to a disallowed prefix are denied
+awscli_s3_smoke() {
+  log "🧪 aws-cli IRSA S3 smoke test"
+  local manifest="${ROOT_DIR}/task-api/k8s/awscli-smoke.yaml"
+
+  kubectl apply -f "$manifest"
+
+  if ! kubectl -n "$NS" wait --for=condition=complete job/awscli-smoke --timeout=180s; then
+    kubectl -n "$NS" logs job/awscli-smoke || true
+    kubectl -n "$NS" delete job awscli-smoke --ignore-not-found
+    abort "aws-cli smoke job failed"
+  fi
+
+  kubectl -n "$NS" logs job/awscli-smoke || true
+  kubectl -n "$NS" delete job awscli-smoke --ignore-not-found
+  log "✅ aws-cli smoke test finished"
+}
+
+# 检查 task-api
+check_task_api() {
+  log "🔎 验证 IRSA 注入与运行时环境"
+
+  # 1) ServiceAccount 注解检查
+  kubectl -n "${NS}" get sa "${TASK_API_SERVICE_ACCOUNT_NAME}" -o yaml | \
+    grep -q "eks.amazonaws.com/role-arn" || \
+    abort "ServiceAccount 未正确注解 eks.amazonaws.com/role-arn"
+
+  # 2) 获取一个 Pod 名称以检查环境变量
+  local pod
+  pod=$(kubectl -n "${NS}" get pods -l app="${TASK_API_SERVICE_ACCOUNT_NAME}" \
+    -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
+  [[ -z "$pod" ]] && abort "未找到 ${APP} Pod，无法进行 IRSA 自检"
+
+  # 等待 Pod 进入 Running 状态
+  local wait_time=0
+  local max_wait=60
+  while [[ $wait_time -lt $max_wait ]]; do
+    pod_status=$(kubectl -n "${NS}" get pod "$pod" -o jsonpath='{.status.phase}' 2>/dev/null || echo "Unknown")
+    if [[ "$pod_status" == "Running" ]]; then
+      break
+    fi
+    sleep 3
+    wait_time=$((wait_time+3))
+  done
+  [[ "$pod_status" != "Running" ]] && abort "Pod $pod 未进入 Running 状态，当前状态: $pod_status"
+
+  # 3) 确认关键环境变量存在
+  local env_out
+  env_out=$(kubectl -n "${NS}" exec "$pod" -- sh -lc 'env') || \
+    abort "无法获取 Pod 环境变量"
+  for key in S3_BUCKET S3_PREFIX AWS_REGION AWS_ROLE_ARN AWS_WEB_IDENTITY_TOKEN_FILE; do
+    echo "$env_out" | grep -q "^${key}=" || abort "缺少环境变量 ${key}"
+  done
+
+  # 4) 确认 WebIdentity Token 已正确挂载
+  kubectl -n "${NS}" exec "$pod" -- sh -lc \
+    'ls -l /var/run/secrets/eks.amazonaws.com/serviceaccount/ && [ -s /var/run/secrets/eks.amazonaws.com/serviceaccount/token ]' >/dev/null || \
+     abort "WebIdentity Token 缺失或为空"
+
+  log "✅ task-api ServiceAccount IRSA 自检通过"
+
+  log "🔎 验证 task-api ALB、Ingress、dns"
+
+  local outdir="${SCRIPT_DIR}/.out"; mkdir -p "$outdir"
+  local dns
+
+  log "⏳ Waiting for ALB to be provisioned ..."
+  # 获取 ALB 的 DNS 名称
+  local t=0; local timeout=600
+  while [[ $t -lt $timeout ]]; do
+    dns=$(kubectl -n "$NS" get ing "$APP" -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || true)
+    [[ -n "${dns}" ]] && break
+    sleep 5; t=$((t+5))
+  done
+  [[ -z "${dns}" ]] && abort "Timeout waiting ALB"
+
+  log "✅ ALB ready: http://${dns}"
+  echo "${dns}" > "${outdir}/alb_${APP}_dns"
+
+  log "🧪 ALB DNS Smoke test: "
+  local smoke_retries=10
+  local smoke_ok=0
+  local smoke_wait=5
+  for ((i=1; i<=smoke_retries; i++)); do
+    if curl -sf "http://${dns}/api/hello?name=Renda" | sed -n '1p'; then
+      smoke_ok=1
+      break
+    else
+      log "⏳ Smoke test attempt $i/${smoke_retries} failed, retrying in ${smoke_wait}s..."
+      sleep $smoke_wait
+    fi
+  done
+  [[ $smoke_ok -eq 0 ]] && abort "Smoke test failed: /api/hello (DNS may not be ready or network issue)"
+  curl -s "http://${dns}/actuator/health" | grep '"status":"UP"' || { log "❌ Health check failed"; return 1; }
+
+  log "✅ ALB DNS Smoke test passed"
+
+  awscli_s3_smoke
+}
+
+...
+
+check_task_api
 ```
 
 ---
