@@ -20,6 +20,12 @@
       - [新增 `infra/aws/modules/app_irsa_s3/versions.tf` 文件](#%E6%96%B0%E5%A2%9E-infraawsmodulesapp_irsa_s3versionstf-%E6%96%87%E4%BB%B6)
     - [Terraform 输出（供脚本与 K8s 使用）](#terraform-%E8%BE%93%E5%87%BA%E4%BE%9B%E8%84%9A%E6%9C%AC%E4%B8%8E-k8s-%E4%BD%BF%E7%94%A8)
     - [快速自检（CLI 即时校验）](#%E5%BF%AB%E9%80%9F%E8%87%AA%E6%A3%80cli-%E5%8D%B3%E6%97%B6%E6%A0%A1%E9%AA%8C)
+  - [Step 2/4 — 给 SA 加 IRSA 注解 + 注入 S3 变量 + 回滚更新（不改应用代码）](#step-24--%E7%BB%99-sa-%E5%8A%A0-irsa-%E6%B3%A8%E8%A7%A3--%E6%B3%A8%E5%85%A5-s3-%E5%8F%98%E9%87%8F--%E5%9B%9E%E6%BB%9A%E6%9B%B4%E6%96%B0%E4%B8%8D%E6%94%B9%E5%BA%94%E7%94%A8%E4%BB%A3%E7%A0%81)
+    - [准备变量（用 `terraform output` 的值）](#%E5%87%86%E5%A4%87%E5%8F%98%E9%87%8F%E7%94%A8-terraform-output-%E7%9A%84%E5%80%BC)
+    - [更新 `post-recreate.sh` 文件](#%E6%9B%B4%E6%96%B0-post-recreatesh-%E6%96%87%E4%BB%B6)
+    - [注入 S3 相关变量（复用已有的 ConfigMap/envFrom）](#%E6%B3%A8%E5%85%A5-s3-%E7%9B%B8%E5%85%B3%E5%8F%98%E9%87%8F%E5%A4%8D%E7%94%A8%E5%B7%B2%E6%9C%89%E7%9A%84-configmapenvfrom)
+    - [应用并更新](#%E5%BA%94%E7%94%A8%E5%B9%B6%E6%9B%B4%E6%96%B0)
+    - [基本自检](#%E5%9F%BA%E6%9C%AC%E8%87%AA%E6%A3%80)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -610,5 +616,98 @@ $ aws s3api get-bucket-ownership-controls --bucket "dev-task-api-welcomed-anteat
      }
      ```
 - 真正功能性验证会在 **Step 3/4** 用 Pod 内 `aws-cli` 来执行。
+
+---
+
+## Step 2/4 — 给 SA 加 IRSA 注解 + 注入 S3 变量 + 回滚更新（不改应用代码）
+
+### 准备变量（用 `terraform output` 的值）
+
+```bash
+export WORK_DIR="/mnt/d/0Repositories/CloudNative"
+export AWS_PROFILE=phase2-sso
+export AWS_REGION=us-east-1
+export NS=svc-task
+export APP=task-api
+export TASK_API_SERVICE_ACCOUNT_NAME="task-api"
+
+# 来自 Terraform 输出
+export ROLE_ARN="arn:aws:iam::563149051155:role/dev-task-api-irsa"
+export S3_BUCKET="dev-task-api-welcomed-anteater"
+export S3_PREFIX="task-api/"
+```
+
+### 更新 `post-recreate.sh` 文件
+
+新增如下内容：
+
+```bash
+
+```
+
+### 注入 S3 相关变量（复用已有的 ConfigMap/envFrom）
+
+> 之前的 `ConfigMap task-api-config` 已经通过 `envFrom` 注入到容器。
+> 现在只需要在 **ConfigMap 文件** 里增加三项，然后 apply。
+
+修改文件路径：`${WORK_DIR}/task-api/k8s/base/configmap.yaml`
+
+将 `data:` 下新增这三行（保持其它键不变）：
+
+```yaml
+data:
+  APP_NAME: "task-api"
+  WELCOME_MSG: "hello from ${AWS_REGION}"
+  S3_BUCKET: "dev-task-api-welcomed-anteater"
+  S3_PREFIX: "task-api/"
+  AWS_REGION: "us-east-1"
+```
+
+### 应用并更新
+
+如果已经执行了每日销毁，则完成前面修改后，直接重建即可进行基本自检。
+
+如果是处于每日正常运行的状态，则执行如下命令来应用修改。
+
+```bash
+# 直接 annotate
+kubectl -n "$NS" annotate sa "$TASK_API_SERVICE_ACCOUNT_NAME" \
+  "eks.amazonaws.com/role-arn=$ROLE_ARN" --overwrite
+
+# 应用并滚动更新
+kubectl apply -f "${WORK_DIR}/task-api/k8s/base/configmap.yaml"
+kubectl -n "$NS" rollout restart deploy/"$APP"
+kubectl -n "$NS" rollout status deploy/"$APP" --timeout=180s
+```
+
+### 基本自检
+
+确认 IRSA 注入与环境变量就绪。
+
+```bash
+$ kubectl -n "$NS" get sa "$TASK_API_SERVICE_ACCOUNT_NAME" -o yaml | grep -n "eks.amazonaws.com/role-arn"
+# 能看到注解里的 Role ARN
+5:    eks.amazonaws.com/role-arn: arn:aws:iam::563149051155:role/dev-task-api-irsa
+
+# 取一个 Pod 名并检查环境：
+$ POD=$(kubectl -n "$NS" get pods -l app="$TASK_API_SERVICE_ACCOUNT_NAME" -o jsonpath='{.items[0].metadata.name}')
+
+$ kubectl -n "$NS" exec "$POD" -- sh -lc 'env | grep -E "S3_BUCKET|S3_PREFIX|AWS_REGION|AWS_ROLE_ARN|AWS_WEB_IDENTITY_TOKEN_FILE"'
+# 能看到 `AWS_ROLE_ARN` 与 `AWS_WEB_IDENTITY_TOKEN_FILE`（由 EKS Webhook 自动注入）
+# 能看到 `S3_BUCKET/S3_PREFIX/AWS_REGION` 三个自定义变量
+AWS_ROLE_ARN=arn:aws:iam::563149051155:role/dev-task-api-irsa
+AWS_WEB_IDENTITY_TOKEN_FILE=/var/run/secrets/eks.amazonaws.com/serviceaccount/token
+S3_BUCKET=dev-task-api-welcomed-anteater
+WELCOME_MSG=hello from ${AWS_REGION}
+AWS_REGION=us-east-1
+S3_PREFIX=task-api/
+
+$ kubectl -n "$NS" exec "$POD" -- sh -lc 'ls -l /var/run/secrets/eks.amazonaws.com/serviceaccount/ && [ -s /var/run/secrets/eks.amazonaws.com/serviceaccount/token ] && echo "token OK"'
+# 确认 WebIdentity Token 已挂载
+# `token OK` 表示投影令牌存在。
+total 0
+lrwxrwxrwx 1 root root 12 Aug 25 17:56 token -> ..data/token
+token OK
+```
 
 ---
