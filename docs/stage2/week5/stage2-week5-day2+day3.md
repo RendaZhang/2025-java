@@ -2,7 +2,7 @@
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
-- [Stage 2 Week 5 Day 2 - K8s 基础对象（NS/SA/Config/Secret/Deployment/Service）](#stage-2-week-5-day-2---k8s-%E5%9F%BA%E7%A1%80%E5%AF%B9%E8%B1%A1nssaconfigsecretdeploymentservice)
+- [Stage 2 Week 5 Day 2 & Day 3 - K8s 基础对象、ALB 暴露、HPA 弹性](#stage-2-week-5-day-2--day-3---k8s-%E5%9F%BA%E7%A1%80%E5%AF%B9%E8%B1%A1alb-%E6%9A%B4%E9%9C%B2hpa-%E5%BC%B9%E6%80%A7)
   - [目标](#%E7%9B%AE%E6%A0%87)
   - [Step 1/5 - 规范化 `k8s/base`（并以 digest 锁定镜像）](#step-15---%E8%A7%84%E8%8C%83%E5%8C%96-k8sbase%E5%B9%B6%E4%BB%A5-digest-%E9%94%81%E5%AE%9A%E9%95%9C%E5%83%8F)
     - [目录与变量](#%E7%9B%AE%E5%BD%95%E4%B8%8E%E5%8F%98%E9%87%8F)
@@ -33,11 +33,11 @@
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
-# Stage 2 Week 5 Day 2 - K8s 基础对象（NS/SA/Config/Secret/Deployment/Service）
+# Stage 2 Week 5 Day 2 & Day 3 - K8s 基础对象、ALB 暴露、HPA 弹性
 
 ## 目标
 
-1. **夯实 K8s 基础对象**
+1. **夯实 K8s 基础对象（Day 2）**
    - 把应用在集群内“站稳”的最小集合做规范化与落库：**Namespace / ServiceAccount（预留 IRSA 注解位）/ ConfigMap / Deployment / Service**，
    - 并把**readiness/liveness** 探针接到 Actuator 健康检查；清单落入仓库 `k8s/base/`，便于脚本自动应用。
 2. **对外暴露与弹性（Day 3）**
