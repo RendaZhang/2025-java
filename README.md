@@ -33,8 +33,7 @@
       - [关键证据与指标（本周留痕）](#%E5%85%B3%E9%94%AE%E8%AF%81%E6%8D%AE%E4%B8%8E%E6%8C%87%E6%A0%87%E6%9C%AC%E5%91%A8%E7%95%99%E7%97%95)
       - [本周经验与坑位](#%E6%9C%AC%E5%91%A8%E7%BB%8F%E9%AA%8C%E4%B8%8E%E5%9D%91%E4%BD%8D)
       - [一分钟复述（面试版本）](#%E4%B8%80%E5%88%86%E9%92%9F%E5%A4%8D%E8%BF%B0%E9%9D%A2%E8%AF%95%E7%89%88%E6%9C%AC)
-      - [Week 6 · 轻量预告](#week-6-%C2%B7-%E8%BD%BB%E9%87%8F%E9%A2%84%E5%91%8A)
-  - [Week 6 - 观测 & 韧性](#week-6---%E8%A7%82%E6%B5%8B--%E9%9F%A7%E6%80%A7)
+  - [Week 6 - 可观测性 & 韧性（Observability + Resilience）](#week-6---%E5%8F%AF%E8%A7%82%E6%B5%8B%E6%80%A7--%E9%9F%A7%E6%80%A7observability--resilience)
     - [通用前置](#%E9%80%9A%E7%94%A8%E5%89%8D%E7%BD%AE)
     - [Day 1 - 应用指标暴露 + AMP 工作区](#day-1---%E5%BA%94%E7%94%A8%E6%8C%87%E6%A0%87%E6%9A%B4%E9%9C%B2--amp-%E5%B7%A5%E4%BD%9C%E5%8C%BA)
     - [Day 2 - ADOT Collector（采集 → AMP）+ 成本护栏](#day-2---adot-collector%E9%87%87%E9%9B%86-%E2%86%92-amp-%E6%88%90%E6%9C%AC%E6%8A%A4%E6%A0%8F)
@@ -361,48 +360,52 @@
 
 > “这一周我把一个 Spring Boot 服务从源码打包到 ECR，用 digest 固定部署到 EKS；通过 ALB Ingress 对外提供服务，并用 HPA（CPU60%）验证 `2→8→2` 的自动扩缩。同时用 IRSA 让 Pod 无密钥访问 S3 的指定前缀，集群内 aws-cli 冒烟验证允许前缀 OK、越权拒绝；S3 开启默认加密与强制 TLS，并通过 VPC Gateway Endpoint 降低 NAT 成本。全链路写进 `post-recreate.sh` 与 Terraform，每日可一键重建/销毁。TTR 约 27 秒，PDB 确保自愿中断不中断业务。”
 
-#### Week 6 · 轻量预告
-
-> 目标：**最小可观测性闭环 + 最小发布治理**，不做过度工程化。
-
-1. **最小可观测性**
-   - **日志**：将 `task-api` 容器日志集中到 **CloudWatch Logs**（EKS 已内置插件可选，或使用脚本安装 fluent-bit 轻量通道），留下一张“按 Pod 过滤日志”的记录即可。
-   - **指标/看板**（二选一，择其易）：
-     - a) **ADOT Collector**（DaemonSet）采集 kube-state-metrics/Pod 资源，用 **Amazon Managed Prometheus (AMP)** 接收；
-     - b) 或直接启用 **CloudWatch Container Insights** 基础指标。
-     - 输出一张“CPU/内存/副本数”记录即可。
-2. **最小发布治理**
-   - 在 `Deployment` 上固定滚更参数：`maxUnavailable: 0`、`maxSurge: 1`；演示一次 `kubectl rollout status/history/undo` 回滚，留 2 张记录（或命令输出）。
-
-交付标准：
-
-- 能在统一位置查看到 **task-api** 的实时日志；
-- 至少一种途径看到 **CPU/内存/副本数** 的曲线；
-- 清晰、可复制的 **回滚步骤** 与一次回滚演示记录。
-
 ---
 
-## Week 6 - 观测 & 韧性
+## Week 6 - 可观测性 & 韧性（Observability + Resilience）
 
-> 目标：在**不引入重型运维**的前提下，建立“应用 + 集群”的指标观测、SLO 口径与最小化 Chaos 自愈演示。
-> 原则：继续 **单集群多命名空间**；一次只做“可讲清楚的最小闭环”。卡顿 > 20 分钟即走退路方案。
+目标：
+
+1. **应用可观测入口就绪**：为 `task-api` 启用 **Spring Boot Actuator + Prometheus** 暴露端点（`/actuator/prometheus`）。
+2. **观测链路最小落地**：
+   - **Free 模式（默认）**：集群内 `kube-prometheus-stack` + Grafana（无云账单）。
+   - **Managed 模式（可选）**：**ADOT Collector → Amazon Managed Prometheus (AMP)**，Grafana 可自建/云托管，用于面试展示“上云观测链路”。
+3. **SLI/SLO 成形**：定义并出图至少 3 个 SLI（建议：**可用性、P95 延迟、错误率**），明确计算公式与目标 SLO（示例：可用性 ≥ 99%，P95 < 300 ms，错误率 < 1%）。
+4. **韧性演示（Chaos）**：用 **Chaos Mesh** 进行 `pod-kill` 与 `network-latency(≈100ms/30s)` 小实验，观察 **P95 抬升**与 **HPA 触发**，度量 **MTTR**（目标 ≤ 1 分钟，作为面试谈资与改进参考）。
+5. **面试物料输出**：沉淀一页式复盘（指标口径、图表截图、实验结论、MTTR 计算）+ 目录化产物，确保“可复制、可演示、可讲故事”。
+
+原则：
+
+- **成本优先**：凡产生云费用的资源（如 AMP/Grafana 托管）**全部纳入每日销毁/重建流程**；默认 **Free 模式**，按需切到 Managed。
+- **不过度工程**：以“**先出图、可验证、可讲清**”为准则；能跑通与可复现优先于完美架构。
+- **承接 Week 5**：最大化复用既有 **EKS 集群、命名空间 `svc-task`、服务 `task-api`** 等内容与脚本。
+- **参数化/可切换**：统一通过 `.week6.env` 控制模式与区域/命名等变量，实现 **一键切换 Free/Managed**。
+- **20 分钟退路**：任一环节超 20 分钟未通，立刻启用退路：切 Free 模式、`port-forward` 本地看图、用“手动删 Pod”替代复杂混沌场景，确保**周目标不失焦**。
+- **面试导向**：每一步都能输出“**做了什么 → 为什么 → 结果如何**”的证据链（命令、截图、公式、结论）。
 
 ### 通用前置
 
-10 分钟 完成：
+> 建议在 Week 6 开始前一次性完成，后续各日共用。
+
+**环境变量文件（统一开关）**：在仓库根目录新建 `.week6.env`
 
 ```bash
-export AWS_REGION=us-east-1
-export NS=svc-task          # 与 Week5 保持一致
-export APP=task-api
-export AMP_ALIAS=renda-lab
+# 模式：free | managed（默认 free）
+WEEK6_MODE=free
+
+# 区域/命名
+AWS_REGION=us-east-1
+NS=svc-task
+APP=task-api
+
+# 观测/混沌命名空间（可按需调整）
+PROM_NAMESPACE=observability
+CHAOS_NS=chaos-testing
+
+# Managed 模式下的 AMP 配置（post-recreate 后会自动回填）
+AMP_ALIAS=amp-rcl-o11y-wk6-use1
+AMP_WORKSPACE_ID=
 ```
-
-产物总表：
-
-- `observability/` 目录（ADOT 配置、Grafana Notes）
-- `chaos/` 目录（安装 values、实验 YAML、报告）
-- 截图：Grafana 图、HPA describe、Chaos 成功页、MTTR 计算过程
 
 ### Day 1 - 应用指标暴露 + AMP 工作区
 
