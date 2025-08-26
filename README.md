@@ -28,7 +28,12 @@
     - [Day 2 + Day 3：K8s 基础对象、ALB 暴露、HPA 弹性](#day-2--day-3k8s-%E5%9F%BA%E7%A1%80%E5%AF%B9%E8%B1%A1alb-%E6%9A%B4%E9%9C%B2hpa-%E5%BC%B9%E6%80%A7)
     - [Day 4：S3 最小接入 + IRSA](#day-4s3-%E6%9C%80%E5%B0%8F%E6%8E%A5%E5%85%A5--irsa)
     - [Day 5 - 收尾硬化 + 文档化 + 指标留痕](#day-5---%E6%94%B6%E5%B0%BE%E7%A1%AC%E5%8C%96--%E6%96%87%E6%A1%A3%E5%8C%96--%E6%8C%87%E6%A0%87%E7%95%99%E7%97%95)
-    - [常见问题与 20 分钟退路](#%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98%E4%B8%8E-20-%E5%88%86%E9%92%9F%E9%80%80%E8%B7%AF)
+    - [Week 5 - 总复盘](#week-5---%E6%80%BB%E5%A4%8D%E7%9B%98)
+      - [本周完成的闭环（从源码到公网与云资源）](#%E6%9C%AC%E5%91%A8%E5%AE%8C%E6%88%90%E7%9A%84%E9%97%AD%E7%8E%AF%E4%BB%8E%E6%BA%90%E7%A0%81%E5%88%B0%E5%85%AC%E7%BD%91%E4%B8%8E%E4%BA%91%E8%B5%84%E6%BA%90)
+      - [关键证据与指标（本周留痕）](#%E5%85%B3%E9%94%AE%E8%AF%81%E6%8D%AE%E4%B8%8E%E6%8C%87%E6%A0%87%E6%9C%AC%E5%91%A8%E7%95%99%E7%97%95)
+      - [本周经验与坑位](#%E6%9C%AC%E5%91%A8%E7%BB%8F%E9%AA%8C%E4%B8%8E%E5%9D%91%E4%BD%8D)
+      - [一分钟复述（面试版本）](#%E4%B8%80%E5%88%86%E9%92%9F%E5%A4%8D%E8%BF%B0%E9%9D%A2%E8%AF%95%E7%89%88%E6%9C%AC)
+      - [Week 6 · 轻量预告](#week-6-%C2%B7-%E8%BD%BB%E9%87%8F%E9%A2%84%E5%91%8A)
   - [Week 6 - 观测 & 韧性](#week-6---%E8%A7%82%E6%B5%8B--%E9%9F%A7%E6%80%A7)
     - [通用前置](#%E9%80%9A%E7%94%A8%E5%89%8D%E7%BD%AE)
     - [Day 1 - 应用指标暴露 + AMP 工作区](#day-1---%E5%BA%94%E7%94%A8%E6%8C%87%E6%A0%87%E6%9A%B4%E9%9C%B2--amp-%E5%B7%A5%E4%BD%9C%E5%8C%BA)
@@ -215,7 +220,10 @@
 ## Week 5 - Cloud-Native 微服务上云（EKS）
 
 > 目标：把一个最小可讲、可演示的 **Spring Boot 微服务** 跑上现有 EKS（NodeGroup），通过 ALB 对外暴露；必要时最小接入 S3（IRSA），并完成可量化产物。
+
 > 原则：**只做最小闭环**（可截图/可复现），遇到卡顿 > 20 分钟走“退路方案”，避免低收益 debug。
+
+> 完成 Week 5 后，即可在面试里完整叙述“**Java 微服务 → 容器化 → EKS 部署 → 通过 ALB 暴露 → S3 集成**”的闭环。
 
 ### 前置检查
 
@@ -305,45 +313,72 @@
 
 ### Day 5 - 收尾硬化 + 文档化 + 指标留痕
 
-**目标**：轻量“收尾硬化 + 文档化 + 指标留痕”，不过度工程化。
-**必要任务（勾选即过）：**
+**今天做了什么（DONE）**
 
-1. **K8s 资源硬化（最小）**
-   - 为 `task-api` 增加 **PodDisruptionBudget**（保持最少 1 个可用副本；示例片段见下），资源 Requests/Limits 已在前文配置可维持不变。&#x20;
-2. **演示脚本**
-   - `demo/start.sh`：一键 apply 本周 YAML；`demo/stop.sh`：清理 ALB/TG 等本周资源（不销毁集群），便于复现与演示。
-3. **README/计划文档更新**
-   - 补充 **访问方式、镜像 tag、ALB DNS、（可选）S3 说明、已知限制**，并附关键截图。
-4. **量化指标与 STAR**
-   - 记录 HPA 触发截图、冷启动大致时延、以及“本周部署成功次数/尝试次数”；补一条 **STAR 一句话**作为面试素材。
+- 为 `task-api` 增加 **PodDisruptionBudget**（保持最少 1 个可用副本；示例片段见下），资源 Requests/Limits 已在前文配置可维持不变。
+- 记录 HPA 扩缩容、冷启动大致时延、以及“本周部署成功次数/尝试次数”；补一条 **STAR 一句话** 作为面试素材。
 
-**参考片段（PDB）**
+### Week 5 - 总复盘
 
-```yaml
-apiVersion: policy/v1
-kind: PodDisruptionBudget
-metadata: { name: task-api-pdb, namespace: svc-task }
-spec:
-  minAvailable: 1
-  selector: { matchLabels: { app: task-api } }
-```
+#### 本周完成的闭环（从源码到公网与云资源）
 
-**验收清单**
+- **应用与镜像**
+  - 最小 **Spring Boot 3 + Actuator** 服务（`/api/hello`、`/actuator/health{/,readiness,liveness}`）。
+  - 多阶段 **Docker 构建**，产物体积约 **93.73 MB**；推送到 **ECR** 并用 **digest** 部署（已固定：`sha256:927d20ca4ce...`）。
+- **集群内“站稳”**
+  - `Namespace=svc-task`，`ServiceAccount=task-api`，`ConfigMap` 注入基础配置。
+  - `Deployment + Service(ClusterIP)`，探针接入 Actuator；资源基线 `requests: 100m/128Mi`，`limits: 500m/512Mi`。
+- **对外暴露（ALB）**
+  - **AWS Load Balancer Controller**：IRSA 用 Terraform 管理，控制器用 Helm 写入 `post-recreate.sh`（含 CRDs 升级与就绪等待）。
+  - `Ingress`→ 公网 **ALB**；健康检查走 `/actuator/health/readiness`；ALB DNS 可达。
+- **弹性与稳定性**
+  - **metrics-server** 安装，**HPA（CPU=60%，min=2,max=10）** 生效：压测时 `2 → 8` 扩容，结束后自动回落到 `2`。
+  - **PDB（minAvailable=1）** 就位，保障自愿中断期间至少 1 个可用副本。
+- **无密钥访问云资源（IRSA + S3）**
+  - 以 **IRSA** 绑定 `task-api` SA 到最小权限 **IAM Role**：仅允许 `GetObject/PutObject` 到 `s3://dev-task-api-welcomed-anteater/task-api/*`，`ListBucket` 仅限该前缀。
+  - 集群内 **aws-cli Job** 冒烟：允许前缀读写成功；越权前缀写入 **AccessDenied**（最小权限有效）。
+  - **S3 Gateway Endpoint** 上线（私网访问不经 NAT），Bucket 默认 **SSE-S3** + **强制 TLS**；仅对 `smoke/` 前缀启用生命周期清理。
+- **自动化与可复现**
+  - **`post-recreate.sh`** 已集成：ALBC 安装/升级（含 CRDs）、业务清单发布、Ingress 发布与等待、metrics-server/HPA、SA 注解与 S3 冒烟。
+  - 集群基础由 **Terraform** 管理；**ECR** 按目前策略**保留**（不随日常销毁），其余资源可一键 `make start-all / stop-all` 循环复现。
 
-- [ ] ALB DNS 可稳定访问健康检查/业务接口
-- [ ] 部署就绪（或 HPA 扩容后恢复）
-- [ ] （可选）S3 PUT/GET 成功
-- [ ] README 已更新“部署与访问”与“本周指标”
-- [ ] `demo/start.sh` / `demo/stop.sh` 可独立执行
-- [ ] 截图归档：ECR、Pods、Ingress、HPA、（可选）S3
+#### 关键证据与指标（本周留痕）
 
-### 常见问题与 20 分钟退路
+- **访问入口**：ALB DNS 正常对外服务；**镜像**以 `…@sha256` 形式部署。
+- **Time-to-Ready（TTR）≈ 27s**（删除单 Pod → 新 Pod Ready）。
+- **HPA 触发记录**：负载时 CPU `≈496%/60%`，副本 `2 → 8`；回落时 CPU `≈2%/60%`，副本 `8 → 2`。
+- **PDB**：`DisruptionsAllowed=1`（在 2 副本基线上满足逐个中断）。
+- **IRSA 冒烟**：`sts get-caller-identity` 成功；允许前缀读写 OK、越权前缀 AccessDenied。
 
-- **ECR 登录失败** → 换 Docker Hub 公有仓并继续（后续再切回 ECR）。
-- **ALB 不创建** → 先用 `kubectl port-forward svc/${APP}-svc 8080:80` 完成演示；另开 issue 排查子网 tag/控制器。
-- **IRSA 无法授权** → 临时改用 `aws configure` 本地测试通过后，再把策略最小化回 IRSA。
+#### 本周经验与坑位
 
-> 完成 Week 5 后，即可在面试里完整叙述“**Java 微服务 → 容器化 → EKS 部署 → 通过 ALB 暴露 →（可选）S3 集成**”的闭环，并展示截图与指标作为佐证。
+- **Digest 固定** 避免 tag 漂移；将 ECR 生命周期设为“保留 1 个 tag”，**成本极低**但**回滚弹性小**（目前可接受，后续建议保留 2–5 个 tag）。
+- **kubeconfig 时序/证书**：Terraform 创建 SA 时曾遇到与 API 服务器 TLS 握手超时；通过 `aws eks update-kubeconfig` 刷新后恢复。将 **SA 创建迁至脚本层**，规避了 Provider 与控制面就绪的竞态。
+- **ALB 常见卡点**（已规避）：子网标签、Controller 就绪、探针路径/延时参数。
+- **成本意识**：S3 网关端点让私网流量绕过 NAT，降低账单暴露面。
+
+#### 一分钟复述（面试版本）
+
+> “这一周我把一个 Spring Boot 服务从源码打包到 ECR，用 digest 固定部署到 EKS；通过 ALB Ingress 对外提供服务，并用 HPA（CPU60%）验证 `2→8→2` 的自动扩缩。同时用 IRSA 让 Pod 无密钥访问 S3 的指定前缀，集群内 aws-cli 冒烟验证允许前缀 OK、越权拒绝；S3 开启默认加密与强制 TLS，并通过 VPC Gateway Endpoint 降低 NAT 成本。全链路写进 `post-recreate.sh` 与 Terraform，每日可一键重建/销毁。TTR 约 27 秒，PDB 确保自愿中断不中断业务。”
+
+#### Week 6 · 轻量预告
+
+> 目标：**最小可观测性闭环 + 最小发布治理**，不做过度工程化。
+
+1. **最小可观测性**
+   - **日志**：将 `task-api` 容器日志集中到 **CloudWatch Logs**（EKS 已内置插件可选，或使用脚本安装 fluent-bit 轻量通道），留下一张“按 Pod 过滤日志”的记录即可。
+   - **指标/看板**（二选一，择其易）：
+     - a) **ADOT Collector**（DaemonSet）采集 kube-state-metrics/Pod 资源，用 **Amazon Managed Prometheus (AMP)** 接收；
+     - b) 或直接启用 **CloudWatch Container Insights** 基础指标。
+     - 输出一张“CPU/内存/副本数”记录即可。
+2. **最小发布治理**
+   - 在 `Deployment` 上固定滚更参数：`maxUnavailable: 0`、`maxSurge: 1`；演示一次 `kubectl rollout status/history/undo` 回滚，留 2 张记录（或命令输出）。
+
+交付标准：
+
+- 能在统一位置查看到 **task-api** 的实时日志；
+- 至少一种途径看到 **CPU/内存/副本数** 的曲线；
+- 清晰、可复制的 **回滚步骤** 与一次回滚演示记录。
 
 ---
 

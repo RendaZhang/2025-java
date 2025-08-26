@@ -3,12 +3,12 @@
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
 - [Day 5 - 收尾硬化 + 文档化 + 指标留痕](#day-5---%E6%94%B6%E5%B0%BE%E7%A1%AC%E5%8C%96--%E6%96%87%E6%A1%A3%E5%8C%96--%E6%8C%87%E6%A0%87%E7%95%99%E7%97%95)
-- [Step 1/3 — 增加 PodDisruptionBudget（PDB）并验收](#step-13--%E5%A2%9E%E5%8A%A0-poddisruptionbudgetpdb%E5%B9%B6%E9%AA%8C%E6%94%B6)
+- [Step 1/2 — 增加 PodDisruptionBudget（PDB）并验收](#step-12--%E5%A2%9E%E5%8A%A0-poddisruptionbudgetpdb%E5%B9%B6%E9%AA%8C%E6%94%B6)
     - [新增 PDB 清单](#%E6%96%B0%E5%A2%9E-pdb-%E6%B8%85%E5%8D%95)
     - [应用并检查](#%E5%BA%94%E7%94%A8%E5%B9%B6%E6%A3%80%E6%9F%A5)
     - [纳入 `post-recreate.sh`](#%E7%BA%B3%E5%85%A5-post-recreatesh)
     - [小提示](#%E5%B0%8F%E6%8F%90%E7%A4%BA)
-  - [Step 2/3 — 轻量文档化 + 指标留痕（仅必要项）](#step-23--%E8%BD%BB%E9%87%8F%E6%96%87%E6%A1%A3%E5%8C%96--%E6%8C%87%E6%A0%87%E7%95%99%E7%97%95%E4%BB%85%E5%BF%85%E8%A6%81%E9%A1%B9)
+  - [Step 2/2 — 轻量文档化 + 指标留痕（仅必要项）](#step-22--%E8%BD%BB%E9%87%8F%E6%96%87%E6%A1%A3%E5%8C%96--%E6%8C%87%E6%A0%87%E7%95%99%E7%97%95%E4%BB%85%E5%BF%85%E8%A6%81%E9%A1%B9)
     - [采集关键信息](#%E9%87%87%E9%9B%86%E5%85%B3%E9%94%AE%E4%BF%A1%E6%81%AF)
     - [快速“冷启动到就绪”测量（单 Pod）](#%E5%BF%AB%E9%80%9F%E5%86%B7%E5%90%AF%E5%8A%A8%E5%88%B0%E5%B0%B1%E7%BB%AA%E6%B5%8B%E9%87%8F%E5%8D%95-pod)
     - [运行事实（最小集）](#%E8%BF%90%E8%A1%8C%E4%BA%8B%E5%AE%9E%E6%9C%80%E5%B0%8F%E9%9B%86)
@@ -22,20 +22,9 @@
 
 **目标**：轻量“收尾硬化 + 文档化 + 指标留痕”，不过度工程化。
 
-**必要任务：**
-
-1. **K8s 资源硬化（最小）**
-   - 为 `task-api` 增加 **PodDisruptionBudget**（保持最少 1 个可用副本；示例片段见下），资源 Requests/Limits 已在前文配置可维持不变。
-2. **演示脚本**
-   - `demo/start.sh`：一键 apply 本周 YAML；`demo/stop.sh`：清理 ALB/TG 等本周资源（不销毁集群），便于复现与演示。
-3. **README/计划文档更新**
-   - 补充 **访问方式、镜像 tag、ALB DNS、（可选）S3 说明、已知限制**，并附关键截图。
-4. **量化指标与 STAR**
-   - 记录 HPA 触发截图、冷启动大致时延、以及“本周部署成功次数/尝试次数”；补一条 **STAR 一句话**作为面试素材。
-
 ---
 
-# Step 1/3 — 增加 PodDisruptionBudget（PDB）并验收
+# Step 1/2 — 增加 PodDisruptionBudget（PDB）并验收
 
 目标：
 
@@ -150,7 +139,7 @@ deploy_task_api() {
 
 ---
 
-## Step 2/3 — 轻量文档化 + 指标留痕（仅必要项）
+## Step 2/2 — 轻量文档化 + 指标留痕（仅必要项）
 
 目标：
 
