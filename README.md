@@ -24,15 +24,9 @@
       - [KPI & 简历映射](#kpi--%E7%AE%80%E5%8E%86%E6%98%A0%E5%B0%84)
   - [Week 5 - Cloud-Native 微服务上云（EKS）](#week-5---cloud-native-%E5%BE%AE%E6%9C%8D%E5%8A%A1%E4%B8%8A%E4%BA%91eks)
     - [前置检查](#%E5%89%8D%E7%BD%AE%E6%A3%80%E6%9F%A5)
-    - [Day 1 - 复盘：应用骨架 + Docker 镜像 + 推送 ECR](#day-1---%E5%A4%8D%E7%9B%98%E5%BA%94%E7%94%A8%E9%AA%A8%E6%9E%B6--docker-%E9%95%9C%E5%83%8F--%E6%8E%A8%E9%80%81-ecr)
-      - [今天做了什么（Done）](#%E4%BB%8A%E5%A4%A9%E5%81%9A%E4%BA%86%E4%BB%80%E4%B9%88done)
-      - [关键决策与记录](#%E5%85%B3%E9%94%AE%E5%86%B3%E7%AD%96%E4%B8%8E%E8%AE%B0%E5%BD%95)
-      - [明天计划（Next）](#%E6%98%8E%E5%A4%A9%E8%AE%A1%E5%88%92next)
-    - [Day 2 + Day 3 复盘：K8s 基础对象、ALB 暴露、HPA 弹性](#day-2--day-3-%E5%A4%8D%E7%9B%98k8s-%E5%9F%BA%E7%A1%80%E5%AF%B9%E8%B1%A1alb-%E6%9A%B4%E9%9C%B2hpa-%E5%BC%B9%E6%80%A7)
-      - [今天做了什么（Done）](#%E4%BB%8A%E5%A4%A9%E5%81%9A%E4%BA%86%E4%BB%80%E4%B9%88done-1)
-      - [常见坑与退路](#%E5%B8%B8%E8%A7%81%E5%9D%91%E4%B8%8E%E9%80%80%E8%B7%AF)
-      - [明天计划（Next · Day 4）](#%E6%98%8E%E5%A4%A9%E8%AE%A1%E5%88%92next-%C2%B7-day-4)
-    - [Day 4 - S3 最小接入 + IRSA](#day-4---s3-%E6%9C%80%E5%B0%8F%E6%8E%A5%E5%85%A5--irsa)
+    - [Day 1：应用骨架 + Docker 镜像 + 推送 ECR](#day-1%E5%BA%94%E7%94%A8%E9%AA%A8%E6%9E%B6--docker-%E9%95%9C%E5%83%8F--%E6%8E%A8%E9%80%81-ecr)
+    - [Day 2 + Day 3：K8s 基础对象、ALB 暴露、HPA 弹性](#day-2--day-3k8s-%E5%9F%BA%E7%A1%80%E5%AF%B9%E8%B1%A1alb-%E6%9A%B4%E9%9C%B2hpa-%E5%BC%B9%E6%80%A7)
+    - [Day 4：S3 最小接入 + IRSA](#day-4s3-%E6%9C%80%E5%B0%8F%E6%8E%A5%E5%85%A5--irsa)
     - [Day 5 - 收尾硬化 + 文档化 + 指标留痕](#day-5---%E6%94%B6%E5%B0%BE%E7%A1%AC%E5%8C%96--%E6%96%87%E6%A1%A3%E5%8C%96--%E6%8C%87%E6%A0%87%E7%95%99%E7%97%95)
     - [常见问题与 20 分钟退路](#%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98%E4%B8%8E-20-%E5%88%86%E9%92%9F%E9%80%80%E8%B7%AF)
   - [Week 6 - 观测 & 韧性](#week-6---%E8%A7%82%E6%B5%8B--%E9%9F%A7%E6%80%A7)
@@ -239,169 +233,109 @@
 
 > 预期产物总表：源码仓（`task-api`）、ECR 镜像 tag、K8s YAML/Helm、ALB DNS 可访问截图、（可选）S3 读写验证。
 
-### Day 1 - 复盘：应用骨架 + Docker 镜像 + 推送 ECR
+### Day 1：应用骨架 + Docker 镜像 + 推送 ECR
 
-#### 今天做了什么（Done）
+今天做了什么（Done）
 
-* 起了一个最小 **Spring Boot 3 + Actuator** 服务（`/api/hello`、`/api/ping` 与 `/actuator/health{,/liveness,/readiness}`）。
-* 编写 **多阶段 Dockerfile**，本地构建镜像并推送到 **Amazon ECR（us-east-1）**。
-* 使用 **digest** 固定镜像版本：`sha256:927d20ca4cebedc14f81770e8e5e49259684723ba65b76e7c59f3003cc9a9741`。
-* 在 **EKS 集群 `dev` / 命名空间 `svc-task`** 部署 `Deployment+Service(ClusterIP)`，通过 `kubectl port-forward` 完成端到端验证（业务接口与健康探针均返回 `UP`）。
+- 起了一个最小 **Spring Boot 3 + Actuator** 服务（`/api/hello`、`/api/ping` 与 `/actuator/health{,/liveness,/readiness}`）。
+- 编写 **多阶段 Dockerfile**，本地构建镜像并推送到 **Amazon ECR（us-east-1）**。
+- 使用 **digest** 固定镜像版本：`sha256:927d20ca4cebedc14f81770e8e5e49259684723ba65b76e7c59f3003cc9a9741`。
+- 在 **EKS 集群 `dev` / 命名空间 `svc-task`** 部署 `Deployment+Service(ClusterIP)`，通过 `kubectl port-forward` 完成端到端验证（业务接口与健康探针均返回 `UP`）。
 
-#### 关键决策与记录
+关键决策与记录
 
-* **Region / Cluster / Repo**：`us-east-1` / `dev` / `task-api`。
-* **AWS 身份**：采用 **SSO Profile `phase2-sso`**；脚本已内置 `--profile` 支持。
-* **镜像标记策略**：推送 `:0.1.0` 与 `:latest`，**部署用 digest 锁定**（避免 tag 漂移）。
-* **ECR 生命周期策略**：当前设置“仅保留 1 个 tag + 未打标签 1 天过期”→ 成本低但**回滚空间极小**；建议后续调整为**至少保留最近 5–10 个 tag**。
+- **Region / Cluster / Repo**：`us-east-1` / `dev` / `task-api`。
+- **AWS 身份**：采用 **SSO Profile `phase2-sso`**；脚本已内置 `--profile` 支持。
+- **镜像标记策略**：推送 `:0.1.0` 与 `:latest`，**部署用 digest 锁定**（避免 tag 漂移）。
+- **ECR 生命周期策略**：当前设置“仅保留 1 个 tag + 未打标签 1 天过期”→ 成本低但**回滚空间极小**；建议后续调整为**至少保留最近 5–10 个 tag**。
 
-#### 明天计划（Next）
+### Day 2 + Day 3：K8s 基础对象、ALB 暴露、HPA 弹性
 
-* 安装 **AWS Load Balancer Controller**，为服务创建 **Ingress（ALB）**：
-
-  * 校验子网标签 / Controller 权限 / 安全组放行；
-  * Ingress 健康检查指向 `/actuator/health/readiness`；
-  * 获取 **ALB DNS** 并完成公网访问验证与截图存证。
-* （可选）为 `task-api` 添加 **HPA（基于 CPU 60%）**，做一次轻压测观察扩缩。
-* 文档更新：在 README/计划文档中记录 **ALB DNS、发布步骤、探针路径** 与**一张流量路径草图**。
-
-### Day 2 + Day 3 复盘：K8s 基础对象、ALB 暴露、HPA 弹性
-
-#### 今天做了什么（Done）
+今天做了什么（Done）
 
 1. **K8s 基础对象规范化（k8s/base）**
-   * `Namespace`：`svc-task`
-   * `ServiceAccount`：`task-api`（预留 IRSA 注解位，Day 4 再绑定 IAM Role）
-   * `ConfigMap`：`task-api-config`（示例：`APP_NAME` / `WELCOME_MSG`）
-   * `Deployment + Service(ClusterIP)`：
-     * 镜像以 **ECR Digest** 固定（避免 tag 漂移）。
-     * 配置 `readiness/liveness` → `/actuator/health/{readiness,liveness}`。
-     * 资源水位：`requests: cpu 100m / mem 128Mi`，`limits: cpu 500m / mem 512Mi`。
+   - `Namespace`：`svc-task`
+   - `ServiceAccount`：`task-api`（预留 IRSA 注解位，Day 4 再绑定 IAM Role）
+   - `ConfigMap`：`task-api-config`（示例：`APP_NAME` / `WELCOME_MSG`）
+   - `Deployment + Service(ClusterIP)`：
+     - 镜像以 **ECR Digest** 固定（避免 tag 漂移）。
+     - 配置 `readiness/liveness` → `/actuator/health/{readiness,liveness}`。
+     - 资源水位：`requests: cpu 100m / mem 128Mi`，`limits: cpu 500m / mem 512Mi`。
 2. **AWS Load Balancer Controller（ALBC）上线**
-   * **IRSA** 用 Terraform 创建：IAM Policy + Role + 信任策略 + `kube-system/aws-load-balancer-controller` SA 注解。
-   * **控制器本体**用 Helm 写进 `post-recreate.sh`：
-     * 固定 `chart` 与 `image.tag`；
-     * 升级前显式 `kubectl apply -k .../config/crd?ref=<controller-version>` 处理 CRDs；
-     * `serviceAccount.create=false`（复用 TF 管理的 SA）；
-     * `rollout status` 等待就绪并打印末尾日志。
+   - **IRSA** 用 Terraform 创建：IAM Policy + Role + 信任策略 + `kube-system/aws-load-balancer-controller` SA 注解。
+   - **控制器本体**用 Helm 写进 `post-recreate.sh`：
+     - 固定 `chart` 与 `image.tag`；
+     - 升级前显式 `kubectl apply -k .../config/crd?ref=<controller-version>` 处理 CRDs；
+     - `serviceAccount.create=false`（复用 TF 管理的 SA）；
+     - `rollout status` 等待就绪并打印末尾日志。
 3. **Ingress → 公网 ALB**
-   * `ingressClassName: alb`，关键注解：
-     * `alb.ingress.kubernetes.io/scheme: internet-facing`
-     * `alb.ingress.kubernetes.io/target-type: ip`
-     * `alb.ingress.kubernetes.io/healthcheck-path: /actuator/health/readiness`
-     * `alb.ingress.kubernetes.io/healthcheck-port: traffic-port`
-   * ALB DNS 已分配；根路径无资源返回 `404`，健康检查 `UP`，**公网可达**验证通过。
+   - `ingressClassName: alb`，关键注解：
+     - `alb.ingress.kubernetes.io/scheme: internet-facing`
+     - `alb.ingress.kubernetes.io/target-type: ip`
+     - `alb.ingress.kubernetes.io/healthcheck-path: /actuator/health/readiness`
+     - `alb.ingress.kubernetes.io/healthcheck-port: traffic-port`
+   - ALB DNS 已分配；根路径无资源返回 `404`，健康检查 `UP`，**公网可达**验证通过。
 4. **弹性扩缩（HPA, autoscaling/v2）**
-   * 目标：CPU **60%**，`min=2 / max=10`，配置了 `behavior` 的放大/回落策略。
-   * 安装/确认 `metrics-server`（Helm，`--kubelet-insecure-tls` 以增强兼容性）。
-   * **压测**（集群内流量，直打 ClusterIP）：
-     * 修正后的内网域名：`http://task-api.svc-task.svc.cluster.local:8080/...`
-     * 使用镜像：`williamyeh/hey:latest`
-     * 命令示例：
+   - 目标：CPU **60%**，`min=2 / max=10`，配置了 `behavior` 的放大/回落策略。
+   - 安装/确认 `metrics-server`（Helm，`--kubelet-insecure-tls` 以增强兼容性）。
+   - **压测**（集群内流量，直打 ClusterIP）：
+     - 修正后的内网域名：`http://task-api.svc-task.svc.cluster.local:8080/...`
+     - 使用镜像：`williamyeh/hey:latest`
+     - 命令示例：
        ```bash
        kubectl -n svc-task run hey --image=williamyeh/hey:latest --restart=Never -- \
          -z 2m -c 50 -q 0 "http://task-api.svc-task.svc.cluster.local:8080/api/hello?name=HPA"
        ```
-     * 观察结果：`cpu: 496%/60%`，`Pods: 2 → 8`；压测结束后约 1 分钟回落到 `cpu: 2%/60%` 与 `Pods: 2`。
+     - 观察结果：`cpu: 496%/60%`，`Pods: 2 → 8`；压测结束后约 1 分钟回落到 `cpu: 2%/60%` 与 `Pods: 2`。
 5. **每日重建脚本已更新**
-   * `post-recreate.sh` 已集成：ALBC 安装/升级（含 CRDs）、Ingress 发布与等待、metrics-server 安装、HPA 发布、冒烟验证。
-   * 与 `infra/aws` 的 Terraform 模块对齐（IRSA 在 HCL，控制器在脚本）。
+   - `post-recreate.sh` 已集成：ALBC 安装/升级（含 CRDs）、Ingress 发布与等待、metrics-server 安装、HPA 发布、冒烟验证。
+   - 与 `infra/aws` 的 Terraform 模块对齐（IRSA 在 HCL，控制器在脚本）。
 
 > 环境锚点：`AWS_REGION=us-east-1`、`CLUSTER=dev`、`NS=svc-task`、`ECR_REPO=task-api`。
 >
 > 说明：ECR 仍采用 **digest 部署**；ECR 生命周期目前“93.73 MB 的镜像 + 只保留 1 个 tag + 1 天清理 untagged”，可节省成本但**回滚空间非常小**，短期可接受，后面若要更稳妥，可以把“最近 1 个”调成“最近 2–5 个”。
 
-#### 常见坑与退路
+### Day 4：S3 最小接入 + IRSA
 
-* **Ingress 没地址**：先看 ALBC 是否就绪、子网/集群标签是否正确、SA 注解的 IAM Role 是否匹配。
-* **ALB 健康检查失败**：确认探针路径与端口，应用冷启动时适当调大 `initialDelaySeconds`。
-* **HPA 不触发**：降低 `averageUtilization`（如 30%）、或把 `requests.cpu` 临时降到 `50m`，或加大压测并发/时长。
-* **镜像/架构不匹配**：节点是 ARM64 时本地构建需指定 `--platform=linux/arm64`。
+**今天做了什么**
 
-#### 明天计划（Next · Day 4）
-
-1. **IRSA for App（与最小 S3 演示）**
-   * 创建 S3 桶与最小权限策略（限定前缀：`arn:aws:s3:::<bucket>/${APP}/*`）；
-   * 为 `svc-task/task-api` 的 SA 绑定 **IAM Role（IRSA）**；
-   * 应用侧小改动：加入一个简单的“写入/读取”或“列举前缀”的 API（或用 CLI 容器验证 STS 权限）。
-   * 冒烟：在 Pod 内执行一次 `curl`/应用接口验证 403→200 的权限变化。
-2. **运行时加固与可靠性**
-   * `securityContext`：`runAsNonRoot`, `runAsUser`, `readOnlyRootFilesystem`；
-   * `PodDisruptionBudget`（维持最少可用副本）；
-   * `requests/limits` 微调与 `probe` 阈值优化；
-   * Ingress 开启 **HTTPS**（ACM 证书）与基础安全头。
-3. **可观测性（若时间允许，先达成“最小闭环”）**
-   * 部署 ADOT Collector（DaemonSet 或 Sidecar）→ 将指标推到 **AMP**，或先把日志集中到 **CloudWatch Logs**；
-   * Grafana 看板骨架与一条告警样例（例如 5xx 比例或 P95 延迟）。
-
-> 产出物：IRSA HCL（或沿用你现有模块输出）、`k8s` 侧 SA 注解更新、最小 S3 演示说明、加固与 PDB 的 YAML、（可选）HTTPS Ingress 与证书记录。
-
-### Day 4 - S3 最小接入 + IRSA
-
-**做什么**
-
-1. 新建 **S3 bucket**（Terraform 或控制台均可；**Block Public Access**、SSE-S3 开启）。
-2. 配置 **IAM 角色**（IRSA）只允许 `bucket/$APP/*` 前缀读写；把 Role 绑定到 `${APP}-sa`。
-3. 在应用添加 `/api/files/put?key=...` 与 `/api/files/get?key=...` 两个端点，演示最小读写。
-
-**最小策略示例（`iam/s3-irsa.json`）**
-
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [{
-    "Effect": "Allow",
-    "Action": ["s3:PutObject","s3:GetObject"],
-    "Resource": "arn:aws:s3:::<BUCKET>/${APP}/*"
-  }]
-}
-```
-
-**验证**
-
-```bash
-curl -X POST "http://<ALB_DNS>/api/files/put?key=test.txt" -d 'hello'
-curl "http://<ALB_DNS>/api/files/get?key=test.txt"   # 预期返回 hello
-```
-
-**产物**：
-
-两条 curl 成功截图；应用日志相关片段。
-
-**退路**：
-
-若当日遇到卡点 → 暂跳过 S3，保留 IRSA 绑定，Day5 先完成文档与演示。
+- 为 `svc-task/task-api` 建立 **IRSA**：创建最小权限的 IAM Role（信任 EKS OIDC，仅允许 `s3:ListBucket` 受 `prefix` 约束，以及对 `<bucket>/<app-prefix>/*` 的 `GetObject/PutObject`），并把 Role 绑定到该 ServiceAccount 的 `eks.amazonaws.com/role-arn` 注解。
+- **最小闭环验证**：在集群内以该 SA 运行一次性 **aws-cli Job**，完成 `sts get-caller-identity`、对**允许前缀**的 Put/List/Get 成功、对**不允许前缀**写入触发 AccessDenied，验证“最小权限”生效。
+- **成本/安全护栏**：为 S3 配置 Gateway Endpoint（私网访问不经 NAT）、Bucket 默认加密 + 强制 TLS、对 `smoke/` 前缀设置保留期生命周期清理。
 
 ### Day 5 - 收尾硬化 + 文档化 + 指标留痕
 
-**做什么**
+**目标**：轻量“收尾硬化 + 文档化 + 指标留痕”，不过度工程化。
+**必要任务（勾选即过）：**
 
-1. K8s 资源硬化：为容器加 `requests/limits`，为 ns 增加 `ResourceQuota`（可选），为部署添加 `PodDisruptionBudget`（1）。
-2. 输出 **演示脚本**：`demo/start.sh`（apply 所有 YAML）、`demo/stop.sh`（清理除集群外的本周资源；ALB/TG 包含）。
-3. README 更新：加入“访问方式、镜像 tag、ALB DNS、（可选）S3 说明、已知限制”。
-4. **量化指标**：记录本周 GitOps 发布成功率（若未上 GitOps，记录“部署成功次数/尝试次数”）、HPA 触发截图、平均冷启动时间。
-5. **STAR 一句话**：补充到“面试素材”区。
+1. **K8s 资源硬化（最小）**
+   - 为 `task-api` 增加 **PodDisruptionBudget**（保持最少 1 个可用副本；示例片段见下），资源 Requests/Limits 已在前文配置可维持不变。&#x20;
+2. **演示脚本**
+   - `demo/start.sh`：一键 apply 本周 YAML；`demo/stop.sh`：清理 ALB/TG 等本周资源（不销毁集群），便于复现与演示。
+3. **README/计划文档更新**
+   - 补充 **访问方式、镜像 tag、ALB DNS、（可选）S3 说明、已知限制**，并附关键截图。
+4. **量化指标与 STAR**
+   - 记录 HPA 触发截图、冷启动大致时延、以及“本周部署成功次数/尝试次数”；补一条 **STAR 一句话**作为面试素材。
 
-**参考片段**
+**参考片段（PDB）**
 
 ```yaml
-# pdb.yaml
 apiVersion: policy/v1
 kind: PodDisruptionBudget
-metadata: { name: ${APP}-pdb, namespace: ${NS} }
+metadata: { name: task-api-pdb, namespace: svc-task }
 spec:
   minAvailable: 1
-  selector: { matchLabels: { app: ${APP} } }
+  selector: { matchLabels: { app: task-api } }
 ```
 
-**验收清单（打勾即过）**
+**验收清单**
 
-- [ ] ALB DNS 可稳定访问 `/healthz` 与 `/api/tasks`
-- [ ] 部署就绪 1/1（或 HPA 扩展 1→3 后恢复）
+- [ ] ALB DNS 可稳定访问健康检查/业务接口
+- [ ] 部署就绪（或 HPA 扩容后恢复）
 - [ ] （可选）S3 PUT/GET 成功
 - [ ] README 已更新“部署与访问”与“本周指标”
 - [ ] `demo/start.sh` / `demo/stop.sh` 可独立执行
-- [ ] 本周截图归档：ECR、Pods、Ingress、HPA、（可选）S3
+- [ ] 截图归档：ECR、Pods、Ingress、HPA、（可选）S3
 
 ### 常见问题与 20 分钟退路
 
