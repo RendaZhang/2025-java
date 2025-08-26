@@ -20,12 +20,12 @@
       - [使用 Terraform 执行变更：](#%E4%BD%BF%E7%94%A8-terraform-%E6%89%A7%E8%A1%8C%E5%8F%98%E6%9B%B4)
     - [Helm 安装/升级 + CRDs：更新 `post-recreate.sh`](#helm-%E5%AE%89%E8%A3%85%E5%8D%87%E7%BA%A7--crds%E6%9B%B4%E6%96%B0-post-recreatesh)
     - [验证](#%E9%AA%8C%E8%AF%81)
-  - [Step 3/5 — 创建 Ingress（生成 ALB）+ 公网验证 + 写入 `post-recreate.sh`](#step-35--%E5%88%9B%E5%BB%BA-ingress%E7%94%9F%E6%88%90-alb-%E5%85%AC%E7%BD%91%E9%AA%8C%E8%AF%81--%E5%86%99%E5%85%A5-post-recreatesh)
+  - [Step 3/5 - 创建 Ingress（生成 ALB）+ 公网验证 + 写入 `post-recreate.sh`](#step-35---%E5%88%9B%E5%BB%BA-ingress%E7%94%9F%E6%88%90-alb-%E5%85%AC%E7%BD%91%E9%AA%8C%E8%AF%81--%E5%86%99%E5%85%A5-post-recreatesh)
     - [预检查（子网标签是否 OK）](#%E9%A2%84%E6%A3%80%E6%9F%A5%E5%AD%90%E7%BD%91%E6%A0%87%E7%AD%BE%E6%98%AF%E5%90%A6-ok)
     - [写 Ingress 清单](#%E5%86%99-ingress-%E6%B8%85%E5%8D%95)
     - [等待 ALB 分配地址并冒烟验证](#%E7%AD%89%E5%BE%85-alb-%E5%88%86%E9%85%8D%E5%9C%B0%E5%9D%80%E5%B9%B6%E5%86%92%E7%83%9F%E9%AA%8C%E8%AF%81)
     - [把 Ingress 发布与等待写进 `post-recreate.sh`](#%E6%8A%8A-ingress-%E5%8F%91%E5%B8%83%E4%B8%8E%E7%AD%89%E5%BE%85%E5%86%99%E8%BF%9B-post-recreatesh)
-- [Step 4/5 — 给 `task-api` 加 HPA（CPU=60%）+ 压测验证 + 纳入 `post-recreate.sh`](#step-45--%E7%BB%99-task-api-%E5%8A%A0-hpacpu60%25-%E5%8E%8B%E6%B5%8B%E9%AA%8C%E8%AF%81--%E7%BA%B3%E5%85%A5-post-recreatesh)
+- [Step 4/5 - 给 `task-api` 加 HPA（CPU=60%）+ 压测验证 + 纳入 `post-recreate.sh`](#step-45---%E7%BB%99-task-api-%E5%8A%A0-hpacpu60%25-%E5%8E%8B%E6%B5%8B%E9%AA%8C%E8%AF%81--%E7%BA%B3%E5%85%A5-post-recreatesh)
     - [安装/确认 metrics-server（Helm）](#%E5%AE%89%E8%A3%85%E7%A1%AE%E8%AE%A4-metrics-serverhelm)
     - [创建 HPA（autoscaling/v2）](#%E5%88%9B%E5%BB%BA-hpaautoscalingv2)
     - [触发一次扩容](#%E8%A7%A6%E5%8F%91%E4%B8%80%E6%AC%A1%E6%89%A9%E5%AE%B9)
@@ -858,7 +858,7 @@ W0816 20:34:04.845735       1 warnings.go:70] v1 Endpoints is deprecated in v1.3
 
 ---
 
-## Step 3/5 — 创建 Ingress（生成 ALB）+ 公网验证 + 写入 `post-recreate.sh`
+## Step 3/5 - 创建 Ingress（生成 ALB）+ 公网验证 + 写入 `post-recreate.sh`
 
 目标：
 
@@ -1021,7 +1021,7 @@ deploy_taskapi_ingress
 
 ---
 
-# Step 4/5 — 给 `task-api` 加 HPA（CPU=60%）+ 压测验证 + 纳入 `post-recreate.sh`
+# Step 4/5 - 给 `task-api` 加 HPA（CPU=60%）+ 压测验证 + 纳入 `post-recreate.sh`
 
 目标：
 
