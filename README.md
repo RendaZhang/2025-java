@@ -52,9 +52,9 @@
     - [20 分钟退路总表](#20-%E5%88%86%E9%92%9F%E9%80%80%E8%B7%AF%E6%80%BB%E8%A1%A8)
   - [Week 8 — Mock + Résumé](#week-8--mock--r%C3%A9sum%C3%A9)
     - [通用前置](#%E9%80%9A%E7%94%A8%E5%89%8D%E7%BD%AE-2)
-  - [Day 1 - 成果打包 & 架构一页纸（One-Pager）](#day-1---%E6%88%90%E6%9E%9C%E6%89%93%E5%8C%85--%E6%9E%B6%E6%9E%84%E4%B8%80%E9%A1%B5%E7%BA%B8one-pager)
-  - [Day 2 - Mock-1（全英）：运行/韧性/观测深挖](#day-2---mock-1%E5%85%A8%E8%8B%B1%E8%BF%90%E8%A1%8C%E9%9F%A7%E6%80%A7%E8%A7%82%E6%B5%8B%E6%B7%B1%E6%8C%96)
-  - [Day 3 - 简历 v2（中/英）+ LinkedIn 打磨](#day-3---%E7%AE%80%E5%8E%86-v2%E4%B8%AD%E8%8B%B1-linkedin-%E6%89%93%E7%A3%A8)
+    - [Day 1 - 成果打包 & 架构一页纸（One-Pager）](#day-1---%E6%88%90%E6%9E%9C%E6%89%93%E5%8C%85--%E6%9E%B6%E6%9E%84%E4%B8%80%E9%A1%B5%E7%BA%B8one-pager)
+    - [Day 2 - Mock-1（全英）：运行/韧性/观测深挖](#day-2---mock-1%E5%85%A8%E8%8B%B1%E8%BF%90%E8%A1%8C%E9%9F%A7%E6%80%A7%E8%A7%82%E6%B5%8B%E6%B7%B1%E6%8C%96)
+    - [Day 3 - 简历 v2（中/英）+ LinkedIn 打磨](#day-3---%E7%AE%80%E5%8E%86-v2%E4%B8%AD%E8%8B%B1-linkedin-%E6%89%93%E7%A3%A8)
     - [Day 4 - Mock-2（全英）：AI + 多云系统设计](#day-4---mock-2%E5%85%A8%E8%8B%B1ai--%E5%A4%9A%E4%BA%91%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1)
     - [Day 5 - Day-8 Cleanup 收官 + 招聘投递包](#day-5---day-8-cleanup-%E6%94%B6%E5%AE%98--%E6%8B%9B%E8%81%98%E6%8A%95%E9%80%92%E5%8C%85)
     - [高频问题库](#%E9%AB%98%E9%A2%91%E9%97%AE%E9%A2%98%E5%BA%93)
@@ -985,7 +985,7 @@ cleanup/
   cleanup.sh
 ```
 
-## Day 1 - 成果打包 & 架构一页纸（One-Pager）
+### Day 1 - 成果打包 & 架构一页纸（One-Pager）
 
 **做什么**
 
@@ -1011,7 +1011,7 @@ cleanup/
 - 架构图工具卡顿 → 先画手稿拍照上传；后补电子版
 - `progress.png` 不会画 → 用 README 表格 + 截图替代
 
-## Day 2 - Mock-1（全英）：运行/韧性/观测深挖
+### Day 2 - Mock-1（全英）：运行/韧性/观测深挖
 
 **主题**：你是资深 Java/Cloud 候选人，面试官围绕 **运行稳定性** 追问（EKS、HPA、Chaos、SLO、日志指标）。
 **流程（90 分钟自测/录制）**
@@ -1038,7 +1038,7 @@ cleanup/
 - 无法录制 → 用语音备忘或记要点
 - 现场失败 → 用预先录像的发布演示作为替代（保证面试可讲）
 
-## Day 3 - 简历 v2（中/英）+ LinkedIn 打磨
+### Day 3 - 简历 v2（中/英）+ LinkedIn 打磨
 
 **做什么**
 
