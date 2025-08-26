@@ -30,6 +30,18 @@
     - [写 Job 清单](#%E5%86%99-job-%E6%B8%85%E5%8D%95)
     - [运行与查看结果](#%E8%BF%90%E8%A1%8C%E4%B8%8E%E6%9F%A5%E7%9C%8B%E7%BB%93%E6%9E%9C)
     - [更新 `scripts/post-recreate.sh` 脚本](#%E6%9B%B4%E6%96%B0-scriptspost-recreatesh-%E8%84%9A%E6%9C%AC)
+  - [Step 4/4 — S3 成本/安全增强（Gateway Endpoint + Bucket Policy 强化 + 前缀生命周期）](#step-44--s3-%E6%88%90%E6%9C%AC%E5%AE%89%E5%85%A8%E5%A2%9E%E5%BC%BAgateway-endpoint--bucket-policy-%E5%BC%BA%E5%8C%96--%E5%89%8D%E7%BC%80%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F)
+    - [在私有子网打通直连：VPC Gateway Endpoint for S3（省 NAT 费）](#%E5%9C%A8%E7%A7%81%E6%9C%89%E5%AD%90%E7%BD%91%E6%89%93%E9%80%9A%E7%9B%B4%E8%BF%9Evpc-gateway-endpoint-for-s3%E7%9C%81-nat-%E8%B4%B9)
+    - [Bucket Policy 强化（最小且不“误杀”现有流程）](#bucket-policy-%E5%BC%BA%E5%8C%96%E6%9C%80%E5%B0%8F%E4%B8%94%E4%B8%8D%E8%AF%AF%E6%9D%80%E7%8E%B0%E6%9C%89%E6%B5%81%E7%A8%8B)
+    - [只清理“测试前缀”的生命周期（避免脏数据）](#%E5%8F%AA%E6%B8%85%E7%90%86%E6%B5%8B%E8%AF%95%E5%89%8D%E7%BC%80%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E9%81%BF%E5%85%8D%E8%84%8F%E6%95%B0%E6%8D%AE)
+    - [具体的 HCL 文件改动](#%E5%85%B7%E4%BD%93%E7%9A%84-hcl-%E6%96%87%E4%BB%B6%E6%94%B9%E5%8A%A8-1)
+      - [更新 `infra/aws/main.tf` 文件](#%E6%9B%B4%E6%96%B0-infraawsmaintf-%E6%96%87%E4%BB%B6)
+      - [更新 `infra/aws/modules/app_irsa_s3/main.tf` 文件](#%E6%9B%B4%E6%96%B0-infraawsmodulesapp_irsa_s3maintf-%E6%96%87%E4%BB%B6)
+      - [更新 `infra/aws/modules/app_irsa_s3/outputs.tf` 文件](#%E6%9B%B4%E6%96%B0-infraawsmodulesapp_irsa_s3outputstf-%E6%96%87%E4%BB%B6)
+      - [更新 `infra/aws/modules/app_irsa_s3/variables.tf` 文件](#%E6%9B%B4%E6%96%B0-infraawsmodulesapp_irsa_s3variablestf-%E6%96%87%E4%BB%B6)
+      - [更新 `infra/aws/modules/network_base/main.tf` 文件](#%E6%9B%B4%E6%96%B0-infraawsmodulesnetwork_basemaintf-%E6%96%87%E4%BB%B6)
+      - [更新 `infra/aws/modules/network_base/outputs.tf` 文件](#%E6%9B%B4%E6%96%B0-infraawsmodulesnetwork_baseoutputstf-%E6%96%87%E4%BB%B6)
+      - [更新 `infra/aws/outputs.tf` 文件](#%E6%9B%B4%E6%96%B0-infraawsoutputstf-%E6%96%87%E4%BB%B6)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -961,6 +973,416 @@ check_task_api() {
 ...
 
 check_task_api
+```
+
+---
+
+## Step 4/4 — S3 成本/安全增强（Gateway Endpoint + Bucket Policy 强化 + 前缀生命周期）
+
+### 在私有子网打通直连：VPC Gateway Endpoint for S3（省 NAT 费）
+
+1. 在 `infra/aws/` 下的你认为合适的位置或方式添加 **S3 网关端点** 并把它**关联到所有“私有子网”的路由表**。
+2. 打上清晰标签，便于巡检。
+
+**关键细节：**
+
+- 只把**私有子网**的路由表关联到 S3 Endpoint，公有子网通常不需要。
+- 端点就绪后，私网里的 EC2/Pod 访问 S3 **不再走 NAT**，计费显著下降。
+
+**Terraform 输出**
+
+```bash
+s3_gateway_endpoint_id = "vpce-00537e89ab3325cf4"
+```
+
+**快速自检：**
+
+```bash
+# 1) 端点状态
+$ aws ec2 describe-vpc-endpoints --filters "Name=service-name,Values=com.amazonaws.us-east-1.s3" --profile phase2-sso --region us-east-1 \
+  --query 'VpcEndpoints[].{Id:VpcEndpointId,State:State,Type:VpcEndpointType,RTs:RouteTableIds}'
+
+# 输出：
+[
+    {
+        "Id": "vpce-00537e89ab3325cf4",
+        "State": "available",
+        "Type": "Gateway",
+        "RTs": [
+            "rtb-026a8fa8865c4474c",
+            "rtb-00dc799eaa7b2ae78"
+        ]
+    }
+]
+
+# 2) 路由表出现 S3 前缀列表路由（pl-开头）
+$ aws ec2 describe-route-tables \
+  --route-table-ids "rtb-026a8fa8865c4474c" "rtb-00dc799eaa7b2ae78" \
+  --profile phase2-sso \
+  --region us-east-1 \
+  --query 'RouteTables[].Routes[?DestinationPrefixListId != `null` && contains(DestinationPrefixListId, `pl-`)]'
+
+# 输出：
+[
+    [
+        {
+            "DestinationPrefixListId": "pl-63a5400a",
+            "GatewayId": "vpce-00537e89ab3325cf4",
+            "Origin": "CreateRoute",
+            "State": "active"
+        }
+    ],
+    [
+        {
+            "DestinationPrefixListId": "pl-63a5400a",
+            "GatewayId": "vpce-00537e89ab3325cf4",
+            "Origin": "CreateRoute",
+            "State": "active"
+        }
+    ]
+]
+```
+
+### Bucket Policy 强化（最小且不“误杀”现有流程）
+
+给 `aws_s3_bucket` 增加一份 **Bucket Policy**（如果已经有了就更新，如果没有就新增），至少包含两条“保护性 Deny”：
+
+1. **强制 TLS 传输**（任何非 HTTPS 一律拒绝）
+   - `Effect: Deny`
+   - `Principal: "*"`
+   - `Action: ["s3:GetObject","s3:PutObject","s3:DeleteObject"]`
+   - `Condition: Bool -> aws:SecureTransport = false`
+2. **仅允许来自 VPC 的访问**（经 **Gateway Endpoint**）
+   - `Effect: Deny` / `Principal: "*"`
+   - `Action: ["s3:GetObject","s3:PutObject","s3:DeleteObject"]`
+   - `Condition: StringNotEqualsIfExists -> aws:SourceVpc = "<VPC ID>"`
+
+> 说明：
+>
+> - 我们**不**在 Bucket Policy 里强制 `x-amz-server-side-encryption` 头，因为已启用 **默认 SSE-S3**；强制请求头会让 `aws s3 cp` 失败（它默认不带头）。
+> - 不推荐直接用 `NotPrincipal` 锁死到单一 Role，会**影响控制台/临时运维**；先用 “TLS + SourceVpc” 两个护栏即可。
+
+**Terraform 输出**
+
+```bash
+task_api_bucket_policy_id = "dev-task-api-welcomed-anteater"
+```
+
+**快速自检：**
+
+```bash
+$ aws s3api get-bucket-policy --profile phase2-sso --bucket "de
+v-task-api-welcomed-anteater" --query 'Policy' | jq -r .
+```
+
+输出：
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "DenyInsecureTransport",
+      "Effect": "Deny",
+      "Principal": "*",
+      "Action": [
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:DeleteObject"
+      ],
+      "Resource": [
+        "arn:aws:s3:::dev-task-api-welcomed-anteater/*",
+        "arn:aws:s3:::dev-task-api-welcomed-anteater"
+      ],
+      "Condition": {
+        "Bool": {
+          "aws:SecureTransport": "false"
+        }
+      }
+    },
+    {
+      "Sid": "DenyNonVpc",
+      "Effect": "Deny",
+      "Principal": "*",
+      "Action": [
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:DeleteObject"
+      ],
+      "Resource": [
+        "arn:aws:s3:::dev-task-api-welcomed-anteater/*",
+        "arn:aws:s3:::dev-task-api-welcomed-anteater"
+      ],
+      "Condition": {
+        "StringNotEqualsIfExists": {
+          "aws:SourceVpc": "vpc-0b06ba5bfab99498b"
+        }
+      }
+    }
+  ]
+}
+```
+
+### 只清理“测试前缀”的生命周期（避免脏数据）
+
+在 `aws_s3_bucket_lifecycle_configuration` 增加针对 **测试/临时** 前缀的规则，例如：
+
+- `ID = "cleanup-smoke"`
+- `Filter` 只匹配 `task-api/smoke/`（或实际用的压测前缀）
+- `Expiration`：7～14 天
+
+**关键细节：**
+
+- **仅**作用于 `smoke/` 这类临时前缀，不要覆盖业务数据。
+- 如果启用了 Versioning，可额外清理 `NoncurrentVersionExpiration`。
+
+**Terraform 输出**
+
+```bash
+task_api_bucket_lifecycle_rules = [
+  "cleanup-smoke:Enabled",
+]
+```
+
+**快速自检：**
+
+```bash
+$ aws s3api get-bucket-lifecycle-configuration --profile phase2-sso --bucket "dev-task-api-welcomed-anteater"
+```
+
+输出：
+
+```json
+{
+    "TransitionDefaultMinimumObjectSize": "all_storage_classes_128K",
+    "Rules": [
+        {
+            "Expiration": {
+                "Days": 7
+            },
+            "ID": "cleanup-smoke",
+            "Filter": {
+                "Prefix": "task-api/smoke/"
+            },
+            "Status": "Enabled",
+            "NoncurrentVersionExpiration": {
+                "NoncurrentDays": 7
+            }
+        }
+    ]
+}
+```
+
+### 具体的 HCL 文件改动
+
+#### 更新 `infra/aws/main.tf` 文件
+
+在 task_api 模块中新增如下：
+
+```hcl
+...
+module "task_api" {
+  ...
+  # 新增如下行，其他保持不变
+  vpc_id            = module.network_base.vpc_id                 # 桶策略限制访问的 VPC
+  ...
+}
+...
+```
+
+#### 更新 `infra/aws/modules/app_irsa_s3/main.tf` 文件
+
+修改 `aws_s3_bucket_lifecycle_configuration` 资源为如下：
+
+```hcl
+...
+resource "aws_s3_bucket_lifecycle_configuration" "this" {
+  bucket = aws_s3_bucket.this.id
+
+  # 仅清理临时 smoke 前缀，避免误删业务数据
+  rule {
+    id     = "cleanup-test-prefix" # 仅清理测试前缀
+    id     = "cleanup-smoke"
+    status = "Enabled"
+
+    filter {
+      prefix = var.s3_prefix # 作用于指定前缀
+      prefix = "${var.s3_prefix}smoke/" # 目标前缀：<prefix>smoke/
+    }
+
+    expiration {
+      days = 30 # 30 天后自动过期
+      days = 7 # 7 天后自动过期
+    }
+
+    noncurrent_version_expiration {
+      noncurrent_days = 7 # 清理旧版本
+    }
+  }
+}
+...
+```
+
+新增如下内容：
+
+```hcl
+...
+
+# --- Bucket Policy ---
+data "aws_iam_policy_document" "bucket" {
+  statement {
+    sid    = "DenyInsecureTransport"
+    effect = "Deny"
+    principals {
+      type        = "*"
+      identifiers = ["*"]
+    }
+    # 仅“数据面”动作：
+    # - 避免阻断管理面（Get/PutBucketPolicy、PutBucketLifecycleConfiguration 等）
+    # - 避免刷新时从公网端点读取桶信息被 403
+    actions = [
+      "s3:GetObject",
+      "s3:PutObject",
+      "s3:DeleteObject"
+    ]
+    resources = [
+      aws_s3_bucket.this.arn,
+      "${aws_s3_bucket.this.arn}/*"
+    ]
+    condition {
+      test     = "Bool"
+      variable = "aws:SecureTransport"
+      values   = ["false"]
+    }
+  }
+
+  dynamic "statement" {
+    for_each = var.vpc_id == null ? [] : [var.vpc_id]
+    content {
+      sid    = "DenyNonVpc"
+      effect = "Deny"
+      principals {
+        type        = "*"
+        identifiers = ["*"]
+      }
+      # 同样只覆盖“数据面”动作
+      actions = [
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:DeleteObject"
+      ]
+      resources = [
+        aws_s3_bucket.this.arn,
+        "${aws_s3_bucket.this.arn}/*"
+      ]
+      condition {
+        # IfExists 避免在没有 SourceVpc 上下文（例如公网端点）时被误判为“不等”
+        test     = "StringNotEqualsIfExists"
+        variable = "aws:SourceVpc"
+        values   = [var.vpc_id]
+      }
+    }
+  }
+}
+
+resource "aws_s3_bucket_policy" "this" {
+  bucket = aws_s3_bucket.this.id
+  policy = data.aws_iam_policy_document.bucket.json
+}
+
+...
+```
+
+#### 更新 `infra/aws/modules/app_irsa_s3/outputs.tf` 文件
+
+新增如下内容：
+
+```hcl
+...
+
+output "bucket_policy_id" {
+  description = "S3 bucket policy resource ID"
+  value       = aws_s3_bucket_policy.this.id
+}
+
+output "bucket_lifecycle_rules" {
+  description = "Lifecycle rule IDs and statuses"
+  value       = [for r in aws_s3_bucket_lifecycle_configuration.this.rule : "${r.id}:${r.status}"]
+}
+```
+
+#### 更新 `infra/aws/modules/app_irsa_s3/variables.tf` 文件
+
+新增如下内容：
+
+```hcl
+...
+
+variable "vpc_id" {
+  description = "VPC ID for optional bucket policy SourceVpc restriction"
+  type        = string
+  default     = null
+}
+```
+
+#### 更新 `infra/aws/modules/network_base/main.tf` 文件
+
+新增如下内容：
+
+```hcl
+...
+data "aws_region" "current" {}               # 当前区域，用于 VPC Endpoint（使用 id 字段）
+...
+# S3 Gateway Endpoint：私有子网直连 S3，绕过 NAT 以节省成本
+resource "aws_vpc_endpoint" "s3" {
+  vpc_id            = aws_vpc.this.id
+  service_name      = "com.amazonaws.${data.aws_region.current.id}.s3"
+  vpc_endpoint_type = "Gateway"
+  route_table_ids   = aws_route_table.private[*].id # 仅关联私有路由表
+
+  tags = {
+    Name        = "${var.cluster_name}-s3-endpoint"
+    ManagedBy   = "Terraform"
+    Description = "Gateway endpoint for S3"
+  }
+}
+...
+```
+
+#### 更新 `infra/aws/modules/network_base/outputs.tf` 文件
+
+新增如下内容：
+
+```hcl
+...
+output "s3_gateway_endpoint_id" {
+  description = "S3 网关端点 ID"
+  value       = aws_vpc_endpoint.s3.id
+}
+...
+```
+
+#### 更新 `infra/aws/outputs.tf` 文件
+
+新增如下内容：
+
+```hcl
+...
+output "s3_gateway_endpoint_id" {
+  description = "S3 网关端点 ID"
+  value       = module.network_base.s3_gateway_endpoint_id
+}
+...
+
+output "task_api_bucket_policy_id" {
+  description = "task-api 桶策略资源 ID"
+  value       = module.task_api.bucket_policy_id
+}
+
+output "task_api_bucket_lifecycle_rules" {
+  description = "task-api 桶生命周期规则及状态"
+  value       = module.task_api.bucket_lifecycle_rules
+}
 ```
 
 ---
