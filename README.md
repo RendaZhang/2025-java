@@ -425,7 +425,7 @@ AMP_WORKSPACE_ID=
    aws amp create-workspace --region $AWS_REGION --alias $AMP_ALIAS \
      --query workspaceId --output text > .amp_id
    ```
-4. 记录 AMP remote\_write 端点（供 ADOT 使用）：
+4. 记录 AMP remote_write 端点（供 ADOT 使用）：
    ```bash
    AMP_ID=$(cat .amp_id)
    echo "https://aps-workspaces.$AWS_REGION.amazonaws.com/workspaces/$AMP_ID/api/v1/remote_write" > .amp_rw
@@ -438,7 +438,7 @@ AMP_WORKSPACE_ID=
 
 **退路**：
 
-若 AMP 创建受限 → 暂改为 **Prometheus Helm（本地集群内）+ Grafana OSS**，后面步骤中的“remote\_write”全部替换为本地 `http://prometheus:9090`（仅演示用）。
+若 AMP 创建受限 → 暂改为 **Prometheus Helm（本地集群内）+ Grafana OSS**，后面步骤中的“remote_write”全部替换为本地 `http://prometheus:9090`（仅演示用）。
 
 ### Day 2 - ADOT Collector（采集 → AMP）+ 成本护栏
 

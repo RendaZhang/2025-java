@@ -50,21 +50,21 @@
 在终端依次执行，有输出即可：
 
 ```bash
-(venv) renda@RendaZhangComputer:/mnt/d/0Repositories/2025Java$ java -version
+(venv) $ java -version
 openjdk version "21.0.8" 2025-07-15
 OpenJDK Runtime Environment (build 21.0.8+9-Ubuntu-0ubuntu124.04.1)
 OpenJDK 64-Bit Server VM (build 21.0.8+9-Ubuntu-0ubuntu124.04.1, mixed mode, sharing)
-(venv) renda@RendaZhangComputer:/mnt/d/0Repositories/2025Java$ mvn -v
+(venv) $ mvn -v
 Apache Maven 3.9.9 (8e8579a9e76f7d015ee5ec7bfcdc97d260186937)
 Maven home: /mnt/d/Java/apache-maven-3.9.9
 Java version: 21.0.8, vendor: Ubuntu, runtime: /usr/lib/jvm/java-21-openjdk-amd64
 Default locale: en, platform encoding: UTF-8
 OS name: "linux", version: "5.15.167.4-microsoft-standard-wsl2", arch: "amd64", family: "unix"
-(venv) renda@RendaZhangComputer:/mnt/d/0Repositories/2025Java$ docker version --format '{{.Server.Version}}'
+(venv) $ docker version --format '{{.Server.Version}}'
 28.3.3
-(venv) renda@RendaZhangComputer:/mnt/d/0Repositories/2025Java$ aws --version
+(venv) $ aws --version
 aws-cli/2.27.41 Python/3.13.4 Linux/5.15.167.4-microsoft-standard-WSL2 exe/x86_64.ubuntu.24
-(venv) renda@RendaZhangComputer:/mnt/d/0Repositories/2025Java$ kubectl version --client --output=yaml | sed -n '1,10p'
+(venv) $ kubectl version --client --output=yaml | sed -n '1,10p'
 clientVersion:
   buildDate: "2025-05-15T08:27:33Z"
   compiler: gc
@@ -123,7 +123,7 @@ aws ecr get-login-password --region "$AWS_REGION" --profile "$PROFILE" \
 ### 创建项目骨架
 
 ```bash
-WORK_DIR=.
+WORK_DIR=/mnt/d/0Repositories/CloudNative
 mkdir -p ${WORK_DIR}/task-api/src/main/java/com/renda/task \
          ${WORK_DIR}/task-api/src/main/resources
 cd ${WORK_DIR}/task-api
