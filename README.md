@@ -404,36 +404,35 @@ AMP_WORKSPACE_ID=
 
 ### Day 1 - 应用指标暴露 + AMP 工作区
 
-**做什么**
+今天做了什么（Done）
 
-1. 在 `task-api` 开启 **Actuator + Prometheus**：
-   - `pom.xml` 增：`spring-boot-starter-actuator`、`micrometer-registry-prometheus`
-   - `application.yml`：
-     ```yaml
-     management:
-       endpoints.web.exposure.include: health,info,prometheus
-       endpoint.health.probes.enabled: true
-     ```
-2. 本地跑一次 `/actuator/prometheus` 验证。
-3. 创建 **AMP Workspace**（一次性）：
-   ```bash
-   aws amp create-workspace --region $AWS_REGION --alias $AMP_ALIAS \
-     --query workspaceId --output text > .amp_id
-   ```
-4. 记录 AMP remote_write 端点（供 ADOT 使用）：
-   ```bash
-   AMP_ID=$(cat .amp_id)
-   echo "https://aps-workspaces.$AWS_REGION.amazonaws.com/workspaces/$AMP_ID/api/v1/remote_write" > .amp_rw
-   ```
+- 新增本地 env 文件：`.env.week6.local`（被 `.gitignore` 忽略，便于本地 CLI 读写）。
+  - 关键变量：`AWS_REGION=us-east-1`、`NS=svc-task`、`APP=task-api`、`PROM_NAMESPACE=observability`、`CHAOS_NS=chaos-testing`。
+  - AMP 别名采用专业命名：`AMP_ALIAS=amp-renda-cloud-lab-wk6-use1`。
+  - 本周直接使用 AMP（托管 Prometheus）。
+- 更新 `task-api`：
+  - `pom.xml` 增加 `micrometer-registry-prometheus` 依赖（在已有 Actuator 基础上补齐）。
+  - `application.yml` 扩展暴露：`health,info,metrics,prometheus`；开启 `http.server.requests` 直方图（便于 P95）。
+- 本地验证成功：`/actuator/prometheus` 返回 `# HELP`/`# TYPE` 指标文本。
+- 在 `us-east-1` **成功创建** AMP Workspace：
+  - `AMP_WORKSPACE_ID=ws-4c9b04d5-5e49-415e-90ef-747450304dca`
+  - `remote_write=https://aps-workspaces.us-east-1.amazonaws.com/workspaces/ws-4c9b04d5-5e49-415e-90ef-747450304dca/api/v1/remote_write`
+- 已写回 `AMP_WORKSPACE_ID` 到 `.env.week6.local` 以便后续使用。
+- 基于最新 `task-api` 代码构建并推送 ECR：
+  - `VERSION=0.1.0-2508272044`
+  - `DIGEST=sha256:d409d3f8925d75544f34edf9f0dbf8d772866b27609ef01826e1467fee52170a`
+- 滚动更新 Deployment 到 **digest**，`rollout` 成功；集群内冒烟验证 `/actuator/prometheus` 通过。
+- 从集群内对 AMP `remote_write` 做 POST 探测：得到 **HTTP 403（预期）** → 说明 **DNS/TLS/出网正常**，只是尚未做 SigV4 认证（明天由 ADOT+IRSA 解决）。
+- 读取集群与认证前置：
+  - `EKS cluster: dev`
+  - `OIDC issuer: https://oidc.eks.us-east-1.amazonaws.com/id/4A580B5B467656AA8A2E18C0238FBC3A`
+  - `IAM OIDC provider: PRESENT`（已存在）
+  - `AmazonPrometheusRemoteWriteAccess` ARN 获取成功。
 
-**产物**：
+今日的关键决策：
 
-- `/actuator/prometheus` 截图
-- `.amp_id`、`.amp_rw` 文件（勿提交敏感数据，可写入 README 为占位）
-
-**退路**：
-
-若 AMP 创建受限 → 暂改为 **Prometheus Helm（本地集群内）+ Grafana OSS**，后面步骤中的“remote_write”全部替换为本地 `http://prometheus:9090`（仅演示用）。
+- **AMP 不纳入每日销毁/重建**：为保留多天历史曲线（面试材料更完整），采用“Workspace 持久 + 采集器按需开关”的策略；可以待结束后统一清理。
+- 每日流程脚本不读取 `.env.week6.local`。
 
 ### Day 2 - ADOT Collector（采集 → AMP）+ 成本护栏
 

@@ -8,8 +8,13 @@
     - [修改 `pom.xml`（添加 Prometheus 注册表依赖）](#%E4%BF%AE%E6%94%B9-pomxml%E6%B7%BB%E5%8A%A0-prometheus-%E6%B3%A8%E5%86%8C%E8%A1%A8%E4%BE%9D%E8%B5%96)
     - [修改 `application.yml`（暴露端点 + 打开直方图）](#%E4%BF%AE%E6%94%B9-applicationyml%E6%9A%B4%E9%9C%B2%E7%AB%AF%E7%82%B9--%E6%89%93%E5%BC%80%E7%9B%B4%E6%96%B9%E5%9B%BE)
   - [第三步：在本地启动 `task-api` 并验证 `/actuator/prometheus`](#%E7%AC%AC%E4%B8%89%E6%AD%A5%E5%9C%A8%E6%9C%AC%E5%9C%B0%E5%90%AF%E5%8A%A8-task-api-%E5%B9%B6%E9%AA%8C%E8%AF%81-actuatorprometheus)
-  - [第四步：创建 AMP Workspace，拿到 Workspace ID 与 remote_write 端点](#%E7%AC%AC%E5%9B%9B%E6%AD%A5%E5%88%9B%E5%BB%BA-amp-workspace%E6%8B%BF%E5%88%B0-workspace-id-%E4%B8%8E-remote_write-%E7%AB%AF%E7%82%B9)
+  - [第四步：创建 AMP Workspace，拿到 Workspace ID 与 remote write 端点](#%E7%AC%AC%E5%9B%9B%E6%AD%A5%E5%88%9B%E5%BB%BA-amp-workspace%E6%8B%BF%E5%88%B0-workspace-id-%E4%B8%8E-remote-write-%E7%AB%AF%E7%82%B9)
   - [第五步：构建最新的 task-api → 推送到 ECR → 用 Digest 回滚发布](#%E7%AC%AC%E4%BA%94%E6%AD%A5%E6%9E%84%E5%BB%BA%E6%9C%80%E6%96%B0%E7%9A%84-task-api-%E2%86%92-%E6%8E%A8%E9%80%81%E5%88%B0-ecr-%E2%86%92-%E7%94%A8-digest-%E5%9B%9E%E6%BB%9A%E5%8F%91%E5%B8%83)
+  - [第六步：最小连通性预检（AMP remote write ↔ 集群出网 ↔ 新镜像就绪）](#%E7%AC%AC%E5%85%AD%E6%AD%A5%E6%9C%80%E5%B0%8F%E8%BF%9E%E9%80%9A%E6%80%A7%E9%A2%84%E6%A3%80amp-remote-write--%E9%9B%86%E7%BE%A4%E5%87%BA%E7%BD%91--%E6%96%B0%E9%95%9C%E5%83%8F%E5%B0%B1%E7%BB%AA)
+    - [变量与 remote write](#%E5%8F%98%E9%87%8F%E4%B8%8E-remote-write)
+    - [从集群内做 DNS/TLS 出网预检](#%E4%BB%8E%E9%9B%86%E7%BE%A4%E5%86%85%E5%81%9A-dnstls-%E5%87%BA%E7%BD%91%E9%A2%84%E6%A3%80)
+    - [确认新镜像的指标端点在集群内可读](#%E7%A1%AE%E8%AE%A4%E6%96%B0%E9%95%9C%E5%83%8F%E7%9A%84%E6%8C%87%E6%A0%87%E7%AB%AF%E7%82%B9%E5%9C%A8%E9%9B%86%E7%BE%A4%E5%86%85%E5%8F%AF%E8%AF%BB)
+    - [只读前置：取 EKS 集群名、OIDC Issuer、以及 AWS 托管策略 ARN](#%E5%8F%AA%E8%AF%BB%E5%89%8D%E7%BD%AE%E5%8F%96-eks-%E9%9B%86%E7%BE%A4%E5%90%8Doidc-issuer%E4%BB%A5%E5%8F%8A-aws-%E6%89%98%E7%AE%A1%E7%AD%96%E7%95%A5-arn)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -183,7 +188,7 @@ Prometheus 端点已成功暴露。
 
 ---
 
-## 第四步：创建 AMP Workspace，拿到 Workspace ID 与 remote_write 端点
+## 第四步：创建 AMP Workspace，拿到 Workspace ID 与 remote write 端点
 
 **目标**：
 
@@ -404,15 +409,139 @@ $ aws amp list-workspaces --region us-east-1 --alias "$AMP_ALIAS"
 10. **集群内冒烟（`/actuator/health` 与 `/actuator/prometheus`）**：
 
     ```bash
-    # 临时起个调试 Pod 并使用内网域名进行测试
+    # 临时起个调试 Pod （会自动删除）并使用内网域名进行测试
     kubectl -n "$NS" run curl \
       --image=curlimages/curl:8.10.1 -it --rm -- sh -lc 'curl -sf http://task-api.svc-task.svc.cluster.local:8080/actuator/health && echo && curl -sf http://task-api.svc-task.svc.cluster.local:8080/actuator/prometheus | head'
-    # 检查
-    kubectl get pods
-    kubectl get services
-    # 完成后清理
-    kubectl delete service curl
-    kubectl delete pod curl
+    # 检查和清理
+    kubectl -n "$NS" get pods
+    kubectl -n "$NS" get services
+    kubectl -n "$NS" delete service curl
+    kubectl -n "$NS" delete pod curl
     ```
+
+---
+
+## 第六步：最小连通性预检（AMP remote write ↔ 集群出网 ↔ 新镜像就绪）
+
+**目标**：
+
+1. 验证集群能连到 AMP 的 `remote_write`（DNS/TLS/出网 OK，预期返回 403/400，因未做 SigV4）；
+2. 再次确认 `task-api` 的 `/actuator/prometheus` 在集群内可读；
+3. 预取 Day 2 需要的 **OIDC/Policy** 信息（只读检查，不做变更）。
+
+### 变量与 remote write
+
+```bash
+AMP_ENDPOINT=$(
+  aws amp describe-workspace \
+    --region "$AWS_REGION" \
+    --workspace-id "$AMP_WORKSPACE_ID" \
+    --query 'workspace.prometheusEndpoint' --output text
+)
+REMOTE_WRITE="${AMP_ENDPOINT}api/v1/remote_write"
+echo "[week6] remote_write = $REMOTE_WRITE"
+```
+
+输出：
+
+```bash
+[week6] remote_write = https://aps-workspaces.us-east-1.amazonaws.com/workspaces/ws-4c9b04d5-5e49-415e-90ef-747450304dca/api/v1/remote_write
+```
+
+### 从集群内做 DNS/TLS 出网预检
+
+预期 HTTP 403/400，代表网络就绪但未签名。
+
+```bash
+kubectl -n "$NS" run amp-netcheck --rm -it --restart=Never --image=curlimages/curl:8.10.1 -- \
+  sh -lc "nslookup aps-workspaces.${AWS_REGION}.amazonaws.com || getent hosts aps-workspaces.${AWS_REGION}.amazonaws.com; \
+          echo '== POST remote_write (expect 403/400) =='; \
+          curl -s -o /dev/null -w 'HTTP %{http_code}\n' -X POST '$REMOTE_WRITE'"
+```
+
+输出：
+
+```bash
+Server:         172.20.0.10
+Address:        172.20.0.10:53
+
+Non-authoritative answer:
+
+Non-authoritative answer:
+Name:   aps-workspaces.us-east-1.amazonaws.com
+Address: 54.197.120.175
+Name:   aps-workspaces.us-east-1.amazonaws.com
+Address: 3.216.243.210
+Name:   aps-workspaces.us-east-1.amazonaws.com
+Address: 44.216.31.204
+Name:   aps-workspaces.us-east-1.amazonaws.com
+Address: 3.221.177.188
+Name:   aps-workspaces.us-east-1.amazonaws.com
+Address: 98.83.214.158
+Name:   aps-workspaces.us-east-1.amazonaws.com
+Address: 50.19.192.67
+Name:   aps-workspaces.us-east-1.amazonaws.com
+Address: 98.83.89.149
+Name:   aps-workspaces.us-east-1.amazonaws.com
+Address: 54.208.94.103
+
+== POST remote_write (expect 403/400) ==
+HTTP 403
+pod "amp-netcheck" deleted
+```
+
+### 确认新镜像的指标端点在集群内可读
+
+```bash
+kubectl -n "$NS" run curl --image=curlimages/curl:8.10.1 -it --rm -- \
+  sh -lc 'curl -sf http://task-api:8080/actuator/prometheus | head'
+```
+
+输出：
+
+```bash
+# HELP application_ready_time_seconds Time taken for the application to be ready to service requests
+# TYPE application_ready_time_seconds gauge
+application_ready_time_seconds{application="task-api",main_application_class="com.renda.task.TaskApiApplication"} 17.851
+# HELP application_started_time_seconds Time taken to start the application
+# TYPE application_started_time_seconds gauge
+application_started_time_seconds{application="task-api",main_application_class="com.renda.task.TaskApiApplication"} 17.391
+# HELP disk_free_bytes Usable space for path
+# TYPE disk_free_bytes gauge
+disk_free_bytes{application="task-api",path="/app/."} 1.711149056E10
+# HELP disk_total_bytes Total space for path
+pod "curl" deleted
+```
+
+### 只读前置：取 EKS 集群名、OIDC Issuer、以及 AWS 托管策略 ARN
+
+```bash
+CTX_CLUSTER=$(kubectl config view --minify -o jsonpath='{.contexts[0].context.cluster}')
+CLUSTER=${CTX_CLUSTER##*/}
+ISSUER=$(aws eks describe-cluster --name "$CLUSTER" --region "$AWS_REGION" --query 'cluster.identity.oidc.issuer' --output text)
+PROVIDER_HOSTPATH=${ISSUER#https://}
+
+# 是否已存在与该 Issuer 匹配的 IAM OIDC Provider（仅检查，不改动）
+FOUND=$(aws iam list-open-id-connect-providers --query 'OpenIDConnectProviderList[*].Arn' --output text \
+  | tr '\t' '\n' \
+  | while read arn; do aws iam get-open-id-connect-provider --open-id-connect-provider-arn "$arn" --query 'Url' --output text; done \
+  | grep -c "$PROVIDER_HOSTPATH" || true)
+
+REMOTE_WRITE_POLICY_ARN=$(aws iam list-policies --scope AWS --query "Policies[?PolicyName=='AmazonPrometheusRemoteWriteAccess'].Arn" --output text)
+
+echo "[week6] EKS cluster: $CLUSTER"
+echo "[week6] OIDC issuer : $ISSUER"
+if [ "$FOUND" -ge 1 ]; then echo "[week6] IAM OIDC provider: PRESENT"; else echo "[week6] IAM OIDC provider: MISSING (we'll create on Day 2)"; fi
+echo "[week6] AmazonPrometheusRemoteWriteAccess ARN: $REMOTE_WRITE_POLICY_ARN"
+```
+
+输出：
+
+```bash
+[week6] EKS cluster: dev
+[week6] OIDC issuer : https://oidc.eks.us-east-1.amazonaws.com/id/4A580B5B467656AA8A2E18C0238FBC3A
+[week6] IAM OIDC provider: PRESENT
+[week6] AmazonPrometheusRemoteWriteAccess ARN: arn:aws:iam::aws:policy/AmazonPrometheusRemoteWriteAccess
+```
 
 ---
