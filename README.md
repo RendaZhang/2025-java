@@ -368,31 +368,26 @@
 
 1. **应用可观测入口就绪**：为 `task-api` 启用 **Spring Boot Actuator + Prometheus** 暴露端点（`/actuator/prometheus`）。
 2. **观测链路最小落地**：
-   - **Free 模式（默认）**：集群内 `kube-prometheus-stack` + Grafana（无云账单）。
-   - **Managed 模式（可选）**：**ADOT Collector → Amazon Managed Prometheus (AMP)**，Grafana 可自建/云托管，用于面试展示“上云观测链路”。
+   - **Managed 模式**：**ADOT Collector → Amazon Managed Prometheus (AMP)**，Grafana 可自建/云托管，用于面试展示“上云观测链路”。
 3. **SLI/SLO 成形**：定义并出图至少 3 个 SLI（建议：**可用性、P95 延迟、错误率**），明确计算公式与目标 SLO（示例：可用性 ≥ 99%，P95 < 300 ms，错误率 < 1%）。
 4. **韧性演示（Chaos）**：用 **Chaos Mesh** 进行 `pod-kill` 与 `network-latency(≈100ms/30s)` 小实验，观察 **P95 抬升**与 **HPA 触发**，度量 **MTTR**（目标 ≤ 1 分钟，作为面试谈资与改进参考）。
 5. **面试物料输出**：沉淀一页式复盘（指标口径、图表截图、实验结论、MTTR 计算）+ 目录化产物，确保“可复制、可演示、可讲故事”。
 
 原则：
 
-- **成本优先**：凡产生云费用的资源（如 AMP/Grafana 托管）**全部纳入每日销毁/重建流程**；默认 **Free 模式**，按需切到 Managed。
+- **成本优先**：凡产生云费用的资源（如 AMP/Grafana 托管）**全部纳入每日销毁/重建流程**。
 - **不过度工程**：以“**先出图、可验证、可讲清**”为准则；能跑通与可复现优先于完美架构。
 - **承接 Week 5**：最大化复用既有 **EKS 集群、命名空间 `svc-task`、服务 `task-api`** 等内容与脚本。
-- **参数化/可切换**：统一通过 `.env.week6.local` 控制模式与区域/命名等变量，实现 **一键切换 Free/Managed**。
-- **20 分钟退路**：任一环节超 20 分钟未通，立刻启用退路：切 Free 模式、`port-forward` 本地看图、用“手动删 Pod”替代复杂混沌场景，确保**周目标不失焦**。
+- **20 分钟退路**：任一环节超 20 分钟未通，立刻启用退路：`port-forward` 本地看图、用“手动删 Pod”替代复杂混沌场景，确保**周目标不失焦**。
 - **面试导向**：每一步都能输出“**做了什么 → 为什么 → 结果如何**”的证据链（命令、截图、公式、结论）。
 
 ### 通用前置
 
 > 建议在 Week 6 开始前一次性完成，后续各日共用。
 
-**环境变量文件（统一开关）**：在仓库根目录新建 `.env.week6.local`
+**环境变量文件**：在仓库根目录新建 `.env.week6.local`
 
 ```bash
-# 模式：free | managed（默认 free）
-WEEK6_MODE=free
-
 # 区域/命名
 AWS_REGION=us-east-1
 NS=svc-task
@@ -402,7 +397,7 @@ APP=task-api
 PROM_NAMESPACE=observability
 CHAOS_NS=chaos-testing
 
-# Managed 模式下的 AMP 配置（post-recreate 后会自动回填）
+# AMP 配置（ID 在创建后回填）
 AMP_ALIAS=amp-rcl-o11y-wk6-use1
 AMP_WORKSPACE_ID=
 ```

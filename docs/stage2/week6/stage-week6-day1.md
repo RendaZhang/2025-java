@@ -15,15 +15,15 @@
 
 **目标**：
 
-让 `task-api` 暴露 Prometheus 指标端点（`/actuator/prometheus`），并把 Week 6 的“模式/云资源开关”落在本地 env 文件中；
+让 `task-api` 暴露 Prometheus 指标端点（`/actuator/prometheus`）；
 
-若选择 Managed 模式，则创建 AMP Workspace（仅创建，不接入采集——采集放到 Day 2）。
+创建 AMP Workspace（仅创建，不接入采集——采集放到 Day 2）。
 
 **产出**：
 
-1. `.env.week6.local`（开关与变量）
+1. `.env.week6.local`
 2. `task-api` 已启用 Actuator + Prometheus（可本地或集群内 `curl` 验证）
-3. （可选）已创建 AMP Workspace，并把 `AMP_WORKSPACE_ID` 写回 `.env.week6.local`
+3. 已创建 AMP Workspace，并把 `AMP_WORKSPACE_ID` 写回 `.env.week6.local`
 
 ---
 
@@ -41,9 +41,6 @@ cd $WORK_DIR
 
 # 1) 新建/覆盖本地 env 文件（注意：region 已按你的 us-east-1）
 tee .env.week6.local >/dev/null <<'EOF'
-# Mode: free | managed  （默认free，后续如需走AMP再切managed）
-WEEK6_MODE=free
-
 # Region / Names
 AWS_REGION=us-east-1
 NS=svc-task
@@ -53,7 +50,7 @@ APP=task-api
 PROM_NAMESPACE=observability
 CHAOS_NS=chaos-testing
 
-# AMP (仅在 managed 模式下使用；ID 会在创建后回填)
+# AMP (ID 会在创建后回填)
 AMP_ALIAS=amp-renda-cloud-lab-wk6-use1
 AMP_WORKSPACE_ID=
 EOF
@@ -63,14 +60,13 @@ grep -qxF '.env.week6.local' .gitignore || echo '.env.week6.local' >> .gitignore
 
 # 3) 加载并回显关键变量，确认写入成功
 set -a; source ./.env.week6.local; set +a
-printf "WEEK6_MODE=%s\nAWS_REGION=%s\nNS=%s\nAPP=%s\nPROM_NAMESPACE=%s\nCHAOS_NS=%s\nAMP_ALIAS=%s\nAMP_WORKSPACE_ID=%s\n" \
-  "$WEEK6_MODE" "$AWS_REGION" "$NS" "$APP" "$PROM_NAMESPACE" "$CHAOS_NS" "$AMP_ALIAS" "${AMP_WORKSPACE_ID:-<empty>}"
+printf "AWS_REGION=%s\nNS=%s\nAPP=%s\nPROM_NAMESPACE=%s\nCHAOS_NS=%s\nAMP_ALIAS=%s\nAMP_WORKSPACE_ID=%s\n" \
+  "$AWS_REGION" "$NS" "$APP" "$PROM_NAMESPACE" "$CHAOS_NS" "$AMP_ALIAS" "${AMP_WORKSPACE_ID:-<empty>}"
 ```
 
-**验收标准（你看到的输出应类似）：**
+**输出：**
 
 ```
-WEEK6_MODE=free
 AWS_REGION=us-east-1
 NS=svc-task
 APP=task-api
@@ -174,7 +170,7 @@ Prometheus 端点已成功暴露。
 常见问题速排：
 
 * **404**：检查 `application.yml` 是否包含 `management.endpoints.web.exposure.include: health,info,metrics,prometheus`。
-* **401/403**：如果你项目启用了 Spring Security，需要另外放行 `/actuator/**`（我们遇到再一起加规则）。
+* **401/403**：如果项目启用了 Spring Security，需要另外放行 `/actuator/**`。
 * **端口占用**：用 `SERVER_PORT=8081`（见上）或关闭占用进程。
 
 ---
