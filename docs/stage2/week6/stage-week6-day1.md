@@ -7,6 +7,7 @@
   - [第二步：为 `task-api` 打开 Prometheus 指标（加依赖 + 配置暴露）](#%E7%AC%AC%E4%BA%8C%E6%AD%A5%E4%B8%BA-task-api-%E6%89%93%E5%BC%80-prometheus-%E6%8C%87%E6%A0%87%E5%8A%A0%E4%BE%9D%E8%B5%96--%E9%85%8D%E7%BD%AE%E6%9A%B4%E9%9C%B2)
     - [修改 `pom.xml`（添加 Prometheus 注册表依赖）](#%E4%BF%AE%E6%94%B9-pomxml%E6%B7%BB%E5%8A%A0-prometheus-%E6%B3%A8%E5%86%8C%E8%A1%A8%E4%BE%9D%E8%B5%96)
     - [修改 `application.yml`（暴露端点 + 打开直方图）](#%E4%BF%AE%E6%94%B9-applicationyml%E6%9A%B4%E9%9C%B2%E7%AB%AF%E7%82%B9--%E6%89%93%E5%BC%80%E7%9B%B4%E6%96%B9%E5%9B%BE)
+  - [第三步：在本地启动 `task-api` 并验证 `/actuator/prometheus`](#%E7%AC%AC%E4%B8%89%E6%AD%A5%E5%9C%A8%E6%9C%AC%E5%9C%B0%E5%90%AF%E5%8A%A8-task-api-%E5%B9%B6%E9%AA%8C%E8%AF%81-actuatorprometheus)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -132,5 +133,48 @@ management:
 >
 > - 只有把 `prometheus` 加到 exposure，`/actuator/prometheus` 才会出现在 HTTP 端点上。
 > - Micrometer + Prometheus 的组合是 Spring Boot 3 推荐做法；开启直方图有助于在 PromQL/Grafana 中做 P95。
+
+---
+
+## 第三步：在本地启动 `task-api` 并验证 `/actuator/prometheus`
+
+**目标**：
+
+确认刚才的依赖与配置已生效，能输出 Prometheus 指标。
+
+执行：
+
+```bash
+# 直接本地跑（推荐）
+mvn -f task-api/pom.xml spring-boot:run
+
+# 若 8080 被占用，可改临时端口：
+# SERVER_PORT=8081 mvn -f task-api/pom.xml spring-boot:run
+```
+
+等日志出现 “Started … in … seconds” 后，开一个新终端验证：
+
+```bash
+# 如果是默认 8080
+curl -sf http://localhost:8080/actuator/prometheus | head -n 30
+
+# 如果用了 8081
+# curl -sf http://localhost:8081/actuator/prometheus | head -n 30
+```
+
+**已经看到**：
+
+* 以 `# HELP ...`、`# TYPE ...` 开头的行；
+* 常见指标名如：`jvm_memory_used_bytes`、`http_server_requests_seconds_count`、`process_cpu_usage` 等。
+
+Prometheus 端点已成功暴露。
+
+`Ctrl + C` 停止 Spring Boot 进程。
+
+常见问题速排：
+
+* **404**：检查 `application.yml` 是否包含 `management.endpoints.web.exposure.include: health,info,metrics,prometheus`。
+* **401/403**：如果你项目启用了 Spring Security，需要另外放行 `/actuator/**`（我们遇到再一起加规则）。
+* **端口占用**：用 `SERVER_PORT=8081`（见上）或关闭占用进程。
 
 ---
