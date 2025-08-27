@@ -3,12 +3,13 @@
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
 - [Day 1 - 应用指标暴露 + AMP 工作区](#day-1---%E5%BA%94%E7%94%A8%E6%8C%87%E6%A0%87%E6%9A%B4%E9%9C%B2--amp-%E5%B7%A5%E4%BD%9C%E5%8C%BA)
-- [第一步：在仓库根目录创建本地环境文件并验证加载](#%E7%AC%AC%E4%B8%80%E6%AD%A5%E5%9C%A8%E4%BB%93%E5%BA%93%E6%A0%B9%E7%9B%AE%E5%BD%95%E5%88%9B%E5%BB%BA%E6%9C%AC%E5%9C%B0%E7%8E%AF%E5%A2%83%E6%96%87%E4%BB%B6%E5%B9%B6%E9%AA%8C%E8%AF%81%E5%8A%A0%E8%BD%BD)
+  - [第一步：在仓库根目录创建本地环境文件并验证加载](#%E7%AC%AC%E4%B8%80%E6%AD%A5%E5%9C%A8%E4%BB%93%E5%BA%93%E6%A0%B9%E7%9B%AE%E5%BD%95%E5%88%9B%E5%BB%BA%E6%9C%AC%E5%9C%B0%E7%8E%AF%E5%A2%83%E6%96%87%E4%BB%B6%E5%B9%B6%E9%AA%8C%E8%AF%81%E5%8A%A0%E8%BD%BD)
   - [第二步：为 `task-api` 打开 Prometheus 指标（加依赖 + 配置暴露）](#%E7%AC%AC%E4%BA%8C%E6%AD%A5%E4%B8%BA-task-api-%E6%89%93%E5%BC%80-prometheus-%E6%8C%87%E6%A0%87%E5%8A%A0%E4%BE%9D%E8%B5%96--%E9%85%8D%E7%BD%AE%E6%9A%B4%E9%9C%B2)
     - [修改 `pom.xml`（添加 Prometheus 注册表依赖）](#%E4%BF%AE%E6%94%B9-pomxml%E6%B7%BB%E5%8A%A0-prometheus-%E6%B3%A8%E5%86%8C%E8%A1%A8%E4%BE%9D%E8%B5%96)
     - [修改 `application.yml`（暴露端点 + 打开直方图）](#%E4%BF%AE%E6%94%B9-applicationyml%E6%9A%B4%E9%9C%B2%E7%AB%AF%E7%82%B9--%E6%89%93%E5%BC%80%E7%9B%B4%E6%96%B9%E5%9B%BE)
   - [第三步：在本地启动 `task-api` 并验证 `/actuator/prometheus`](#%E7%AC%AC%E4%B8%89%E6%AD%A5%E5%9C%A8%E6%9C%AC%E5%9C%B0%E5%90%AF%E5%8A%A8-task-api-%E5%B9%B6%E9%AA%8C%E8%AF%81-actuatorprometheus)
   - [第四步：创建 AMP Workspace，拿到 Workspace ID 与 remote_write 端点](#%E7%AC%AC%E5%9B%9B%E6%AD%A5%E5%88%9B%E5%BB%BA-amp-workspace%E6%8B%BF%E5%88%B0-workspace-id-%E4%B8%8E-remote_write-%E7%AB%AF%E7%82%B9)
+  - [第五步：构建最新的 task-api → 推送到 ECR → 用 Digest 回滚发布](#%E7%AC%AC%E4%BA%94%E6%AD%A5%E6%9E%84%E5%BB%BA%E6%9C%80%E6%96%B0%E7%9A%84-task-api-%E2%86%92-%E6%8E%A8%E9%80%81%E5%88%B0-ecr-%E2%86%92-%E7%94%A8-digest-%E5%9B%9E%E6%BB%9A%E5%8F%91%E5%B8%83)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -28,7 +29,7 @@
 
 ---
 
-# 第一步：在仓库根目录创建本地环境文件并验证加载
+## 第一步：在仓库根目录创建本地环境文件并验证加载
 
 **目标**：
 
@@ -254,5 +255,164 @@ $ aws amp list-workspaces --region us-east-1 --alias "$AMP_ALIAS"
     ]
 }
 ```
+
+> 也可以在 AWS 控制台 `Amazon Prometheus > Workspaces > amp-renda-cloud-lab-wk6-use1` 里面查看详情。
+
+---
+
+## 第五步：构建最新的 task-api → 推送到 ECR → 用 Digest 回滚发布
+
+**目标**：
+
+基于今天更新的 `task-api` 代码，构建新镜像并推到 ECR，拿到 **digest**，用 `kubectl set image` 以 **digest 锁定** 更新现有 Deployment（和 Week5 的策略一致，避免 tag 漂移）。
+
+> 下面命令默认 Region `us-east-1`，ECR 仓库名 `task-api`，命名空间 `svc-task`，应用名 `task-api`，与 Week5 保持一致。
+
+1. **确认节点架构**，以选择正确的 `--platform`：
+
+    ```bash
+    kubectl get nodes -o custom-columns=NAME:.metadata.name,ARCH:.status.nodeInfo.architecture
+    ```
+
+2. **进入子项目**：
+
+    ```bash
+    cd task-api
+    ```
+
+3. **变量与登录**：
+
+    ```bash
+    # 基本变量
+    export PROFILE="phase2-sso"
+    # —— 统一导出 AWS_PROFILE，省去每条命令 --profile ——
+    export AWS_PROFILE="$PROFILE"
+    export AWS_REGION=us-east-1
+    export ECR_REPO=task-api
+    export APP=task-api
+    export NS=svc-task
+    # 可追踪 tag
+    export VERSION="0.1.0-$(date +%y%m%d%H%M)"
+    echo "[week6] ECR Image Tag: $VERSION"
+
+    # 账户与仓库 URI
+    ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+    REMOTE="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO}"
+    echo "[week6] ECR Remote: $REMOTE"
+
+    # 确认/创建仓库（若已存在会跳过）
+    aws ecr describe-repositories --repository-names "$ECR_REPO" --region "$AWS_REGION" >/dev/null 2>&1 \
+      || aws ecr create-repository --repository-name "$ECR_REPO" --image-tag-mutability IMMUTABLE --region "$AWS_REGION"
+    # 登录
+    aws ecr get-login-password --region "$AWS_REGION" | docker login --username AWS --password-stdin "${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+
+    # 输出：
+    [week6] ECR Image Tag: 0.1.0-2508272044
+    [week6] ECR Remote: 563149051155.dkr.ecr.us-east-1.amazonaws.com/task-api
+    Login Succeeded
+    ```
+
+4. **本地构建镜像（下例以 `linux/amd64` 为例，可按需替换）**：
+
+    ```bash
+    docker system prune -a
+    docker build --platform=linux/amd64 -t "${APP}:${VERSION}" .
+    docker images
+    ```
+
+5. 可使用 `docker run` 在本地冒烟：
+
+    ```bash
+    # 启动测试容器
+    docker run -d -p 8080:8080 --name my-task "${APP}:${VERSION}"
+    docker ps
+    # 测试
+    curl http://localhost:8080/actuator/health
+    curl http://localhost:8080/actuator/prometheus
+    # 完成后清理
+    docker stop my-task && docker rm my-task
+    docker ps -a
+    ```
+
+6. **推送到 ECR 并记录 digest**：
+
+    ```bash
+    docker tag "${APP}:${VERSION}" "${REMOTE}:${VERSION}"
+    docker tag "${APP}:${VERSION}" "$REMOTE:latest"
+    docker push "${REMOTE}:${VERSION}"
+    # 推送成功会回显各层与 digest
+
+    # 读取本次镜像的 digest
+    DIGEST=$(aws ecr describe-images \
+      --repository-name "$ECR_REPO" \
+      --image-ids imageTag="$VERSION" \
+      --query 'imageDetails[0].imageDigest' \
+      --output text \
+      --region "$AWS_REGION")
+    echo "DIGEST=$DIGEST"
+    # 更新子项目 task-api 的 scripts 记录
+    printf 'export DIGEST=%s\n' "$DIGEST" > scripts/.last_image
+
+    # 输出：
+    0.1.0-2508272044: digest: sha256:d409d3f8925d75544f34edf9f0dbf8d772866b27609ef01826e1467fee52170a size: 1994
+    DIGEST=sha256:d409d3f8925d75544f34edf9f0dbf8d772866b27609ef01826e1467fee52170a
+    ```
+
+    > 已检查最新推送的镜像大小为 95.93 MB
+
+7. **给 ECR 镜像加新的 latest 标签**：
+
+    ```bash
+    # 拉取 ECR 镜像到本地
+    docker system prune -a
+    docker pull "${REMOTE}:${VERSION}"
+    docker images
+    # 打新标签
+    docker tag "${REMOTE}:${VERSION}" "$REMOTE:latest"
+    # 修改为 MUTABLE（需管理员权限）
+    aws ecr put-image-tag-mutability \
+    --repository-name $APP \
+    --image-tag-mutability MUTABLE \
+    --region $AWS_REGION
+    # 推送 latest 标签
+    docker push "$REMOTE:latest"
+    # 改回 IMMUTABLE
+    aws ecr put-image-tag-mutability \
+    --repository-name $APP \
+    --image-tag-mutability IMMUTABLE \
+    --region $AWS_REGION
+    # 本地清理
+    docker system prune -a
+    docker images -a
+    docker ps -a
+    ```
+
+8. **更新部署引用**：
+
+   - 将新的 digest 写入 `task-api/k8s/base/deploy-svc.yaml`。
+   - 把最新的 tag `${VERSION}` 的值同步更新到 `scripts/post-recreate.sh` 的 `IMAGE_TAG` 的默认值中。
+   - 可以在执行 `post-recreate.sh` 时通过 `IMAGE_TAG`/`IMAGE_DIGEST` 传入。
+
+9. **用 digest 更新集群中的 Deployment 并等待滚动完成**：
+
+    ```bash
+    kubectl -n "$NS" set image deploy/"$APP" "$APP"="${REMOTE}@${DIGEST}" --record
+    kubectl -n "$NS" rollout status deploy/"$APP" --timeout=180s
+    kubectl -n "$NS" get deploy,po -o wide
+    ```
+
+10. **集群内冒烟（`/actuator/health` 与 `/actuator/prometheus`）**：
+
+    ```bash
+    # 临时起个调试 Pod 并使用内网域名进行测试
+    kubectl -n "$NS" run curl \
+      --image=curlimages/curl:8.10.1 -it --rm -- sh -lc 'curl -sf http://task-api.svc-task.svc.cluster.local:8080/actuator/health && echo && curl -sf http://task-api.svc-task.svc.cluster.local:8080/actuator/prometheus | head'
+    # 检查
+    kubectl get pods
+    kubectl get services
+    # 完成后清理
+    kubectl delete service curl
+    kubectl delete pod curl
+    ```
 
 ---

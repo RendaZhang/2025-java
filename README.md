@@ -286,7 +286,7 @@
    - 目标：CPU **60%**，`min=2 / max=10`，配置了 `behavior` 的放大/回落策略。
    - 安装/确认 `metrics-server`（Helm，`--kubelet-insecure-tls` 以增强兼容性）。
    - **压测**（集群内流量，直打 ClusterIP）：
-     - 修正后的内网域名：`http://task-api.svc-task.svc.cluster.local:8080/...`
+     - 内网域名：`http://task-api.svc-task.svc.cluster.local:8080/...`
      - 使用镜像：`williamyeh/hey:latest`
      - 命令示例：
        ```bash

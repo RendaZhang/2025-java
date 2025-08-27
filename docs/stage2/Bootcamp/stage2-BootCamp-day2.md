@@ -375,18 +375,14 @@ eksctl get nodegroup --cluster dev --region us-east-1 --profile phase2-sso
 
 ```bash
 # 投放一个示例 Pod
-
 kubectl run nginx --image=nginx -n default --restart=Never
 kubectl expose pod nginx --port 80 --type ClusterIP
 # 测试完毕后进行清理
-
 kubectl delete service nginx
 kubectl delete pod nginx
 # 检查 Pod
-
 kubectl get pods
 # 检查 Service
-
 kubectl get services
 ```
 
