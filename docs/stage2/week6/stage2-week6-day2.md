@@ -296,11 +296,22 @@ EOF
 helm repo add open-telemetry https://open-telemetry.github.io/opentelemetry-helm-charts
 helm repo update
 helm upgrade --install adot-collector open-telemetry/opentelemetry-collector \
-  -n observability -f task-api/k8s/adot-collector-values.yaml
+  -n observability -f task-api/k8s/adot-collector-values.yaml \
+  --set config.service.telemetry.logs.level=debug
 
 # 等待就绪并查看日志
-kubectl -n observability rollout status deploy/adot-collector-opentelemetry-collector --timeout=180s
-kubectl -n observability logs deploy/adot-collector-opentelemetry-collector --tail=200 | egrep -i 'prometheusremotewrite|sigv4|wrote|export|remote write|success|200'
+
+$ kubectl -n observability rollout status deploy/adot-collector-opentelemetry-collector --timeout=180s
+deployment "adot-collector-opentelemetry-collector" successfully rolled out
+
+$ kubectl -n observability logs deploy/adot-collector-opentelemetry-collector --tail=200 | egrep -i 'prometheusremotewrite|sigv4|wrote|export|remote write|success|200'
+2025/08/28 16:43:40 attn: users of the `datadog`, `logzio`, `sapm`, `signalfx` exporter components. please refer to https://github.com/aws-observability/aws-otel-collector/issues/2734 in regards to an upcoming ADOT Collector breaking change
+2025-08-28T16:43:40.583Z        info    builders/builders.go:26 Development component. May change in the future.       {"kind": "exporter", "data_type": "logs", "name": "debug"}
+2025-08-28T16:43:40.583Z        debug   builders/builders.go:24 Beta component. May change in the future.       {"kind": "exporter", "data_type": "metrics", "name": "prometheusremotewrite"}
+2025-08-28T16:43:40.585Z        info    builders/builders.go:26 Development component. May change in the future.       {"kind": "exporter", "data_type": "traces", "name": "debug"}
+2025-08-28T16:43:40.587Z        info    healthcheckextension@v0.117.0/healthcheckextension.go:32        Starting health_check extension {"kind": "extension", "name": "health_check", "config": {"Endpoint":"10.0.132.0:13133","TLSSetting":null,"CORS":null,"Auth":null,"MaxRequestBodySize":0,"IncludeMetadata":false,"ResponseHeaders":null,"CompressionAlgorithms":null,"ReadTimeout":0,"ReadHeaderTimeout":0,"WriteTimeout":0,"IdleTimeout":0,"Path":"/","ResponseBody":null,"CheckCollectorPipeline":{"Enabled":false,"Interval":"5m","ExporterFailureThreshold":5}}}
+2025-08-28T16:43:40.587Z        info    extensions/extensions.go:42     Extension is starting...        {"kind": "extension", "name": "sigv4auth"}
+2025-08-28T16:43:40.587Z        info    extensions/extensions.go:59     Extension started.      {"kind": "extension", "name": "sigv4auth"}
 ```
 
 > `post-recreate.sh` 和 `pre-teardown.sh` 脚本已经同步更新以整合 ADOT Collector 到重建和销毁流程之中。
@@ -310,8 +321,10 @@ kubectl -n observability logs deploy/adot-collector-opentelemetry-collector --ta
 触发请求（命中 http_server_requests_*）：
 
 ```bash
-kubectl -n "$NS" run hit --image=curlimages/curl:8.10.1 -it --rm -- \
-  sh -lc 'for i in $(seq 1 150); do curl -s -o /dev/null http://task-api.svc-task.svc.cluster.local:8080/actuator/health; done; echo done'
+$ kubectl -n "$NS" run curl --image=curlimages/curl:8.10.1 --restart=Never --rm --attach -- sh -lc 'for i in $(seq 1 300); do curl -s -o /dev/null http://task-api.svc-task.svc.cluster.local:8080/api/hello; curl -s -o /dev/null http://task-api.svc-task.svc.cluster.local:8080/actuator/health; done; echo done'
+If you don't see a command prompt, try pressing enter.
+done
+pod "curl" deleted
 ```
 
 检查日志：
@@ -324,5 +337,61 @@ kubectl -n observability logs deploy/adot-collector-opentelemetry-collector --ta
 ```
 
 > 若短时间没看到写入，请继续执行触发请求命令来打一小波流量促进指标增长。
+
+快速健康检查：
+
+```bash
+# ADOT 部署健康：
+$ kubectl -n observability get deploy,pod -l app.kubernetes.io/instance=adot-collector
+NAME                                                     READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/adot-collector-opentelemetry-collector   1/1     1            1           30m
+
+NAME                                                          READY   STATUS    RESTARTS   AGE
+pod/adot-collector-opentelemetry-collector-8554fcff87-5tx4f   1/1     Running   0          30m
+
+# IRSA 注解匹配：
+$ kubectl -n observability get sa adot-collector -o yaml | grep eks.amazonaws.com/role-arn -n
+5:    eks.amazonaws.com/role-arn: arn:aws:iam::563149051155:role/adot-collector
+
+# 采集目标可达（集群内访问）：
+$ kubectl -n observability run curl --rm -it --image=curlimages/curl:8.10.1 --restart=Never -- sh -lc 'curl -sf http://task-api.svc-task.svc.cluster.local:8080/actuator/prometheus | head -n 5'
+# HELP application_ready_time_seconds Time taken for the application to be ready to service requests
+# TYPE application_ready_time_seconds gauge
+application_ready_time_seconds{application="task-api",main_application_class="com.renda.task.TaskApiApplication"} 23.974
+# HELP application_started_time_seconds Time taken to start the application
+# TYPE application_started_time_seconds gauge
+pod "curl" deleted
+
+# 观察 ADOT 日志（更有效的关键字）：
+# 默认日志不会打印 HTTP 200；
+# 若 `--set config.service.telemetry.logs.level=debug` 重新部署，可看到 exporter 更详细的行为。
+$ kubectl -n observability logs deploy/adot-collector-opentelemetry-collector --tail=300 | rg -i 'prometheusremotewrite|export|remote|aps|error|denied|retry|throttle'
+2025/08/28 16:43:40 attn: users of the `datadog`, `logzio`, `sapm`, `signalfx` exporter components. please refer to https://github.com/aws-observability/aws-otel-collector/issues/2734 in regards to an upcoming ADOT Collector breaking change
+2025-08-28T16:43:40.583Z        info    builders/builders.go:26 Development component. May change in the future.       {"kind": "exporter", "data_type": "logs", "name": "debug"}
+2025-08-28T16:43:40.583Z        debug   builders/builders.go:24 Beta component. May change in the future.       {"kind": "exporter", "data_type": "metrics", "name": "prometheusremotewrite"}
+2025-08-28T16:43:40.585Z        info    builders/builders.go:26 Development component. May change in the future.       {"kind": "exporter", "data_type": "traces", "name": "debug"}
+2025-08-28T16:43:40.587Z        info    healthcheckextension@v0.117.0/healthcheckextension.go:32        Starting health_check extension {"kind": "extension", "name": "health_check", "config": {"Endpoint":"10.0.132.0:13133","TLSSetting":null,"CORS":null,"Auth":null,"MaxRequestBodySize":0,"IncludeMetadata":false,"ResponseHeaders":null,"CompressionAlgorithms":null,"ReadTimeout":0,"ReadHeaderTimeout":0,"WriteTimeout":0,"IdleTimeout":0,"Path":"/","ResponseBody":null,"CheckCollectorPipeline":{"Enabled":false,"Interval":"5m","ExporterFailureThreshold":5}}}
+```
+
+直接手动进入 observability 命名空间的临时 debug 容器进行 curl 访问：
+
+```bash
+$ kubectl -n observability run debug -it --image=curlimages/curl:8.10.1 --rm -- sh
+If you don't see a command prompt, try pressing enter.
+~ $ curl -sf http://task-api.svc-task.svc.cluster.local:8080/api/hello
+~ $ curl -sf http://task-api.svc-task.svc.cluster.local:8080/api/healthcheck
+~ $ curl -sf http://task-api.svc-task.svc.cluster.local:8080/actuator/health
+{"status":"UP","groups":["liveness","readiness"]}~ $ exit
+Session ended, resume using 'kubectl attach debug -c debug -i -t' command when the pod is running
+pod "debug" deleted
+```
+
+如果 pod 自动删除失败，执行如下命令检查并删除：
+
+```bash
+kubectl -n observability get pod curl
+kubectl -n observability logs pod curl
+kubectl -n observability delete pod curl
+```
 
 ---
