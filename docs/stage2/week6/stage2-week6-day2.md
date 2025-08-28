@@ -299,6 +299,10 @@ helm upgrade --install adot-collector open-telemetry/opentelemetry-collector \
   -n observability -f task-api/k8s/adot-collector-values.yaml \
   --set config.service.telemetry.logs.level=debug
 
+# 如果需要可以执行如下命令清理残留的部署
+helm -n observability uninstall adot-collector
+kubectl -n observability delete deploy adot-collector-opentelemetry-collector
+
 # 等待就绪并查看日志
 
 $ kubectl -n observability rollout status deploy/adot-collector-opentelemetry-collector --timeout=180s
@@ -330,13 +334,34 @@ pod "curl" deleted
 检查日志：
 
 ```bash
-kubectl -n observability logs deploy/adot-collector-opentelemetry-collector --tail=200 | egrep -i 'prometheusremotewrite|wrote|200'
+$ kubectl -n observability logs deploy/adot-collector-opentelemetry-collector --tail=200 | egrep -i 'prometheusremotewrite|wrote|200'
+2025-08-28T17:05:18.345Z        debug   builders/builders.go:24 Beta component. May change in the future.       {"kind": "exporter", "data_type": "metrics", "name": "prometheusremotewrite"}
 
-# 日志里出现向 AMP 发送样本的迹象（如 `prometheusremotewrite`, `sigv4`, `200`, `wrote X samples` 等字样）。
-# SigV4 的使用与 `prometheusremotewrite` 的结合方式见官方示例。
+# ADOT Collector 的 prometheusremotewrite 导出器默认只在失败时输出日志；成功发送样本时不会打印 “200” 或 “remote write” 等信息。
+# 因此 egrep 未命中并不代表没有写入。
 ```
 
-> 若短时间没看到写入，请继续执行触发请求命令来打一小波流量促进指标增长。
+端到端验证（port-forward）。
+
+其中一个终端执行（保持挂着）：
+
+```bash
+kubectl -n observability port-forward deploy/adot-collector-opentelemetry-collector 8888
+```
+
+另一个终端发请求验证：
+
+```bash
+$ curl -s localhost:8888/metrics | grep otelcol_exporter_sent_metric_points
+# HELP otelcol_exporter_sent_metric_points Number of metric points successfully sent to destination. [alpha]
+# TYPE otelcol_exporter_sent_metric_points counter
+otelcol_exporter_sent_metric_points{exporter="prometheusremotewrite",service_instance_id="5b0c432f-83d1-4b76-bdd6-38892eec1660",service_name="aws-otel-collector",service_version="v0.43.0"} 90
+
+$ curl -s http://localhost:8888/metrics | grep 'otelcol_exporter_sent_metric_points{exporter="prometheusremotewrite"'
+otelcol_exporter_sent_metric_points{exporter="prometheusremotewrite",service_instance_id="5b0c432f-83d1-4b76-bdd6-38892eec1660",service_name="aws-otel-collector",service_version="v0.43.0"} 345
+```
+
+该值大于 0 即表示样本已通过 Remote Write 发送。
 
 快速健康检查：
 
