@@ -436,95 +436,44 @@ AMP_WORKSPACE_ID=
 
 ### Day 2 - ADOT Collector（采集 → AMP）+ 成本护栏
 
-**做什么**
+今日回顾：
 
-1. 新建 `observability/adot-collector.yaml`：最小 **Agent/DaemonSet**，采集 **应用 /actuator/prometheus** 与 **kube-state-metrics**（如未装可先跳过）。带**成本护栏**：
-   ```yaml
-   apiVersion: v1
-   kind: Namespace
-   metadata: { name: aws-observe }
-   ---
-   apiVersion: v1
-   kind: DaemonSet
-   metadata: { name: adot, namespace: aws-observe, labels: { app: adot } }
-   spec:
-     selector: { matchLabels: { app: adot } }
-     template:
-       metadata: { labels: { app: adot } }
-       spec:
-         serviceAccountName: adot-sa
-         containers:
-         - name: collector
-           image: public.ecr.aws/aws-observability/aws-otel-collector:latest
-           args: ["--config=/etc/otel/config.yaml"]
-           volumeMounts: [{ name: conf, mountPath: /etc/otel }]
-         volumes:
-         - name: conf
-           configMap:
-             name: adot-conf
-   ---
-   apiVersion: v1
-   kind: ConfigMap
-   metadata: { name: adot-conf, namespace: aws-observe }
-   data:
-     config.yaml: |
-       receivers:
-         prometheus:
-           config:
-             scrape_configs:
-             - job_name: "app"
-               metrics_path: /actuator/prometheus
-               static_configs:
-               - targets: ["${APP}-svc.${NS}.svc.cluster.local:80"]
-       processors:
-         filter/drop_kubelet:
-           metrics:
-             include:
-               match_type: regexp
-               metric_names: ["kubelet_.*"]
-         attributes:
-           actions:
-           - key: project
-             value: phase2-sprint
-             action: upsert
-         batch: {}
-       exporters:
-         prometheusremotewrite:
-           endpoint: ${AMP_REMOTE_WRITE}
-           auth:
-             authenticator: sigv4auth
-           external_labels:
-             cluster: dev
-           # 成本护栏
-           remote_write_queue:
-             max_samples_per_send: 10000
-       extensions:
-         sigv4auth:
-           region: ${AWS_REGION}
-       service:
-         extensions: [sigv4auth]
-         pipelines:
-           metrics:
-             receivers: [prometheus]
-             processors: [filter/drop_kubelet, attributes, batch]
-             exporters: [prometheusremotewrite]
-   ```
-   > 将 `${AMP_REMOTE_WRITE}` 手动替换为 `.amp_rw` 的值；`${AWS_REGION}` 替换为变量。
-2. 绑定 SA 的最小权限（可沿用集群级 IRSA；如无则直接 `kubectl apply` 运行，不涉及 AWS 写权限）。
-3. 应用：
-   ```bash
-   kubectl apply -f observability/adot-collector.yaml
-   ```
-4. 在 AMP 中确认有 **最新时间序列**（Grafana 配置见 Day3）。
+- 在 `observability` 命名空间部署 **ADOT Collector（Deployment）**，只采集 `task-api` 的 `/actuator/prometheus`。
+- 通过 **IRSA** 赋予最小权限（`AmazonPrometheusRemoteWriteAccess`），以 **SigV4** 将指标写入 **AMP**。
+- 加上**成本护栏**（采集范围/频率与指标白名单），并完成端到端验证与脚本整合。
 
-**产物**：
+关键变更与配置：
 
-- `observability/adot-collector.yaml`
-- AMP 工作区有新指标（可用 `curl` 验证 remote\_write 200）
+- **IRSA（Terraform 模块化）**
+  - IAM Role：`arn:aws:iam::563149051155:role/adot-collector`（信任策略包含 `aud=sts.amazonaws.com` 与 `sub=system:serviceaccount:observability:adot-collector`）。
+- **Helm 部署 ADOT Collector**（OpenTelemetry 官方 Chart + **ADOT 镜像**）
+  - K8s ServiceAccount：`observability/adot-collector`，**由 Helm 管理**，并带注解 `eks.amazonaws.com/role-arn` 指向上述 Role。
+  - Release：`adot-collector`，Deployment 名：`adot-collector-opentelemetry-collector`。
+  - 使用 **完整 FQDN** 作为采集目标；示例：`task-api.svc-task.svc.cluster.local:8080/actuator/prometheus`。
+  - **SigV4**：`extensions.sigv4auth.region=us-east-1`，`exporters.prometheusremotewrite.auth.authenticator=sigv4auth`。
+  - **成本护栏**：
+    - `scrape_interval: 30s`，`scrape_timeout: 10s`，`sample_limit: 5000`；
+    - `metric_relabel_configs` **只保留** `http_server_requests_seconds_(bucket|sum|count)` 与 `jvm_memory_used_bytes`；
+    - 暂不启用 exporter 的发送队列/重试（后续按需加）。
+  - **Telemetry 日志级别**：回调到 `info`（生产友好）。
+- **远端写入**：AMP `remote_write` 指向 Day 1 创建的 Workspace（`ws-4c9b04d5-...`，区域 `us-east-1`）。
 
-**退路**：
+验收与证据：
 
-若 ADOT 配置反复出错 → 改用 **kube-prometheus-stack** Helm（Operator）一键起 Prom+Grafana（成本稍高，但流程直观），或暂时只走 CloudWatch Container Insights 做截图演示。
+- 部署：`kubectl -n observability rollout status deploy/adot-collector-opentelemetry-collector` → **successfully rolled out**。
+- 业务流量：用 `curlimages/curl` 对 `/api/hello` 与 `/actuator/health` 连续发请求，触发 `http_server_requests_*` 增长。
+- 成功写入验证：
+  - 由于 ADOT 的 `prometheusremotewrite` **成功发送默认不打印 2xx 日志**，采用 **port-forward + 自监控指标** 验证：
+    - `curl localhost:8888/metrics | grep otelcol_exporter_sent_metric_points{exporter="prometheusremotewrite"}`
+    - 计数 **> 0**，表明已成功向 AMP 发送样本。
+- 脚本整合：已将 **Collector 安装/卸载** 纳入 `post-recreate.sh` 与 `pre-teardown.sh`（与“每日重建/销毁”流程对齐）。
+
+今日决策与取舍：
+
+- **由 Helm 管理 ServiceAccount**。
+- **维持最小采集面**（仅应用指标），先确保“能写入、能出图”，后续再按需扩展 kube-state / node 指标。
+- **发送队列/重试**暂不启用，待稳定运行后再视需要加固。
+- **成本控制**优先：采样频率、白名单指标、限制标签基数（`method/status/outcome` 为主）。
 
 ### Day 3 - Grafana Dash + SLI/SLO 口径
 

@@ -9,6 +9,10 @@
     - [在 Terraform 中的关键修改](#%E5%9C%A8-terraform-%E4%B8%AD%E7%9A%84%E5%85%B3%E9%94%AE%E4%BF%AE%E6%94%B9)
     - [快速自检命令](#%E5%BF%AB%E9%80%9F%E8%87%AA%E6%A3%80%E5%91%BD%E4%BB%A4)
   - [第三步：用 Helm 安装/升级 ADOT Collector](#%E7%AC%AC%E4%B8%89%E6%AD%A5%E7%94%A8-helm-%E5%AE%89%E8%A3%85%E5%8D%87%E7%BA%A7-adot-collector)
+    - [安装 ADOT Collector](#%E5%AE%89%E8%A3%85-adot-collector)
+    - [触发请求（命中 http_server_requests_*）](#%E8%A7%A6%E5%8F%91%E8%AF%B7%E6%B1%82%E5%91%BD%E4%B8%AD-http_server_requests_)
+    - [端到端验证（port-forward）](#%E7%AB%AF%E5%88%B0%E7%AB%AF%E9%AA%8C%E8%AF%81port-forward)
+  - [第四步：收尾](#%E7%AC%AC%E5%9B%9B%E6%AD%A5%E6%94%B6%E5%B0%BE)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -203,6 +207,8 @@ $ kubectl -n observability get sa adot-collector -o yaml | grep eks.amazonaws.co
 > - 官方 ADOT Helm 仓库已标注**不再建议使用**，我们采用 **OpenTelemetry 官方 Helm Chart**，但将 **镜像换成 ADOT Collector**（内置 SigV4 扩展），并用 **values.yaml 的 `config`** 字段提供 Collector 配置。这样既符合 Helm 习惯，也能用 SigV4 给 AMP 做 `remote_write`。
 > - SigV4 的正确写法：使用 **`prometheusremotewrite` 导出器 + `sigv4auth` 扩展**，并在 `service.extensions` 与 `exporters.prometheusremotewrite.auth.authenticator` 两处引用。
 
+### 安装 ADOT Collector
+
 ```bash
 # 准备 values 文件
 tee task-api/k8s/adot-collector-values.yaml >/dev/null <<EOF
@@ -296,8 +302,7 @@ EOF
 helm repo add open-telemetry https://open-telemetry.github.io/opentelemetry-helm-charts
 helm repo update
 helm upgrade --install adot-collector open-telemetry/opentelemetry-collector \
-  -n observability -f task-api/k8s/adot-collector-values.yaml \
-  --set config.service.telemetry.logs.level=debug
+  -n observability -f task-api/k8s/adot-collector-values.yaml
 
 # 如果需要可以执行如下命令清理残留的部署
 helm -n observability uninstall adot-collector
@@ -309,23 +314,23 @@ $ kubectl -n observability rollout status deploy/adot-collector-opentelemetry-co
 deployment "adot-collector-opentelemetry-collector" successfully rolled out
 
 $ kubectl -n observability logs deploy/adot-collector-opentelemetry-collector --tail=200 | egrep -i 'prometheusremotewrite|sigv4|wrote|export|remote write|success|200'
-2025/08/28 16:43:40 attn: users of the `datadog`, `logzio`, `sapm`, `signalfx` exporter components. please refer to https://github.com/aws-observability/aws-otel-collector/issues/2734 in regards to an upcoming ADOT Collector breaking change
-2025-08-28T16:43:40.583Z        info    builders/builders.go:26 Development component. May change in the future.       {"kind": "exporter", "data_type": "logs", "name": "debug"}
-2025-08-28T16:43:40.583Z        debug   builders/builders.go:24 Beta component. May change in the future.       {"kind": "exporter", "data_type": "metrics", "name": "prometheusremotewrite"}
-2025-08-28T16:43:40.585Z        info    builders/builders.go:26 Development component. May change in the future.       {"kind": "exporter", "data_type": "traces", "name": "debug"}
-2025-08-28T16:43:40.587Z        info    healthcheckextension@v0.117.0/healthcheckextension.go:32        Starting health_check extension {"kind": "extension", "name": "health_check", "config": {"Endpoint":"10.0.132.0:13133","TLSSetting":null,"CORS":null,"Auth":null,"MaxRequestBodySize":0,"IncludeMetadata":false,"ResponseHeaders":null,"CompressionAlgorithms":null,"ReadTimeout":0,"ReadHeaderTimeout":0,"WriteTimeout":0,"IdleTimeout":0,"Path":"/","ResponseBody":null,"CheckCollectorPipeline":{"Enabled":false,"Interval":"5m","ExporterFailureThreshold":5}}}
-2025-08-28T16:43:40.587Z        info    extensions/extensions.go:42     Extension is starting...        {"kind": "extension", "name": "sigv4auth"}
-2025-08-28T16:43:40.587Z        info    extensions/extensions.go:59     Extension started.      {"kind": "extension", "name": "sigv4auth"}
+2025/08/28 18:57:21 attn: users of the `datadog`, `logzio`, `sapm`, `signalfx` exporter components. please refer to https://github.com/aws-observability/aws-otel-collector/issues/2734 in regards to an upcoming ADOT Collector breaking change
+2025-08-28T18:57:22.162Z        info    builders/builders.go:26 Development component. May change in the future.       {"kind": "exporter", "data_type": "traces", "name": "debug"}
+2025-08-28T18:57:22.163Z        info    builders/builders.go:26 Development component. May change in the future.       {"kind": "exporter", "data_type": "logs", "name": "debug"}
+2025-08-28T18:57:22.167Z        info    extensions/extensions.go:42     Extension is starting...        {"kind": "extension", "name": "sigv4auth"}
+2025-08-28T18:57:22.167Z        info    extensions/extensions.go:59     Extension started.      {"kind": "extension", "name": "sigv4auth"}
+2025-08-28T18:57:22.167Z        info    healthcheckextension@v0.117.0/healthcheckextension.go:32        Starting health_check extension {"kind": "extension", "name": "health_check", "config": {"Endpoint":"10.0.149.89:13133","TLSSetting":null,"CORS":null,"Auth":null,"MaxRequestBodySize":0,"IncludeMetadata":false,"ResponseHeaders":null,"CompressionAlgorithms":null,"ReadTimeout":0,"ReadHeaderTimeout":0,"WriteTimeout":0,"IdleTimeout":0,"Path":"/","ResponseBody":null,"CheckCollectorPipeline":{"Enabled":false,"Interval":"5m","ExporterFailureThreshold":5}}}
 ```
 
 > `post-recreate.sh` 和 `pre-teardown.sh` 脚本已经同步更新以整合 ADOT Collector 到重建和销毁流程之中。
 
 **已经确认**：`rollout status` 显示 `successfully rolled out`。
 
-触发请求（命中 http_server_requests_*）：
+### 触发请求（命中 http_server_requests_*）
 
 ```bash
 $ kubectl -n "$NS" run curl --image=curlimages/curl:8.10.1 --restart=Never --rm --attach -- sh -lc 'for i in $(seq 1 300); do curl -s -o /dev/null http://task-api.svc-task.svc.cluster.local:8080/api/hello; curl -s -o /dev/null http://task-api.svc-task.svc.cluster.local:8080/actuator/health; done; echo done'
+
 If you don't see a command prompt, try pressing enter.
 done
 pod "curl" deleted
@@ -335,13 +340,11 @@ pod "curl" deleted
 
 ```bash
 $ kubectl -n observability logs deploy/adot-collector-opentelemetry-collector --tail=200 | egrep -i 'prometheusremotewrite|wrote|200'
-2025-08-28T17:05:18.345Z        debug   builders/builders.go:24 Beta component. May change in the future.       {"kind": "exporter", "data_type": "metrics", "name": "prometheusremotewrite"}
-
 # ADOT Collector 的 prometheusremotewrite 导出器默认只在失败时输出日志；成功发送样本时不会打印 “200” 或 “remote write” 等信息。
 # 因此 egrep 未命中并不代表没有写入。
 ```
 
-端到端验证（port-forward）。
+### 端到端验证（port-forward）
 
 其中一个终端执行（保持挂着）：
 
@@ -355,13 +358,17 @@ kubectl -n observability port-forward deploy/adot-collector-opentelemetry-collec
 $ curl -s localhost:8888/metrics | grep otelcol_exporter_sent_metric_points
 # HELP otelcol_exporter_sent_metric_points Number of metric points successfully sent to destination. [alpha]
 # TYPE otelcol_exporter_sent_metric_points counter
-otelcol_exporter_sent_metric_points{exporter="prometheusremotewrite",service_instance_id="5b0c432f-83d1-4b76-bdd6-38892eec1660",service_name="aws-otel-collector",service_version="v0.43.0"} 90
+otelcol_exporter_sent_metric_points{exporter="prometheusremotewrite",service_instance_id="08167170-fd26-4092-a18f-362ce9fd3977",service_name="aws-otel-collector",service_version="v0.43.0"} 390
 
 $ curl -s http://localhost:8888/metrics | grep 'otelcol_exporter_sent_metric_points{exporter="prometheusremotewrite"'
-otelcol_exporter_sent_metric_points{exporter="prometheusremotewrite",service_instance_id="5b0c432f-83d1-4b76-bdd6-38892eec1660",service_name="aws-otel-collector",service_version="v0.43.0"} 345
+otelcol_exporter_sent_metric_points{exporter="prometheusremotewrite",service_instance_id="08167170-fd26-4092-a18f-362ce9fd3977",service_name="aws-otel-collector",service_version="v0.43.0"} 405
 ```
 
 该值大于 0 即表示样本已通过 Remote Write 发送。
+
+---
+
+## 第四步：收尾
 
 快速健康检查：
 
@@ -369,10 +376,10 @@ otelcol_exporter_sent_metric_points{exporter="prometheusremotewrite",service_ins
 # ADOT 部署健康：
 $ kubectl -n observability get deploy,pod -l app.kubernetes.io/instance=adot-collector
 NAME                                                     READY   UP-TO-DATE   AVAILABLE   AGE
-deployment.apps/adot-collector-opentelemetry-collector   1/1     1            1           30m
+deployment.apps/adot-collector-opentelemetry-collector   1/1     1            1           14m
 
 NAME                                                          READY   STATUS    RESTARTS   AGE
-pod/adot-collector-opentelemetry-collector-8554fcff87-5tx4f   1/1     Running   0          30m
+pod/adot-collector-opentelemetry-collector-7f5476f4d8-llp6c   1/1     Running   0          14m
 
 # IRSA 注解匹配：
 $ kubectl -n observability get sa adot-collector -o yaml | grep eks.amazonaws.com/role-arn -n
@@ -382,7 +389,7 @@ $ kubectl -n observability get sa adot-collector -o yaml | grep eks.amazonaws.co
 $ kubectl -n observability run curl --rm -it --image=curlimages/curl:8.10.1 --restart=Never -- sh -lc 'curl -sf http://task-api.svc-task.svc.cluster.local:8080/actuator/prometheus | head -n 5'
 # HELP application_ready_time_seconds Time taken for the application to be ready to service requests
 # TYPE application_ready_time_seconds gauge
-application_ready_time_seconds{application="task-api",main_application_class="com.renda.task.TaskApiApplication"} 23.974
+application_ready_time_seconds{application="task-api",main_application_class="com.renda.task.TaskApiApplication"} 18.184
 # HELP application_started_time_seconds Time taken to start the application
 # TYPE application_started_time_seconds gauge
 pod "curl" deleted
@@ -391,11 +398,10 @@ pod "curl" deleted
 # 默认日志不会打印 HTTP 200；
 # 若 `--set config.service.telemetry.logs.level=debug` 重新部署，可看到 exporter 更详细的行为。
 $ kubectl -n observability logs deploy/adot-collector-opentelemetry-collector --tail=300 | rg -i 'prometheusremotewrite|export|remote|aps|error|denied|retry|throttle'
-2025/08/28 16:43:40 attn: users of the `datadog`, `logzio`, `sapm`, `signalfx` exporter components. please refer to https://github.com/aws-observability/aws-otel-collector/issues/2734 in regards to an upcoming ADOT Collector breaking change
-2025-08-28T16:43:40.583Z        info    builders/builders.go:26 Development component. May change in the future.       {"kind": "exporter", "data_type": "logs", "name": "debug"}
-2025-08-28T16:43:40.583Z        debug   builders/builders.go:24 Beta component. May change in the future.       {"kind": "exporter", "data_type": "metrics", "name": "prometheusremotewrite"}
-2025-08-28T16:43:40.585Z        info    builders/builders.go:26 Development component. May change in the future.       {"kind": "exporter", "data_type": "traces", "name": "debug"}
-2025-08-28T16:43:40.587Z        info    healthcheckextension@v0.117.0/healthcheckextension.go:32        Starting health_check extension {"kind": "extension", "name": "health_check", "config": {"Endpoint":"10.0.132.0:13133","TLSSetting":null,"CORS":null,"Auth":null,"MaxRequestBodySize":0,"IncludeMetadata":false,"ResponseHeaders":null,"CompressionAlgorithms":null,"ReadTimeout":0,"ReadHeaderTimeout":0,"WriteTimeout":0,"IdleTimeout":0,"Path":"/","ResponseBody":null,"CheckCollectorPipeline":{"Enabled":false,"Interval":"5m","ExporterFailureThreshold":5}}}
+2025/08/28 18:57:21 attn: users of the `datadog`, `logzio`, `sapm`, `signalfx` exporter components. please refer to https://github.com/aws-observability/aws-otel-collector/issues/2734 in regards to an upcoming ADOT Collector breaking change
+2025-08-28T18:57:22.162Z        info    builders/builders.go:26 Development component. May change in the future.       {"kind": "exporter", "data_type": "traces", "name": "debug"}
+2025-08-28T18:57:22.163Z        info    builders/builders.go:26 Development component. May change in the future.       {"kind": "exporter", "data_type": "logs", "name": "debug"}
+2025-08-28T18:57:22.167Z        info    healthcheckextension@v0.117.0/healthcheckextension.go:32        Starting health_check extension {"kind": "extension", "name": "health_check", "config": {"Endpoint":"10.0.149.89:13133","TLSSetting":null,"CORS":null,"Auth":null,"MaxRequestBodySize":0,"IncludeMetadata":false,"ResponseHeaders":null,"CompressionAlgorithms":null,"ReadTimeout":0,"ReadHeaderTimeout":0,"WriteTimeout":0,"IdleTimeout":0,"Path":"/","ResponseBody":null,"CheckCollectorPipeline":{"Enabled":false,"Interval":"5m","ExporterFailureThreshold":5}}}
 ```
 
 直接手动进入 observability 命名空间的临时 debug 容器进行 curl 访问：
@@ -403,10 +409,9 @@ $ kubectl -n observability logs deploy/adot-collector-opentelemetry-collector --
 ```bash
 $ kubectl -n observability run debug -it --image=curlimages/curl:8.10.1 --rm -- sh
 If you don't see a command prompt, try pressing enter.
-~ $ curl -sf http://task-api.svc-task.svc.cluster.local:8080/api/hello
-~ $ curl -sf http://task-api.svc-task.svc.cluster.local:8080/api/healthcheck
 ~ $ curl -sf http://task-api.svc-task.svc.cluster.local:8080/actuator/health
-{"status":"UP","groups":["liveness","readiness"]}~ $ exit
+{"status":"UP","groups":["liveness","readiness"]}
+~ $ exit
 Session ended, resume using 'kubectl attach debug -c debug -i -t' command when the pod is running
 pod "debug" deleted
 ```
@@ -417,6 +422,32 @@ pod "debug" deleted
 kubectl -n observability get pod curl
 kubectl -n observability logs pod curl
 kubectl -n observability delete pod curl
+```
+
+命名空间检查：
+
+```bash
+$ kubectl -n observability get pods
+NAME                                                      READY   STATUS    RESTARTS   AGE
+adot-collector-opentelemetry-collector-7f5476f4d8-llp6c   1/1     Running   0          17m
+
+$ kubectl -n svc-task get pods
+NAME                        READY   STATUS    RESTARTS   AGE
+task-api-7c8b778754-95fcm   1/1     Running   0          3h34m
+task-api-7c8b778754-r2lh9   1/1     Running   0          4h1m
+
+$ kubectl -n kube-system get pods
+NAME                                                         READY   STATUS    RESTARTS   AGE
+aws-load-balancer-controller-8574d469c6-dq64b                1/1     Running   0          4h9m
+aws-load-balancer-controller-8574d469c6-kt4ln                1/1     Running   0          4h9m
+aws-node-gjcnn                                               2/2     Running   0          15m
+aws-node-tqfb8                                               2/2     Running   0          4h11m
+cluster-autoscaler-aws-cluster-autoscaler-5877d8fbb9-m82fx   1/1     Running   0          4h3m
+coredns-5d849c4789-5bz4c                                     1/1     Running   0          4h25m
+coredns-5d849c4789-rxjl6                                     1/1     Running   0          4h25m
+kube-proxy-d4psb                                             1/1     Running   0          4h11m
+kube-proxy-xt25h                                             1/1     Running   0          15m
+metrics-server-cdbfbb9d5-7ctpw                               1/1     Running   0          4h1m
 ```
 
 ---
