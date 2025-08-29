@@ -16,8 +16,6 @@
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
-太棒了，收到你的偏好。我把 **Day 2** 的方案按“最小必要 + Terraform 做 IRSA + 收尾再讨论是否并入每日流程”的思路重新整理好了。
-
 # Day 2 - ADOT Collector（采集 → AMP）+ 成本护栏
 
 ## 今日目标
