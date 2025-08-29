@@ -7,10 +7,10 @@
   - [第二步：Terraform 给 Grafana 配 IRSA，仅改必要项](#%E7%AC%AC%E4%BA%8C%E6%AD%A5terraform-%E7%BB%99-grafana-%E9%85%8D-irsa%E4%BB%85%E6%94%B9%E5%BF%85%E8%A6%81%E9%A1%B9)
     - [在 Terraform 中需要做的修改点](#%E5%9C%A8-terraform-%E4%B8%AD%E9%9C%80%E8%A6%81%E5%81%9A%E7%9A%84%E4%BF%AE%E6%94%B9%E7%82%B9)
     - [本地自检命令](#%E6%9C%AC%E5%9C%B0%E8%87%AA%E6%A3%80%E5%91%BD%E4%BB%A4)
-    - [`terraform apply` **输出**](#terraform-apply-%E8%BE%93%E5%87%BA)
-  - [Day 3 · 第三步（Helm 安装 Grafana + 用 IRSA 通过 SigV4 连 AMP）](#day-3-%C2%B7-%E7%AC%AC%E4%B8%89%E6%AD%A5helm-%E5%AE%89%E8%A3%85-grafana--%E7%94%A8-irsa-%E9%80%9A%E8%BF%87-sigv4-%E8%BF%9E-amp)
+  - [第三步：Helm 安装 Grafana + 用 IRSA 通过 SigV4 连 AMP](#%E7%AC%AC%E4%B8%89%E6%AD%A5helm-%E5%AE%89%E8%A3%85-grafana--%E7%94%A8-irsa-%E9%80%9A%E8%BF%87-sigv4-%E8%BF%9E-amp)
     - [生成 values + 安装](#%E7%94%9F%E6%88%90-values--%E5%AE%89%E8%A3%85)
     - [验证](#%E9%AA%8C%E8%AF%81)
+    - [辅助命令和基本检查](#%E8%BE%85%E5%8A%A9%E5%91%BD%E4%BB%A4%E5%92%8C%E5%9F%BA%E6%9C%AC%E6%A3%80%E6%9F%A5)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -107,10 +107,10 @@ Successfully logged into Start URL: https://d-9066388969.awsapps.com/start
 
 ### 本地自检命令
 
-核对 TF 是否指向正确 Issuer。
-
 ```bash
-# 推导当前集群与 issuer（和 Day2 做法一致）
+aws iam get-role --role-name grafana-amp-query --query 'Role.Arn' --output text
+
+# 核对 TF 是否指向正确 Issuer
 CTX_CLUSTER=$(kubectl config view --minify -o jsonpath='{.contexts[0].context.cluster}')
 CLUSTER=${CTX_CLUSTER##*/}
 ISSUER=$(aws eks describe-cluster --name "$CLUSTER" --region "$AWS_REGION" --query 'cluster.identity.oidc.issuer' --output text)
@@ -120,27 +120,15 @@ echo "[week6] issuer=$ISSUER"
 echo "[week6] issuer_host=$ISSUER_HOST"
 ```
 
-### `terraform apply` **输出**
+**输出**：
 
 ```bash
 arn:aws:iam::563149051155:role/grafana-amp-query
 
-"oidc.eks.us-east-1.amazonaws.com/id/832372465C509509317C17435FAFD16D:aud": "sts.amazonaws.com"
-"oidc.eks.us-east-1.amazonaws.com/id/832372465C509509317C17435FAFD16D:sub": "system:serviceaccount:observability:grafana"
+[week6] cluster=dev
+[week6] issuer=https://oidc.eks.us-east-1.amazonaws.com/id/6A0469A4E0E37492A07D2BE78F4F9288
+[week6] issuer_host=oidc.eks.us-east-1.amazonaws.com/id/6A0469A4E0E37492A07D2BE78F4F9288
 ```
-
-1. **IAM Role ARN**（期望类似）：
-   ```
-   arn:aws:iam::<ACCOUNT_ID>:role/grafana-amp-query
-   ```
-2. **信任策略的关键字段**（节选即可）——我需要看到这两行的实际值：
-   - `"<OIDC_ISSUER_HOST>/aud": "sts.amazonaws.com"`
-   - `"<OIDC_ISSUER_HOST>/sub": "system:serviceaccount:observability:grafana"`
-3. 可以用 CLI 验证并贴回：
-   ```bash
-   aws iam get-role --role-name grafana-amp-query --query 'Role.Arn' --output text
-   aws iam get-role --role-name grafana-amp-query --query 'Role.AssumeRolePolicyDocument' --output json
-   ```
 
 > 这一步**不需要**在 K8s 里创建 `ServiceAccount/grafana`；
 > 会在下一步（Helm 安装）里让 Helm 自己创建，
@@ -148,7 +136,7 @@ arn:aws:iam::563149051155:role/grafana-amp-query
 
 ---
 
-## Day 3 · 第三步（Helm 安装 Grafana + 用 IRSA 通过 SigV4 连 AMP）
+## 第三步：Helm 安装 Grafana + 用 IRSA 通过 SigV4 连 AMP
 
 > 要点依据：
 > - **Grafana 连接 AMP**的官方步骤：数据源 URL 用 **workspace 的 prometheusEndpoint（去掉 `/api/v1/query`）**，并启用 **SigV4**。我们用 **IRSA** 让 Pod 里 AWS SDK 走默认凭证链；另外把 **`GF_AUTH_SIGV4_AUTH_ENABLED=true`** 打开（Grafana 要开启 SigV4 支持）。
@@ -232,15 +220,20 @@ kubectl -n observability rollout status deploy/grafana --timeout=180s
 kubectl -n observability port-forward svc/grafana 3000:80
 ```
 
+> `post-recreate.sh` 和 `pre-teardown.sh` 脚本已经同步更新以整合 Grafana 到重建和销毁流程之中。
+
 ### 验证
 
-打开浏览器 `http://localhost:3000`，以 `admin / password` 登录。进入 **Connections → Data sources → AMP**，点击 **Save & Test**，应看到 **“Data source is working”**。
+打开浏览器 `http://localhost:3000`，以 `admin / password` 登录。进入 **Connections → Data sources → AMP**，点击 **Test**，应看到 **“Successfully queried the Prometheus API”**。
+
+已经成功在页面看到：
+
+```bash
+Successfully queried the Prometheus API.
+Next, you can start to visualize data by building a dashboard, or by querying data in the Explore view.
+```
 
 > 官方说明中也强调 **URL 用 workspace 的 Endpoint（去掉 `/api/v1/query`），SigV4 选 AWS SDK Default，Region 指定为工作区所在区域**。
-
-- `rollout status` 返回 `successfully rolled out`；
-- UI 中 Data source **Save & Test 成功**；或在 Explore 面板能跑通 `up` / `http_server_requests_seconds_count` 等查询；
-- （可选）“Data sources” 页面显示 **“Amazon Managed Service for Prometheus”** 类型（来自插件），而非 core Prometheus 数据源。
 
 说明与取舍：
 
@@ -248,5 +241,83 @@ kubectl -n observability port-forward svc/grafana 3000:80
 - URL 使用 **workspace 的 `prometheusEndpoint`**（Day1/Day3 已能取到），**不要**手动拼 `/api/v1/query`；Grafana 会自动加，AWS 文档也明确要求去掉它。
 - 通过 **IRSA** 提供凭证，`authType=default` 即可；同时设置 `GF_AUTH_SIGV4_AUTH_ENABLED=true` 与 `AWS_SDK_LOAD_CONFIG=true`，与 AWS 文档一致（SigV4 功能开关 + 默认提供链）。
 - 数据源以 **provisioning** 方式写入（Helm→ConfigMap→挂载），这是官方推荐的可重复部署做法。
+
+### 辅助命令和基本检查
+
+如果修改了 yaml 文件后需要重新部署：
+
+```bash
+# 清理
+helm -n observability uninstall grafana
+# kubectl -n observability delete deploy grafana
+
+# 重新部署
+helm upgrade --install grafana grafana/grafana \
+  -n observability -f task-api/k8s/grafana-values.yaml
+
+# 重新检查
+kubectl -n observability rollout status deploy/grafana --timeout=180s
+kubectl -n observability port-forward svc/grafana 3000:80
+
+# 打开浏览器 `http://localhost:3000`，以 `admin / password` 登录。
+# 进入 **Connections → Data sources → AMP**，点击 **Test**。
+```
+
+基本 IRSA 检查流程
+
+确认 Grafana Pod 是否真的走了 IRSA：
+
+```bash
+POD=$(kubectl -n observability get pods -l app.kubernetes.io/name=grafana -o jsonpath='{.items[0].metadata.name}')
+echo "[week6] pod=$POD"
+
+# SA 注解（确保 role-arn 指向你刚建的 grafana-amp-query）
+kubectl -n observability get sa grafana -o yaml | egrep -A1 'eks.amazonaws.com/role-arn|name: grafana'
+
+# Pod 内查看 IRSA 环境变量是否已注入
+kubectl -n observability exec "$POD" -- sh -lc 'env | egrep "AWS_ROLE_ARN|AWS_WEB_IDENTITY_TOKEN_FILE|AWS_DEFAULT_REGION|AWS_REGION" || true'
+```
+
+输出：
+
+```bash
+[week6] pod=grafana-6d59c964f7-qqhfx
+
+eks.amazonaws.com/role-arn|name: grafana'
+    eks.amazonaws.com/role-arn: arn:aws:iam::563149051155:role/grafana-amp-query
+    meta.helm.sh/release-name: grafana
+    meta.helm.sh/release-namespace: observability
+--
+    app.kubernetes.io/name: grafana
+    app.kubernetes.io/version: 11.5.0
+--
+  name: grafana
+  namespace: observability
+
+AWS_ROLE_ARN|AWS_WEB_IDENTITY_TOKEN_FILE|AWS_DEFAULT_REGION|AWS_REGION" || true'
+AWS_ROLE_ARN=arn:aws:iam::563149051155:role/grafana-amp-query
+AWS_WEB_IDENTITY_TOKEN_FILE=/var/run/secrets/eks.amazonaws.com/serviceaccount/token
+AWS_DEFAULT_REGION=us-east-1
+AWS_REGION=us-east-1
+```
+
+校验 OIDC issuer 是否与 Role 信任策略一致：
+
+```bash
+CLUSTER=$(kubectl config view --minify -o jsonpath='{.contexts[0].context.cluster}'); CLUSTER=${CLUSTER##*/}
+ISSUER=$(aws eks describe-cluster --name "$CLUSTER" --region "$AWS_REGION" --query 'cluster.identity.oidc.issuer' --output text)
+ISSUER_HOST=${ISSUER#https://}
+echo "[week6] issuer_host=$ISSUER_HOST"
+aws iam get-role --role-name grafana-amp-query --query 'Role.AssumeRolePolicyDocument' --output json | jq -r '..|."StringEquals"?|objects|to_entries[]|"\(.key)=\(.value)"' | egrep 'oidc.*:aud|oidc.*:sub'
+```
+
+输出：
+
+```bash
+[week6] issuer_host=oidc.eks.us-east-1.amazonaws.com/id/6A0469A4E0E37492A07D2BE78F4F9288
+
+oidc.eks.us-east-1.amazonaws.com/id/6A0469A4E0E37492A07D2BE78F4F9288:aud=sts.amazonaws.com
+oidc.eks.us-east-1.amazonaws.com/id/6A0469A4E0E37492A07D2BE78F4F9288:sub=system:serviceaccount:observability:grafana
+```
 
 ---
