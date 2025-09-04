@@ -343,36 +343,36 @@ oidc.eks.us-east-1.amazonaws.com/id/6A0469A4E0E37492A07D2BE78F4F9288:sub=system:
 1. **打开 Grafana**（保持已 `port-forward` 到 3000）→ 登录。
 2. 左侧点 **Dashboards → + New → New dashboard**。
 3. **添加变量（Variables）**
-   * 右上角齿轮（Dashboard settings）→ **Variables → New**：
-     * Name：`app`
-     * Type：**Query**
-     * Data source：**AMP**
-     * Query：`label_values(http_server_requests_seconds_count, application)`
-     * Refresh：On Dashboard Load → **Update**
-   * 左上角 **Back** 返回面板。
+   - 右上角齿轮（Dashboard settings）→ **Variables → New**：
+     - Name：`app`
+     - Type：**Query**
+     - Data source：**AMP**
+     - Query：`label_values(http_server_requests_seconds_count, application)`
+     - Refresh：On Dashboard Load → **Update**
+   - 左上角 **Back** 返回面板。
 4. **面板 1：QPS（每秒请求数）**
-   * **Add visualization → Time series**
-   * Query（PromQL）：
+   - **Add visualization → Time series**
+   - Query（PromQL）：
      ```
      sum(rate(http_server_requests_seconds_count{application="$app"}[1m]))
      ```
-   * Panel title：`QPS`
-   * Unit：`req/s`（在右侧 “Standard options → Unit” 选 `requests/sec`）
-   * Save。
+   - Panel title：`QPS`
+   - Unit：`req/s`（在右侧 “Standard options → Unit” 选 `requests/sec`）
+   - Save。
 5. **面板 2：错误率（5xx/全部）**
-   * Add visualization → Time series
-   * Query：
+   - Add visualization → Time series
+   - Query：
      ```
      ( sum(rate(http_server_requests_seconds_count{application="$app", status=~"5.."}[5m]))
        /
        sum(rate(http_server_requests_seconds_count{application="$app"}[5m])) ) * 100
      ```
-   * Panel title：`Error Rate (%)`
-   * Unit：`percent (0-100)`，小数位 `0` 或 `1`。
-   * Save。
+   - Panel title：`Error Rate (%)`
+   - Unit：`percent (0-100)`，小数位 `0` 或 `1`。
+   - Save。
 6. **面板 3：P95 延迟（毫秒）**
-   * Add visualization → Time series
-   * Query：
+   - Add visualization → Time series
+   - Query：
      ```
      histogram_quantile(
        0.95,
@@ -381,13 +381,13 @@ oidc.eks.us-east-1.amazonaws.com/id/6A0469A4E0E37492A07D2BE78F4F9288:sub=system:
        )
      ) * 1000
      ```
-   * Panel title：`P95 Latency (ms)`
-   * Unit：`milliseconds (ms)`，小数位 `0` 或 `1`。
-   * Save。
+   - Panel title：`P95 Latency (ms)`
+   - Unit：`milliseconds (ms)`，小数位 `0` 或 `1`。
+   - Save。
 7. **仪表盘设置**
-   * 时间范围：右上角选 `Last 1 hour`（或 `Last 15 min`）。
-   * 刷新频率：`30s`。
-   * 顶部变量下拉选择你的应用（默认应看到 `task-api`）。
+   - 时间范围：右上角选 `Last 1 hour`（或 `Last 15 min`）。
+   - 刷新频率：`30s`。
+   - 顶部变量下拉选择你的应用（默认应看到 `task-api`）。
 
 > 如果曲线暂时是平的，打点小流量让它动起来：
 
@@ -398,8 +398,8 @@ kubectl -n svc-task run gf-hit --image=curlimages/curl:8.10.1 --restart=Never -i
 
 **结果**
 
-* 三个面板都能出数值/曲线；
-* QPS 有跳动、错误率通常接近 0%、P95 有合合理的毫秒级数值。
+- 三个面板都能出数值/曲线；
+- QPS 有跳动、错误率通常接近 0%、P95 有合合理的毫秒级数值。
 
 > 已经同步更新 `task-api/k8s/grafana-values.yaml` 以实现自动创建 Grafana 仪表盘。
 
@@ -461,8 +461,8 @@ P95 延迟（毫秒）
 
 #### 方式 1：UI 导出（最简单）
 
-* 打开你的仪表盘 → 右上角 **Share** → **Export** → 勾选 *Export for sharing externally*（可选）→ **Save to file**。
-* 将下载的文件重命名为：`observability/grafana/dashboards/task-api-o11y.json`。
+- 打开你的仪表盘 → 右上角 **Share** → **Export** → 勾选 *Export for sharing externally*（可选）→ **Save to file**。
+- 将下载的文件重命名为：`observability/grafana/dashboards/task-api-o11y.json`。
 
 #### 方式 2：API 导出（命令行）
 

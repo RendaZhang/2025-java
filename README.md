@@ -477,26 +477,38 @@ AMP_WORKSPACE_ID=
 
 ### Day 3 - Grafana Dash + SLI/SLO 口径
 
-**做什么**
+今日回顾
 
-1. **Grafana Cloud**（或本地 Grafana）：新增 **Prometheus(AMP)** 数据源（SigV4 认证）。
-2. 导入一个最小仪表盘：
-   - 应用：`http_server_requests_seconds_bucket{app="$APP"}` 计算 **P95**
-   - 错误率：`sum(rate(http_server_requests_seconds_count{status=~"5..",app="$APP"}[5m])) / sum(rate(http_server_requests_seconds_count{app="$APP"}[5m]))`
-   - 资源：容器 CPU/内存（cAdvisor 指标或 `container_*` 指标）
-3. 定义 SLI/SLO：
-   - **可用性**：5xx 率 < 0.1%（近 1 天） → SLO=99.9%
-   - **延迟**：P95 < 300ms（近 1 天）
-     写入 `observability/slo.yaml`（文档式定义）。
+- 在集群内用 **Helm** 部署 **Grafana OSS**，通过 **IRSA + SigV4** 连接 **AMP**。
+- 用 **最小仪表盘**（QPS / 错误率 / P95）把数据“出图”。
+- 将 Grafana 的安装与仪表盘 **纳入每日重建/销毁流程**，做到一键复原。
 
-**产物**：
+关键实现
 
-- Grafana 仪表盘截图（至少 3 张：P95、错误率、CPU/内存）
-- `observability/slo.yaml`（口径 + 阈值）
+- **身份与权限**
+  - 通过 **Terraform** 创建 **IRSA Role**：`arn:aws:iam::563149051155:role/grafana-amp-query`，仅附 `AmazonPrometheusQueryAccess`。
+  - Helm 让 **ServiceAccount: `observability/grafana`** 随部署创建，并在 SA 上添加注解 `eks.amazonaws.com/role-arn=<上面 Role>`。
+  - Grafana 以环境变量开启 SigV4 支持：`GF_AUTH_SIGV4_AUTH_ENABLED=true`；默认凭证链：`AWS_SDK_LOAD_CONFIG=true`。
+- **数据源（Data Source）**
+  - 使用 **AMP 专用插件**：`grafana-amazonprometheus-datasource`。
+  - URL 指向 **Workspace 的 `prometheusEndpoint` 根**（末尾带 `/`，不手拼 `/api/v1/query`）。
+  - `jsonData`：`authType=default`、`defaultRegion=us-east-1`、`httpMethod=POST`；并显式打开 `sigV4Auth=true / sigV4AuthType=default / sigV4Region=us-east-1`。
+  - UI 中 **Save & Test = 成功**（已看到 “Successfully queried the Prometheus API.”）。
+- **最小仪表盘（3 图 + 变量）**
+  - 变量 `app = label_values(http_server_requests_seconds_count, application)`。
+  - **QPS**：`sum(rate(http_server_requests_seconds_count{application="$app"}[5m]))`
+  - **错误率(%)**：`( sum(rate(http_server_requests_seconds_count{application="$app",status=~"5.."}[5m])) / sum(rate(http_server_requests_seconds_count{application="$app"}[5m])) ) * 100`
+  - **P95(ms)**：`histogram_quantile(0.95, sum by (le) (rate(http_server_requests_seconds_bucket{application="$app"}[5m]))) * 1000`
+  - 刷新 `30s`，时窗建议 `Last 15m` 或 `Last 1h`。
+- **自动化与复原**
+  - 已把 **Grafana 的 Helm 安装与 values（含数据源与仪表盘 provisioning）** 纳入 **post-recreate / pre-teardown**，Pod 启动即可**自动加载仪表盘**。
 
-**退路**：
+常见坑 & 处理
 
-Grafana Cloud 配置困难 → 使用 **kubectl port-forward** 暂时本地访问 Grafana OSS 服务；或作为替代，导出 AMP 的 `series`/`query_range` 返回 JSON 截图存证。
+- **403 Forbidden**：
+  - 已通过 **AMP 专用插件** + IRSA 生效 + 正确 URL/Region 解决；
+  - 备用方案（未用）：核心 Prometheus 数据源 + `sigV4Auth=true`。
+- **插件页面显示 “No Authentication”**：通常是插件/类型未正确识别或 values 未完全生效；通过修正数据源类型与 jsonData 后解决。
 
 ### Day 4 - Chaos Mesh 安装 + `pod-kill`/`network-latency` 实验
 
