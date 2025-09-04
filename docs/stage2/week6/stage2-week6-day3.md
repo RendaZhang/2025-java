@@ -11,6 +11,17 @@
     - [生成 values + 安装](#%E7%94%9F%E6%88%90-values--%E5%AE%89%E8%A3%85)
     - [验证](#%E9%AA%8C%E8%AF%81)
     - [辅助命令和基本检查](#%E8%BE%85%E5%8A%A9%E5%91%BD%E4%BB%A4%E5%92%8C%E5%9F%BA%E6%9C%AC%E6%A3%80%E6%9F%A5)
+  - [第四步：做一个最小可用的仪表盘：QPS / 错误率 / P95](#%E7%AC%AC%E5%9B%9B%E6%AD%A5%E5%81%9A%E4%B8%80%E4%B8%AA%E6%9C%80%E5%B0%8F%E5%8F%AF%E7%94%A8%E7%9A%84%E4%BB%AA%E8%A1%A8%E7%9B%98qps--%E9%94%99%E8%AF%AF%E7%8E%87--p95)
+  - [第五步：沉淀 SLI/SLO 文档 + 导出仪表盘 JSON](#%E7%AC%AC%E4%BA%94%E6%AD%A5%E6%B2%89%E6%B7%80-slislo-%E6%96%87%E6%A1%A3--%E5%AF%BC%E5%87%BA%E4%BB%AA%E8%A1%A8%E7%9B%98-json)
+    - [SLI / SLO（task-api）](#sli--slotask-api)
+      - [指标来源](#%E6%8C%87%E6%A0%87%E6%9D%A5%E6%BA%90)
+      - [变量](#%E5%8F%98%E9%87%8F)
+      - [SLI 定义与 PromQL](#sli-%E5%AE%9A%E4%B9%89%E4%B8%8E-promql)
+      - [SLO](#slo)
+      - [证据与读图指引](#%E8%AF%81%E6%8D%AE%E4%B8%8E%E8%AF%BB%E5%9B%BE%E6%8C%87%E5%BC%95)
+    - [导出仪表盘 JSON](#%E5%AF%BC%E5%87%BA%E4%BB%AA%E8%A1%A8%E7%9B%98-json)
+      - [方式 1：UI 导出（最简单）](#%E6%96%B9%E5%BC%8F-1ui-%E5%AF%BC%E5%87%BA%E6%9C%80%E7%AE%80%E5%8D%95)
+      - [方式 2：API 导出（命令行）](#%E6%96%B9%E5%BC%8F-2api-%E5%AF%BC%E5%87%BA%E5%91%BD%E4%BB%A4%E8%A1%8C)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -255,6 +266,9 @@ helm -n observability uninstall grafana
 helm upgrade --install grafana grafana/grafana \
   -n observability -f task-api/k8s/grafana-values.yaml
 
+# 检查日志
+kubectl -n observability logs deploy/grafana
+
 # 重新检查
 kubectl -n observability rollout status deploy/grafana --timeout=180s
 kubectl -n observability port-forward svc/grafana 3000:80
@@ -321,3 +335,148 @@ oidc.eks.us-east-1.amazonaws.com/id/6A0469A4E0E37492A07D2BE78F4F9288:sub=system:
 ```
 
 ---
+
+## 第四步：做一个最小可用的仪表盘：QPS / 错误率 / P95
+
+用 Grafana UI 完成。
+
+1. **打开 Grafana**（保持已 `port-forward` 到 3000）→ 登录。
+2. 左侧点 **Dashboards → + New → New dashboard**。
+3. **添加变量（Variables）**
+   * 右上角齿轮（Dashboard settings）→ **Variables → New**：
+     * Name：`app`
+     * Type：**Query**
+     * Data source：**AMP**
+     * Query：`label_values(http_server_requests_seconds_count, application)`
+     * Refresh：On Dashboard Load → **Update**
+   * 左上角 **Back** 返回面板。
+4. **面板 1：QPS（每秒请求数）**
+   * **Add visualization → Time series**
+   * Query（PromQL）：
+     ```
+     sum(rate(http_server_requests_seconds_count{application="$app"}[1m]))
+     ```
+   * Panel title：`QPS`
+   * Unit：`req/s`（在右侧 “Standard options → Unit” 选 `requests/sec`）
+   * Save。
+5. **面板 2：错误率（5xx/全部）**
+   * Add visualization → Time series
+   * Query：
+     ```
+     ( sum(rate(http_server_requests_seconds_count{application="$app", status=~"5.."}[5m]))
+       /
+       sum(rate(http_server_requests_seconds_count{application="$app"}[5m])) ) * 100
+     ```
+   * Panel title：`Error Rate (%)`
+   * Unit：`percent (0-100)`，小数位 `0` 或 `1`。
+   * Save。
+6. **面板 3：P95 延迟（毫秒）**
+   * Add visualization → Time series
+   * Query：
+     ```
+     histogram_quantile(
+       0.95,
+       sum by (le) (
+         rate(http_server_requests_seconds_bucket{application="$app"}[5m])
+       )
+     ) * 1000
+     ```
+   * Panel title：`P95 Latency (ms)`
+   * Unit：`milliseconds (ms)`，小数位 `0` 或 `1`。
+   * Save。
+7. **仪表盘设置**
+   * 时间范围：右上角选 `Last 1 hour`（或 `Last 15 min`）。
+   * 刷新频率：`30s`。
+   * 顶部变量下拉选择你的应用（默认应看到 `task-api`）。
+
+> 如果曲线暂时是平的，打点小流量让它动起来：
+
+```bash
+kubectl -n svc-task run gf-hit --image=curlimages/curl:8.10.1 --restart=Never -it --rm -- \
+  sh -lc 'for i in $(seq 1 300); do curl -s -o /dev/null http://task-api:8080/api/hello; done; echo done'
+```
+
+**结果**
+
+* 三个面板都能出数值/曲线；
+* QPS 有跳动、错误率通常接近 0%、P95 有合合理的毫秒级数值。
+
+> 已经同步更新 `task-api/k8s/grafana-values.yaml` 以实现自动创建 Grafana 仪表盘。
+
+---
+
+## 第五步：沉淀 SLI/SLO 文档 + 导出仪表盘 JSON
+
+### SLI / SLO（task-api）
+
+#### 指标来源
+
+- 源：Spring Boot Micrometer → `/actuator/prometheus`
+- 采集：ADOT Collector（Prometheus receiver，30s）→ AMP（Prometheus Remote Write, SigV4）
+- 可视化：Grafana（AMP 数据源）
+
+#### 变量
+- application: Micrometer 统一标签 `application=task-api`（Grafana 变量：`$app`）
+
+#### SLI 定义与 PromQL
+
+QPS（每秒请求数）
+
+- 公式：`sum(rate(http_server_requests_seconds_count{application="$app"}[5m]))`
+- 解释：5 分钟速率，反映吞吐。
+
+错误率（%）
+
+- 公式：
+  ```
+  ( sum(rate(http_server_requests_seconds_count{application="$app", status=~"5.."}[5m]))
+    / sum(rate(http_server_requests_seconds_count{application="$app"}[5m])) ) * 100
+  ```
+- 解释：5xx 占比，窗口 5 分钟。
+
+P95 延迟（毫秒）
+
+- 公式：
+  ```
+  histogram_quantile(
+    0.95,
+    sum by (le) ( rate(http_server_requests_seconds_bucket{application="$app"}[5m]) )
+  ) * 1000
+  ```
+- 解释：HTTP Server 请求 95 分位延迟；直方图来自 Micrometer 的 \`http.server.requests\`。
+
+#### SLO
+
+- 可用性 ≥ 99.0%
+- P95 < 300 ms
+- 错误率 < 1%
+
+#### 证据与读图指引
+
+- QPS：随压测升高并回落；与实例数/流量成正相关。
+- 错误率：常态应接近 0%；若做 Chaos/限流实验会抬升。
+- P95：网络/CPU/GC 抖动或 Pod 重启时会抬升。
+
+### 导出仪表盘 JSON
+
+#### 方式 1：UI 导出（最简单）
+
+* 打开你的仪表盘 → 右上角 **Share** → **Export** → 勾选 *Export for sharing externally*（可选）→ **Save to file**。
+* 将下载的文件重命名为：`observability/grafana/dashboards/task-api-o11y.json`。
+
+#### 方式 2：API 导出（命令行）
+
+1. 在 Grafana **Administration → Service accounts** 新建一个只读 Token（或在 **API Keys** 创建 *Viewer*）。
+2. 记下仪表盘 UID（浏览器地址栏 `/d/<UID>/...`）。
+3. 执行：
+
+   ```bash
+   GF_URL=http://localhost:3000
+   GF_TOKEN=<token>
+   DASH_UID=<dashboard_uid>
+
+   curl -sS -H "Authorization: Bearer $GF_TOKEN" \
+     "$GF_URL/api/dashboards/uid/$DASH_UID" \
+     | jq '.dashboard' \
+     > observability/grafana/dashboards/task-api-o11y.json
+   ```
