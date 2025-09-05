@@ -6,6 +6,7 @@
   - [今日目标](#%E4%BB%8A%E6%97%A5%E7%9B%AE%E6%A0%87)
   - [第一步：预检与变量就位](#%E7%AC%AC%E4%B8%80%E6%AD%A5%E9%A2%84%E6%A3%80%E4%B8%8E%E5%8F%98%E9%87%8F%E5%B0%B1%E4%BD%8D)
   - [第二步：安装 Chaos Mesh（最小化，适配 containerd）](#%E7%AC%AC%E4%BA%8C%E6%AD%A5%E5%AE%89%E8%A3%85-chaos-mesh%E6%9C%80%E5%B0%8F%E5%8C%96%E9%80%82%E9%85%8D-containerd)
+  - [第三步：PodKill 实验（30s）](#%E7%AC%AC%E4%B8%89%E6%AD%A5podkill-%E5%AE%9E%E9%AA%8C30s)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -259,6 +260,136 @@ kubectl -n chaos-testing get pods -o wide | grep chaos-daemon
 
 # 恢复业务副本
 kubectl -n svc-task scale deploy/task-api --replicas=2
+```
+
+把 Auth 校验开关关掉：关闭后 vauth.kb.io 直接放行。
+
+```bash
+# 给目标命名空间授权
+kubectl label ns svc-task chaos-mesh.org/inject=enabled --overwrite
+# 关闭校验
+kubectl -n chaos-testing set env deploy/chaos-controller-manager SECURITY_MODE=false
+kubectl -n chaos-testing rollout status deploy/chaos-controller-manager
+```
+
+---
+
+## 第三步：PodKill 实验（30s）
+
+在 `chaos-testing` 命名空间创建一个 **PodChaos**，随机杀掉 `svc-task` 命名空间中、带 `app=task-api` 标签的 **一个** Pod，持续 30 秒；
+
+观察 Pod 被杀→重建的自愈过程。
+
+新增 `task-api/k8s/chaos/experiment-pod-kill.yaml` 文件，写入实验清单（30s 随机杀 1 个 Pod，优雅期 0）：
+
+```yaml
+apiVersion: chaos-mesh.org/v1alpha1
+kind: PodChaos
+metadata:
+  name: kill-task-api-one
+  namespace: chaos-testing
+spec:
+  action: pod-kill
+  mode: one
+  selector:
+    namespaces:
+      - svc-task
+    labelSelectors:
+      app: task-api
+  gracePeriod: 0
+  duration: '30s'
+```
+
+```bash
+# 应用实验和记录开始时间（t0）
+kubectl apply -f task-api/k8s/chaos/experiment-pod-kill.yaml
+date '+[t0] %F %T %Z'
+
+# 观察实验对象与目标 Pod 的变化
+kubectl -n chaos-testing get podchaos
+# 观察目标 Pod 变化（看到一个 task-api Pod Terminating→新 Pod Running）
+kubectl -n svc-task get pods -o wide -w
+
+# … 等待新 Pod 就绪 …
+
+# 记录 MTTR
+# 当确认新 Pod Ready 后，记录恢复时间（t2）
+#   （按 Ctrl+C 退出上面的 watch，再执行下面这行）
+date '+[t2] %F %T %Z'
+#   手工计算 MTTR ~= t2 - t0
+
+# 事件与诊断
+
+# 看实验事件（确认注入/恢复）
+kubectl -n chaos-testing describe podchaos kill-task-api-one | sed -n '/Events/,$p'
+
+# 看业务命名空间的事件（新 Pod 调度/就绪）
+kubectl -n svc-task get events --sort-by=.lastTimestamp | tail -n 20
+
+# 清理
+kubectl -n chaos-testing delete -f task-api/k8s/chaos/experiment-pod-kill.yaml --ignore-not-found
+```
+
+> 期间看到一个 `task-api` Pod 变为 `Terminating`，随后新的 Pod 被调度并 `Running`。30 秒到期后实验自动结束。
+
+> 说明：
+> 当前 `task-api` **有 2 个副本**（HPA：`REPLICAS=2`），因此杀掉一个 Pod 通常不会明显影响请求成功率；
+> 本实验主要验证**自愈能力**。
+> 如果想让效果在 Grafana 上更“显著”，可以在实验前临时将副本改为 1（可选）：
+> `kubectl -n svc-task scale deploy task-api --replicas=1`
+> 做完实验后再恢复为 2。
+
+输出记录：
+
+```bash
+$ kubectl -n chaos-testing get podchaos
+NAME                AGE
+kill-task-api-one   1s
+
+$ kubectl -n svc-task get pods -o wide -w
+NAME                        READY   STATUS    RESTARTS   AGE   IP             NODE                         NOMINATED NODE   READINESS GATES
+task-api-7c8b778754-mrvdv   1/1     Running   0          51s   10.0.149.229   ip-10-0-154-9.ec2.internal   <none>           <none>
+task-api-7c8b778754-wz9gf   1/1     Running   0          13m   10.0.144.250   ip-10-0-154-9.ec2.internal   <none>           <none>
+# 被杀 Pod 名称：task-api-7c8b778754-qpg4q
+# 新 Pod 名称：task-api-7c8b778754-mrvdv
+
+# 手工计算得出 MTTR 约为 56 秒。
+[t0] 2025-09-06 00:59:50 CST
+[t2] 2025-09-06 01:00:46 CST
+MTTR ~= 56s
+
+$ kubectl -n chaos-testing describe podchaos kill-task-api-one | sed -n '/Events/,$p'
+      Events:
+        Operation:      Apply
+        Timestamp:      2025-09-05T16:59:50Z
+        Type:           Succeeded
+      Id:               svc-task/task-api-7c8b778754-qpg4q
+      Injected Count:   1
+      Phase:            Injected
+      Recovered Count:  0
+      Selector Key:     .
+    Desired Phase:      Run
+Events:
+  Type    Reason           Age    From            Message
+  ----    ------           ----   ----            -------
+  Normal  FinalizerInited  8m41s  initFinalizers  Finalizer has been inited
+  Normal  Updated          8m41s  initFinalizers  Successfully update finalizer of resource
+  Normal  Updated          8m41s  desiredphase    Successfully update desiredPhase of resource
+  Normal  Applied          8m41s  records         Successfully apply chaos for svc-task/task-api-7c8b778754-qpg4q
+  Normal  Updated          8m41s  records         Successfully update records of resource
+
+$ kubectl -n svc-task get events --sort-by=.lastTimestamp | tail -n 20
+LAST SEEN   TYPE      REASON                   OBJECT                                              MESSAGE
+24m         Normal    Scheduled                pod/task-api-7c8b778754-wz9gf                       Successfully assigned svc-task/task-api-7c8b778754-wz9gf to ip-10-0-154-9.ec2.internal
+11m         Normal    Scheduled                pod/task-api-7c8b778754-mrvdv                       Successfully assigned svc-task/task-api-7c8b778754-mrvdv to ip-10-0-154-9.ec2.internal
+11m         Normal    Created                  pod/task-api-7c8b778754-mrvdv                       Created container: task-api
+11m         Normal    Killing                  pod/task-api-7c8b778754-qpg4q                       Stopping container task-api
+11m         Normal    Started                  pod/task-api-7c8b778754-mrvdv                       Started container task-api
+11m         Normal    Pulled                   pod/task-api-7c8b778754-mrvdv                       Container image "563149051155.dkr.ecr.us-east-1.amazonaws.com/task-api@sha256:d409d3f8925d75544f34edf9f0dbf8d772866b27609ef01826e1467fee52170a" already present on machine
+11m         Normal    SuccessfulCreate         replicaset/task-api-7c8b778754                      Created pod: task-api-7c8b778754-mrvdv
+11m         Warning   Unhealthy                pod/task-api-7c8b778754-mrvdv                       Liveness probe failed: Get "http://10.0.149.229:8080/actuator/health/liveness": dial tcp 10.0.149.229:8080: connect: connection refused
+11m         Warning   Unhealthy                pod/task-api-7c8b778754-mrvdv                       Readiness probe failed: Get "http://10.0.149.229:8080/actuator/health/readiness": dial tcp 10.0.149.229:8080: connect: connection refused
+11m         Normal    SuccessfullyReconciled   targetgroupbinding/k8s-svctask-taskapi-0d313cbf1f   Successfully reconciled
 ```
 
 ---
