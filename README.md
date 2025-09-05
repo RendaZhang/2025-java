@@ -39,7 +39,7 @@
     - [Day 2 - ADOT Collector（采集 → AMP）+ 成本护栏](#day-2---adot-collector%E9%87%87%E9%9B%86-%E2%86%92-amp-%E6%88%90%E6%9C%AC%E6%8A%A4%E6%A0%8F)
     - [Day 3 - Grafana Dash + SLI/SLO 口径](#day-3---grafana-dash--slislo-%E5%8F%A3%E5%BE%84)
     - [Day 4 - Chaos Mesh 安装 + `pod-kill`/`network-latency` 实验](#day-4---chaos-mesh-%E5%AE%89%E8%A3%85--pod-killnetwork-latency-%E5%AE%9E%E9%AA%8C)
-    - [Day 5 - 整理与硬化（配额/限额/告警）](#day-5---%E6%95%B4%E7%90%86%E4%B8%8E%E7%A1%AC%E5%8C%96%E9%85%8D%E9%A2%9D%E9%99%90%E9%A2%9D%E5%91%8A%E8%AD%A6)
+    - [Day 5 - 稳态与弹性：探针 + 资源配额 + HPA 触发与回落](#day-5---%E7%A8%B3%E6%80%81%E4%B8%8E%E5%BC%B9%E6%80%A7%E6%8E%A2%E9%92%88--%E8%B5%84%E6%BA%90%E9%85%8D%E9%A2%9D--hpa-%E8%A7%A6%E5%8F%91%E4%B8%8E%E5%9B%9E%E8%90%BD)
     - [20 分钟退路清单](#20-%E5%88%86%E9%92%9F%E9%80%80%E8%B7%AF%E6%B8%85%E5%8D%95)
   - [Week 7 - CI/CD + DevOps](#week-7---cicd--devops)
     - [通用前置](#%E9%80%9A%E7%94%A8%E5%89%8D%E7%BD%AE-1)
@@ -535,7 +535,7 @@ AMP_WORKSPACE_ID=
 - **权限/运行时**：EKS 默认 containerd；必须设置 `runtime=containerd` + 正确 `socketPath`；`hostNetwork`+`privileged` 便于网络类混沌生效。
 - **安全阈值**：先做 **小半径**（单 Pod、短时 30s），逐步扩大（多副本、长时、强度更大），控制面与业务面分离在 `chaos-testing` 命名空间。
 
-### Day 5 - 整理与硬化（配额/限额/告警）
+### Day 5 - 稳态与弹性：探针 + 资源配额 + HPA 触发与回落
 
 **做什么**
 
