@@ -416,6 +416,7 @@ kubectl -n svc-task run gf-hit --image=curlimages/curl:8.10.1 --restart=Never -i
 - 可视化：Grafana（AMP 数据源）
 
 #### 变量
+
 - application: Micrometer 统一标签 `application=task-api`（Grafana 变量：`$app`）
 
 #### SLI 定义与 PromQL

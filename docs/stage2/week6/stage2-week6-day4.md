@@ -7,6 +7,8 @@
   - [第一步：预检与变量就位](#%E7%AC%AC%E4%B8%80%E6%AD%A5%E9%A2%84%E6%A3%80%E4%B8%8E%E5%8F%98%E9%87%8F%E5%B0%B1%E4%BD%8D)
   - [第二步：安装 Chaos Mesh（最小化，适配 containerd）](#%E7%AC%AC%E4%BA%8C%E6%AD%A5%E5%AE%89%E8%A3%85-chaos-mesh%E6%9C%80%E5%B0%8F%E5%8C%96%E9%80%82%E9%85%8D-containerd)
   - [第三步：PodKill 实验（30s）](#%E7%AC%AC%E4%B8%89%E6%AD%A5podkill-%E5%AE%9E%E9%AA%8C30s)
+  - [第四步：NetworkLatency 实验（100ms / 30s）](#%E7%AC%AC%E5%9B%9B%E6%AD%A5networklatency-%E5%AE%9E%E9%AA%8C100ms--30s)
+  - [第五步：把 Chaos Mesh 的安装集成进重建和销毁流程（可选开关）](#%E7%AC%AC%E4%BA%94%E6%AD%A5%E6%8A%8A-chaos-mesh-%E7%9A%84%E5%AE%89%E8%A3%85%E9%9B%86%E6%88%90%E8%BF%9B%E9%87%8D%E5%BB%BA%E5%92%8C%E9%94%80%E6%AF%81%E6%B5%81%E7%A8%8B%E5%8F%AF%E9%80%89%E5%BC%80%E5%85%B3)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -393,3 +395,128 @@ LAST SEEN   TYPE      REASON                   OBJECT                           
 ```
 
 ---
+
+## 第四步：NetworkLatency 实验（100ms / 30s）
+
+对 `svc-task` 命名空间中、带 `app=task-api` 标签的 **全部 Pod** 注入 **双向 100ms 延迟（抖动 10ms）**，持续 **30 秒**。
+
+预期在 Grafana 中看到 **P95 明显抬升**。
+
+新增 `task-api/k8s/chaos/experiment-net-latency.yaml` 文件：
+
+```yaml
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: net-latency-task-api
+  namespace: chaos-testing
+spec:
+  action: delay
+  mode: all
+  selector:
+    namespaces:
+      - svc-task
+    labelSelectors:
+      app: task-api
+  delay:
+    latency: '100ms'
+    jitter: '10ms'
+    correlation: '0'
+  # 只对 task-api Pod 的出站流量加延迟
+  direction: to
+  duration: '30s'
+```
+
+```bash
+# 应用实验
+kubectl apply -f task-api/k8s/chaos/experiment-net-latency.yaml
+
+# 观察实验对象状态
+kubectl -n chaos-testing get networkchaos
+kubectl -n chaos-testing describe networkchaos net-latency-task-api | sed -n '/Events/,$p'
+
+# 清理
+kubectl -n chaos-testing delete -f task-api/k8s/chaos/experiment-net-latency.yaml --ignore-not-found
+```
+
+> 同时打点轻负载，保证曲线可见：
+
+```bash
+kubectl -n svc-task run nl-hit --image=curlimages/curl:8.10.1 --restart=Never -it --rm -- \
+  sh -lc 'for i in $(seq 1 300); do curl -s -o /dev/null http://task-api:8080/api/hello; done; echo done'
+```
+
+**Grafana 观测**
+
+- 时间窗：`Last 15m`；刷新：`30s`。
+- 看 **P95 Latency (ms)** 面板应出现短时峰值（≈ +100ms 的量级，实际取决于基线）。
+- QPS/错误率可能轻微波动，但不一定显著。
+
+> 若未看到效果，快速排查要点：
+>
+> 1. `chaos-daemon` 是否都 `Running`；
+> 2. 目标 Pod 是否匹配 `app=task-api`；
+> 3. `describe networkchaos` 的事件是否显示注入失败（若有失败信息，把那几行贴我）。
+
+输出记录：
+
+```bash
+$ kubectl -n chaos-testing get networkchaos
+NAME                   ACTION   DURATION
+net-latency-task-api   delay    30s
+
+$ kubectl -n chaos-testing describe networkchaos net-latency-task-api | sed -n '/Events/,$p'
+      Events:
+        Operation:      Apply
+        Timestamp:      2025-09-05T17:51:00Z
+        Type:           Succeeded
+        Operation:      Recover
+        Timestamp:      2025-09-05T17:51:30Z
+        Type:           Succeeded
+      Id:               svc-task/task-api-7c8b778754-wz9gf
+      Injected Count:   1
+      Phase:            Not Injected
+      Recovered Count:  1
+      Selector Key:     .
+      Events:
+        Operation:      Apply
+        Timestamp:      2025-09-05T17:51:01Z
+        Type:           Succeeded
+        Operation:      Recover
+        Timestamp:      2025-09-05T17:51:30Z
+        Type:           Succeeded
+      Id:               svc-task/task-api-7c8b778754-mrvdv
+      Injected Count:   1
+      Phase:            Not Injected
+      Recovered Count:  1
+      Selector Key:     .
+    Desired Phase:      Stop
+  Instances:
+    svc-task/task-api-7c8b778754-mrvdv:  4
+    svc-task/task-api-7c8b778754-wz9gf:  4
+Events:
+  Type    Reason           Age    From            Message
+  ----    ------           ----   ----            -------
+  Normal  FinalizerInited  2m36s  initFinalizers  Finalizer has been inited
+  Normal  Updated          2m36s  initFinalizers  Successfully update finalizer of resource
+  Normal  Started          2m36s  desiredphase    Experiment has started
+  Normal  Updated          2m36s  desiredphase    Successfully update desiredPhase of resource
+  Normal  Updated          2m36s  records         Successfully update records of resource
+  Normal  Applied          2m36s  records         Successfully apply chaos for svc-task/task-api-7c8b778754-wz9gf
+  Normal  Updated          2m36s  records         Successfully update records of resource
+  Normal  Applied          2m35s  records         Successfully apply chaos for svc-task/task-api-7c8b778754-mrvdv
+  Normal  Updated          2m35s  records         Successfully update records of resource
+  Normal  TimeUp           2m6s   desiredphase    Time up according to the duration
+  Normal  Updated          2m6s   desiredphase    Successfully update desiredPhase of resource
+  Normal  Updated          2m6s   records         Successfully update records of resource
+  Normal  Recovered        2m6s   records         Successfully recover chaos for svc-task/task-api-7c8b778754-wz9gf
+  Normal  Updated          2m6s   records         Successfully update records of resource
+  Normal  Recovered        2m6s   records         Successfully recover chaos for svc-task/task-api-7c8b778754-mrvdv
+  Normal  Updated          2m6s   records         Successfully update records of resource
+```
+
+## 第五步：把 Chaos Mesh 的安装集成进重建和销毁流程（可选开关）
+
+已经更新 `scripts/post-recreate.sh` 脚本集成了 Chaos Mesh 的安装（可选，默认不开启）。
+
+已经更新 `scripts/pre-teardown.sh` 脚本集成了 Chaos Mesh 的卸载（可选，默认开启）。
