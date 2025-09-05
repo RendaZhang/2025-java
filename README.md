@@ -512,59 +512,28 @@ AMP_WORKSPACE_ID=
 
 ### Day 4 - Chaos Mesh 安装 + `pod-kill`/`network-latency` 实验
 
-**做什么**
+今日回顾：
 
-1. 安装（EC2 NodeGroup 支持 **privileged**）：
-   ```bash
-   helm repo add chaos-mesh https://charts.chaos-mesh.org
-   helm install chaos-mesh chaos-mesh/chaos-mesh -n chaos-testing --create-namespace \
-     --set chaosDaemon.securityContext.privileged=true
-   ```
-2. `pod-kill`（30 秒）：`chaos/pod-kill.yaml`
-   ```yaml
-   apiVersion: chaos-mesh.org/v1alpha1
-   kind: PodChaos
-   metadata: { name: kill-${APP}, namespace: chaos-testing }
-   spec:
-     action: pod-kill
-     mode: one
-     selector:
-       namespaces: [${NS}]
-       labelSelectors: { app: ${APP} }
-     duration: "30s"
-   ```
-   执行与观测：
-   ```bash
-   date +%s > .t0 && kubectl apply -f chaos/pod-kill.yaml
-   kubectl get pods -n $NS -w   # 观察新 Pod 就绪
-   date +%s > .t1 && echo "MTTR=$(( $(cat .t1) - $(cat .t0) ))s"
-   ```
-3. `network-latency`（100ms\@30s）：
-   ```yaml
-   apiVersion: chaos-mesh.org/v1alpha1
-   kind: NetworkChaos
-   metadata: { name: net-lat-${APP}, namespace: chaos-testing }
-   spec:
-     action: delay
-     mode: one
-     selector:
-       namespaces: [${NS}]
-       labelSelectors: { app: ${APP} }
-     delay: { latency: "100ms", correlation: "0", jitter: "0ms" }
-     duration: "30s"
-   ```
+- 用 **Helm + chaos-mesh-values.yaml** 在 `chaos-testing` 命名空间安装 **Chaos Mesh**（containerd 运行时，socket `/run/containerd/containerd.sock`）。
+- 运行两项实验并留痕：
+  - **PodKill（30s，mode=one）**：随机杀 1 个 `svc-task/task-api` Pod。
+  - **NetworkLatency（100±10ms/30s，direction=both，mode=all）**：对 `task-api` 注入网络延迟。
+- 用 Grafana（AMP 数据源）观察影响并记录恢复：
+  - **MTTR ≈ 56s**（记录的 t0→t2）。
+  - **P95 峰值**：基线 ~**25ms**，注入期 ~**120–140ms**。
 
-   观察 **P95 抬升** 与 **HPA** 是否触发（可用 `hey`/`wrk` 适度压测 1–2 分钟）。
+自动化与流程
 
-**产物**：
+- 已在 **`scripts/post-recreate.sh`** 集成 **Chaos Mesh 安装**（可选，**默认不开启**）。
+- 在 **`scripts/pre-teardown.sh`** 集成 **Chaos Mesh 卸载**（可选，**默认开启**）。
+- 实验 YAML 独立于安装流程，适合按需执行与回滚（`kubectl delete -f chaos/*.yaml`）。
 
-- Chaos Dashboard 成功页面或 `kubectl` 输出截图
-- **MTTR 计算**记录（`MTTR=xx s`）
-- Grafana 截图（实验窗口内 P95/错误率/副本数变化）
+排障与最佳实践（速查）
 
-**退路**：
-
-Chaos Mesh 不稳定 → **手动 `kubectl delete pod`** 替代表演自愈；网络延迟改为用 `tc netem` 容器进行最小演示。
+- **无效注入**：优先检查 `chaos-daemon` 是否 `Running`、selector 是否命中（`app=task-api`）、以及 Pod/Service 的标签一致性。
+- **无可见效果**：在实验窗口内**打点轻量流量**（`curlimages/curl` / `hey`），确保指标曲线有数据。
+- **权限/运行时**：EKS 默认 containerd；必须设置 `runtime=containerd` + 正确 `socketPath`；`hostNetwork`+`privileged` 便于网络类混沌生效。
+- **安全阈值**：先做 **小半径**（单 Pod、短时 30s），逐步扩大（多副本、长时、强度更大），控制面与业务面分离在 `chaos-testing` 命名空间。
 
 ### Day 5 - 整理与硬化（配额/限额/告警）
 
