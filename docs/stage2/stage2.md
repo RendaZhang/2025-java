@@ -50,12 +50,9 @@
 
 | 时段 | 核心主题 & 关键实操 | 主要交付物 |
 |------|-------------------|-----------|
-| **Day-0 (½ d)** | **Docker & K8s Refresher**<br>· Play-with-Docker：`build / run / push`<br>· Kubernetes Basics 1-3：`kubectl create / expose / scale` | `stage2-BootCamp-day0.md` |
-| **Bootcamp 3 d** | **云底座 + IaC**<br>**Day 1** VPC / ALB / IAM 对照（AWS）<br>**Day 2** `eksctl` 创建 **EKS Managed NodeGroup** (Spot t3.small ×2 + OD t3.medium ×1)<br>**Day 3** Terraform 导入 EKS；`backend "s3" + DynamoDB lock + AES256` |
-| **Week 5** | **Cloud-Native 微服务上云（EKS）**<br>① Spring Boot 微服务骨架 → Docker 镜像 → 推送 ECR<br>② K8s 基础对象：Namespace / SA(IRSA) / ConfigMap / Secret / Deployment / Service<br>③ Ingress（AWS Load Balancer Controller）+ HPA → 通过 ALB DNS 暴露服务；可选：接入 S3 | 源码仓 + Docker 镜像 Tag<br>K8s YAML/Helm（含 IRSA）<br>ALB DNS 可访问截图 + （可选）S3 读写验证 |
-| **Week 6** | **可观测 & 韧性（Observability + Resilience）**<br>① ADOT Collector → **Amazon Managed Prometheus (AMP)**（`sample_limit`=10k，drop `kubelet_*`）+ Grafana Cloud 仪表盘<br>② Spring Actuator 暴露应用指标，定义 SLI/SLO（可用性、P95、错误率）<br>③ **Chaos Mesh**：`pod-kill`/`network-latency` 演练 + **HPA 自愈**，输出 **MTTR ≤ 1 min** | ADOT 配置 & AMP Workspace<br>Grafana Dash 截图（应用/集群指标）<br>Chaos 报告（MTTR/P95） + HPA 触发截图 |
-| **Week 7** | **CI/CD + DevOps 自动化**<br>① GitHub Actions（OIDC）→ **ECR** 推镜像 → **EKS** 滚动发布（Helm/`kubectl`）<br>② 阶段门：Maven 单测 + **Trivy** 镜像扫描 + 策略化回滚（`rollout undo`）<br>③ 指标留痕：构建时长、发布成功率、平均改动交付时间（Lead Time） | `.github/workflows/ci-cd.yml`<br>IAM OIDC 角色 + `aws-auth` RBAC<br>发布/回滚脚本与运行截图 |
-| **Week 8** | **Mock Marathon & Résumé v2**<br>① Mock-1：故障注入 + SLO 深挖（全英，含追问）<br>② Mock-2：AI + 多云系统设计（全英，画架构图）<br>③ 成果打包：README/作品集/两段演示视频/`progress.png` 指标折线<br>④ **Day-8 Cleanup**：一键销毁 + 账单审计 + 重建演练清单 | 两段 90min 录像 + 评分表（含改进项）<br>简历 v2（中/英）PDF + LinkedIn 文案<br>`progress.png` + 架构图 + `cleanup/` 脚本 & 账单截图 |
+| **Bootcamp** | **云底座 + IaC**<br>**Day 0** Play-with-Docker `build / run / push`；Kubernetes Basics 1-3 `kubectl create / expose / scale` <br>**Day 1** VPC / ALB / IAM 对照（AWS）<br>**Day 2** `eksctl` 创建 **EKS Managed NodeGroup** (Spot t3.small ×2 + OD t3.medium ×1)；Terraform 导入 EKS；`backend "s3" + DynamoDB lock + AES256` |
+| **Week 5** | **Cloud-Native 微服务上云（EKS）**<br>① Spring Boot 微服务骨架 → Docker 镜像 → 推送 ECR<br>② K8s 基础对象：Namespace / SA(IRSA) / ConfigMap / Secret / Deployment / Service<br>③ Ingress（AWS Load Balancer Controller）+ HPA → 通过 ALB DNS 暴露服务；可选：接入 S3 | 源码仓 + Docker 镜像 Tag<br>K8s YAML/Helm（含 IRSA）<br>ALB DNS 可访问 + （可选）S3 读写验证 |
+| **Week 6** | **可观测 & 韧性（Observability + Resilience）**<br>① ADOT Collector → **Amazon Managed Prometheus (AMP)**（`sample_limit`=10k，drop `kubelet_*`）+ Grafana Cloud 仪表盘<br>② Spring Actuator 暴露应用指标，定义 SLI/SLO（可用性、P95、错误率）<br>③ **Chaos Mesh**：`pod-kill`/`network-latency` 演练 + **HPA 自愈**，输出 **MTTR ≤ 1 min** | ADOT 配置 & AMP Workspace<br>Grafana Dash（应用/集群指标）<br>Chaos 报告（MTTR/P95） + HPA 触发记录 |
 
 ---
 
