@@ -2,16 +2,16 @@
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
-- [Week 3: Algorithm Enhancement and Preliminary Performance Optimization](#week-3-algorithm-enhancement-and-preliminary-performance-optimization)
-  - [📘 Daily Learning Journal – Day 4 (Technical English & Speaking)](#-daily-learning-journal--day-4-technical-english--speaking)
+- [Week 4: Algorithm Enhancement and Preliminary Performance Optimization](#week-4-algorithm-enhancement-and-preliminary-performance-optimization)
+  - [📘 Daily Learning Journal – Day 1 (Technical English & Speaking)](#-daily-learning-journal--day-1-technical-english--speaking)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
-# Week 3: Algorithm Enhancement and Preliminary Performance Optimization
+# Week 4: Algorithm Enhancement and Preliminary Performance Optimization
 
 ---
 
-## 📘 Daily Learning Journal – Day 4 (Technical English & Speaking)
+## 📘 Daily Learning Journal – Day 1 (Technical English & Speaking)
 
 **Introduction**
 
