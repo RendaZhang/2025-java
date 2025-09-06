@@ -1,3 +1,56 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [Stage1 - Week3 - Day 1: Dynamic Programming](#stage1---week3---day-1-dynamic-programming)
+  - [Fibonacci - LC 509](#fibonacci---lc-509)
+    - [Time:](#time)
+    - [Code:](#code)
+    - [Result:](#result)
+  - [Climbing Stairs - LC 70](#climbing-stairs---lc-70)
+    - [Time:](#time-1)
+    - [Code:](#code-1)
+    - [Result:](#result-1)
+  - [Memoized Recursion](#memoized-recursion)
+    - [Fibonacci - LC 509](#fibonacci---lc-509-1)
+    - [Climbing Stairs - LC 70](#climbing-stairs---lc-70-1)
+  - [Compare & Reflect](#compare--reflect)
+  - [LC 416 “Partition Equal Subset Sum”](#lc-416-partition-equal-subset-sum)
+    - [DFS + Memoization (Top-down)](#dfs--memoization-top-down)
+    - [2D Dynamic Programming (Bottom-up)](#2d-dynamic-programming-bottom-up)
+    - [1D Dynamic Programming (Space-Optimized)](#1d-dynamic-programming-space-optimized)
+    - [Complexity Comparison Summary](#complexity-comparison-summary)
+  - [LC 62 “Unique Paths”](#lc-62-unique-paths)
+    - [2D Dynamic Programming (Bottom-up)](#2d-dynamic-programming-bottom-up-1)
+      - [Time](#time)
+      - [State Definition](#state-definition)
+      - [Transition](#transition)
+      - [Initialization & Order](#initialization--order)
+      - [Complexity](#complexity)
+      - [Code](#code)
+    - [1D Dynamic Programming (Space-Optimized)](#1d-dynamic-programming-space-optimized-1)
+      - [Time](#time-1)
+      - [State Definition](#state-definition-1)
+      - [Transition](#transition-1)
+      - [Initialization & Order](#initialization--order-1)
+      - [Complexity](#complexity-1)
+      - [Code](#code-1)
+  - [LC 1143 “Longest Common Subsequence”](#lc-1143-longest-common-subsequence)
+    - [2D Dynamic Programming (Bottom-up)](#2d-dynamic-programming-bottom-up-2)
+      - [State Definition](#state-definition-2)
+      - [Transition](#transition-2)
+      - [Initialization & Order](#initialization--order-2)
+      - [Complexity](#complexity-2)
+      - [Code](#code-2)
+    - [Two-Row Rolling Array DP (Space-Optimized)](#two-row-rolling-array-dp-space-optimized)
+      - [State Definition](#state-definition-3)
+      - [Transition](#transition-3)
+      - [Initialization & Order](#initialization--order-3)
+      - [Complexity](#complexity-3)
+      - [Code](#code-3)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Stage1 - Week3 - Day 1: Dynamic Programming
 
 ______________________________________________________________________

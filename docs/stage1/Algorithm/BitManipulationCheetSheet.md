@@ -1,3 +1,33 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [🧠 Java Bit Manipulation Cheatsheet](#-java-bit-manipulation-cheatsheet)
+  - [✨ Common Bitwise Operators and Their Meanings](#-common-bitwise-operators-and-their-meanings)
+  - [🧮 Common Bit Manipulation Techniques](#-common-bit-manipulation-techniques)
+    - [✅ Check Even/Odd](#-check-evenodd)
+    - [✅ Swap Two Numbers (XOR Method)](#-swap-two-numbers-xor-method)
+    - [✅ Check if Power of 2](#-check-if-power-of-2)
+    - [✅ Extract the Lowest Set Bit](#-extract-the-lowest-set-bit)
+    - [✅ Clear the Lowest Set Bit](#-clear-the-lowest-set-bit)
+    - [✅ Set the i-th Bit to 1](#-set-the-i-th-bit-to-1)
+    - [✅ Clear the i-th Bit to 0](#-clear-the-i-th-bit-to-0)
+    - [✅ Toggle the i-th Bit](#-toggle-the-i-th-bit)
+    - [✅ Check if the i-th Bit is 1](#-check-if-the-i-th-bit-is-1)
+  - [📊 Utility Methods in Java (Integer Class)](#-utility-methods-in-java-integer-class)
+  - [💡 Common Interview Applications](#-common-interview-applications)
+  - [📌 Quick Mnemonics](#-quick-mnemonics)
+  - [🧠 Advanced Examples](#-advanced-examples)
+  - [🛠 Suggested Practice](#-suggested-practice)
+  - [🧠 Example Implementations](#-example-implementations)
+    - [1. Check if a Number is a Power of 2](#1-check-if-a-number-is-a-power-of-2)
+    - [2. Count the Number of 1s in a Binary Representation](#2-count-the-number-of-1s-in-a-binary-representation)
+    - [3. Subset Enumeration Using Bitmask](#3-subset-enumeration-using-bitmask)
+    - [4. Using `BitSet` to Compress a Boolean Array](#4-using-bitset-to-compress-a-boolean-array)
+  - [📌 Final Tips for Practice](#-final-tips-for-practice)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # 🧠 Java Bit Manipulation Cheatsheet
 
 ## ✨ Common Bitwise Operators and Their Meanings

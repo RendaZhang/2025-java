@@ -1,3 +1,54 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [Stage1 - Week3 - Day 3: Backtracking & Greedy Algorithms](#stage1---week3---day-3-backtracking--greedy-algorithms)
+  - [LC 77 - Combinations](#lc-77---combinations)
+    - [✅ Code](#-code)
+    - [⏱ Time Complexity: `O(C(n, k) * k)`](#-time-complexity-ocn-k--k)
+    - [🗂 Space Complexity: `O(k)`](#-space-complexity-ok)
+    - [🔁 Number of Recursive Calls](#-number-of-recursive-calls)
+    - [✅ Example Walkthrough](#-example-walkthrough)
+  - [LC 46 - Permutations](#lc-46---permutations)
+    - [✅ **Visited Array Version**](#-visited-array-version)
+      - [🌟 Core Idea](#-core-idea)
+      - [⏱ **Time Complexity**](#-time-complexity)
+      - [🗂 **Space Complexity**](#-space-complexity)
+      - [Code](#code)
+      - [🔄 **Number of Recursive Calls**](#-number-of-recursive-calls)
+    - [✅ **Swap Version**](#-swap-version)
+      - [🌟 Core Idea](#-core-idea-1)
+      - [⏱ **Time Complexity**](#-time-complexity-1)
+      - [🗂 **Space Complexity**](#-space-complexity-1)
+      - [Code](#code-1)
+      - [🔄 **Number of Recursive Calls**](#-number-of-recursive-calls-1)
+    - [🧐 **Comparison Summary**](#-comparison-summary)
+    - [🏷 **Visited Array vs Swap Version**](#-visited-array-vs-swap-version)
+  - [LC 39 - Combination Sum](#lc-39---combination-sum)
+    - [💻 DFS with Pruning Version](#-dfs-with-pruning-version)
+      - [🌟 **Algorithm Idea**](#-algorithm-idea)
+      - [⏱ **Time Complexity**](#-time-complexity-2)
+      - [📊 **Pruning Effect Statistics**](#-pruning-effect-statistics)
+      - [✅ **Comparison: Before Pruning vs After Pruning**](#-comparison-before-pruning-vs-after-pruning)
+    - [💻 DP Version](#-dp-version)
+    - [Problem Classification:](#problem-classification)
+    - [State Definition:](#state-definition)
+    - [State Transition:](#state-transition)
+    - [Initialization:](#initialization)
+      - [🔍 **Time Complexity Analysis**](#-time-complexity-analysis)
+      - [✅ **DFS vs DP Comparison**](#-dfs-vs-dp-comparison)
+      - [🎯 **When to Use DFS vs DP?**](#-when-to-use-dfs-vs-dp)
+  - [LC 435 - Non-overlapping Intervals](#lc-435---non-overlapping-intervals)
+    - [CODE](#code)
+    - [✅ **Reason for Local Optimality**](#-reason-for-local-optimality)
+    - [✅ **Proof of Correctness**](#-proof-of-correctness)
+    - [✅ **Time Complexity**](#-time-complexity)
+    - [✅ **Space Complexity**](#-space-complexity)
+    - [✅ **Summary**](#-summary)
+  - [LC 452 - Minimum Number of Arrows to Burst Balloons](#lc-452---minimum-number-of-arrows-to-burst-balloons)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Stage1 - Week3 - Day 3: Backtracking & Greedy Algorithms
 
 ______________________________________________________________________

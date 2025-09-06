@@ -4,15 +4,12 @@
 
 - [2025 Java 学习计划](#2025-java-%E5%AD%A6%E4%B9%A0%E8%AE%A1%E5%88%92)
   - [总体目标](#%E6%80%BB%E4%BD%93%E7%9B%AE%E6%A0%87)
-  - [第一阶段（第 1-4 周）：基础复习与技能提升](#%E7%AC%AC%E4%B8%80%E9%98%B6%E6%AE%B5%E7%AC%AC-1-4-%E5%91%A8%E5%9F%BA%E7%A1%80%E5%A4%8D%E4%B9%A0%E4%B8%8E%E6%8A%80%E8%83%BD%E6%8F%90%E5%8D%87)
+  - [第一阶段：基础复习与技能提升](#%E7%AC%AC%E4%B8%80%E9%98%B6%E6%AE%B5%E5%9F%BA%E7%A1%80%E5%A4%8D%E4%B9%A0%E4%B8%8E%E6%8A%80%E8%83%BD%E6%8F%90%E5%8D%87)
     - [第 1 周：Java 基础、开发工具与算法快速复习](#%E7%AC%AC-1-%E5%91%A8java-%E5%9F%BA%E7%A1%80%E5%BC%80%E5%8F%91%E5%B7%A5%E5%85%B7%E4%B8%8E%E7%AE%97%E6%B3%95%E5%BF%AB%E9%80%9F%E5%A4%8D%E4%B9%A0)
       - [Java 基础（共 3 天）](#java-%E5%9F%BA%E7%A1%80%E5%85%B1-3-%E5%A4%A9)
       - [开发工具（共 1 天）](#%E5%BC%80%E5%8F%91%E5%B7%A5%E5%85%B7%E5%85%B1-1-%E5%A4%A9)
-      - [算法基础（贯穿全周）](#%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80%E8%B4%AF%E7%A9%BF%E5%85%A8%E5%91%A8)
-      - [英语听力与口语（贯穿全周）](#%E8%8B%B1%E8%AF%AD%E5%90%AC%E5%8A%9B%E4%B8%8E%E5%8F%A3%E8%AF%AD%E8%B4%AF%E7%A9%BF%E5%85%A8%E5%91%A8)
     - [第 2 周：Spring 框架、数据库与缓存复习](#%E7%AC%AC-2-%E5%91%A8spring-%E6%A1%86%E6%9E%B6%E6%95%B0%E6%8D%AE%E5%BA%93%E4%B8%8E%E7%BC%93%E5%AD%98%E5%A4%8D%E4%B9%A0)
     - [第 3 周：算法强化与性能优化初步](#%E7%AC%AC-3-%E5%91%A8%E7%AE%97%E6%B3%95%E5%BC%BA%E5%8C%96%E4%B8%8E%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96%E5%88%9D%E6%AD%A5)
-    - [第 4 周：英语能力提升与面试准备](#%E7%AC%AC-4-%E5%91%A8%E8%8B%B1%E8%AF%AD%E8%83%BD%E5%8A%9B%E6%8F%90%E5%8D%87%E4%B8%8E%E9%9D%A2%E8%AF%95%E5%87%86%E5%A4%87)
   - [第二阶段 Java Cloud-Native Sprint](#%E7%AC%AC%E4%BA%8C%E9%98%B6%E6%AE%B5-java-cloud-native-sprint)
     - [执行背景](#%E6%89%A7%E8%A1%8C%E8%83%8C%E6%99%AF)
       - [声明](#%E5%A3%B0%E6%98%8E)
@@ -30,7 +27,7 @@
 
 ---
 
-## 第一阶段（第 1-4 周）：基础复习与技能提升
+## 第一阶段：基础复习与技能提升
 
 ### 第 1 周：Java 基础、开发工具与算法快速复习
 
@@ -55,15 +52,6 @@
 - IntelliJ IDEA（基础操作与快捷键）
 - Docker（容器化基础使用）
 
-#### 算法基础（贯穿全周）
-
-- 每日完成 1-2 道 Leetcode Medium 算法题目练习（数据结构与基础算法）
-
-#### 英语听力与口语（贯穿全周）
-
-- 每天收听 30 分钟英文技术播客或视频（如 TechLead）
-- 每天英文口语复述算法题或技术知识点，锻炼表达能力
-
 ### 第 2 周：Spring 框架、数据库与缓存复习
 
 - **Day1: Spring 核心**
@@ -85,24 +73,13 @@
 
 | 天次 | 学习主题 | 关键要点 | 主要产出 |
 |------|----------|----------|----------|
-| **Day 1** | 动态规划基础复盘 | - DP 四步模板<br>- 斐波那契、爬楼梯、01 背包 | 4 道题代码 + `dp-day1.md` 英文总结 |
-| **Day 2** | 动态规划进阶 | - 一维压缩、O(n log n) LIS<br>- 最大子数组和（Kadane）<br>- 区间 DP / Bitmask DP 入门 | 5 道题代码 + `dp-day2.md` 英文总结 |
-| **Day 3** | 回溯 & 贪心 | - 回溯三步框架 + 剪枝<br>- 组合/全排列/组合总和<br>- 区间贪心（无重叠区间） | 5 道题 + `backtrack-greedy-day3.md` |
-| **Day 4** | JVM 内部结构 & GC 原理 | - 堆/Metaspace 布局<br>- G1/ZGC 收集器机制<br>- GC 日志、jstat、VisualVM | `gc_base.log` + `jvm-gc-day4.md` |
-| **Day 5** | JVM 性能调优实战 | - 压测 ► 诊断 ► 调参 ► 复测闭环<br>- 参数：堆大小、MaxGCPauseMillis、IHOP | baseline / tuned 报表 + `jvm-tune-report.md` |
-| **Day 6** | MySQL 高级优化 & 索引深度 | - 覆盖索引、下推谓词<br>- Buffer Pool 命中率<br>- EXPLAIN JSON / optimizer_trace | 优化前后 EXPLAIN + `mysql-adv-day6.md` |
-| **Day 7** | 周整合 & 输出 | - 知识库 & Cheat Sheet<br>- Pull Request：GC/Index 参数合并<br>- 英文周报 ≥ 200 词 + 5 min 算法讲解视频 | `week3-cheatsheet.md` + `week3-report-en.md` + `week4-plan-draft.md` |
-
-### 第 4 周：英语能力提升与面试准备
-
-- **Day1-Day3: 技术英文阅读与写作**
-  - 阅读英文技术文章或书籍（如《Effective Java》）
-  - 每天撰写英文技术博客或学习总结
-- **Day4-Day5: 模拟技术面试**
-  - 每周进行一次英文技术面试模拟
-  - 改善英文自我介绍与技术问答表现
-- **Day6-Day7: 面试总结与准备强化**
-  - 总结本周面试经验与不足，制定针对性改进措施
+| **Day 1** | 动态规划基础复盘 | - DP 四步模板<br>- 斐波那契、爬楼梯、01 背包 | 4 道题代码 |
+| **Day 2** | 动态规划进阶 | - 一维压缩、O(n log n) LIS<br>- 最大子数组和（Kadane）<br>- 区间 DP / Bitmask DP 入门 | 5 道题代码 |
+| **Day 3** | 回溯 & 贪心 | - 回溯三步框架 + 剪枝<br>- 组合/全排列/组合总和<br>- 区间贪心（无重叠区间） | 5 道题 |
+| **Day 4** | JVM 内部结构 & GC 原理 | - 堆/Metaspace 布局<br>- G1/ZGC 收集器机制<br>- GC 日志、jstat、VisualVM | `gc_base.log` |
+| **Day 5** | JVM 性能调优实战 | - 压测 ► 诊断 ► 调参 ► 复测闭环<br>- 参数：堆大小、MaxGCPauseMillis、IHOP | baseline / tuned 报表 |
+| **Day 6** | MySQL 高级优化 & 索引深度 | - 覆盖索引、下推谓词<br>- Buffer Pool 命中率<br>- EXPLAIN JSON / optimizer_trace | 优化前后 EXPLAIN |
+| **Day 7** | 周整合 & 输出 | - 知识库 & Cheat Sheet<br>- Pull Request：GC/Index 参数合并<br>- 英文周报 ≥ 200 词 + 5 min 算法讲解视频 |  |
 
 ---
 

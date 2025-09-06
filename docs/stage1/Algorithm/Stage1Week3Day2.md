@@ -1,3 +1,49 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [Stage1 - Week3 - Day 2: Dynamic Programming Advanced](#stage1---week3---day-2-dynamic-programming-advanced)
+  - [LC 300 - Longest Increasing Subsequence](#lc-300---longest-increasing-subsequence)
+    - [O(n²) DP](#on%C2%B2-dp)
+    - [O(n log n) Binary Search Optimization](#on-log-n-binary-search-optimization)
+  - [LC 53 - Maximum Subarray (Kadane’s Algorithm)](#lc-53---maximum-subarray-kadanes-algorithm)
+    - [1️⃣ State Machine Diagram](#-state-machine-diagram)
+    - [2️⃣ Code Implementation (Core ≤ 5 Lines)](#-code-implementation-core-%E2%89%A4-5-lines)
+    - [3️⃣ DP Evolution Table (Example Input: `[-2,1,-3,4,-1,2,1,-5,4]`)](#-dp-evolution-table-example-input--21-34-121-54)
+    - [4️⃣ 2D Extension (Maximum Submatrix Sum)](#-2d-extension-maximum-submatrix-sum)
+    - [🧠 Interview Bonus Explanation](#-interview-bonus-explanation)
+  - [🧠 LC 1039 - Minimum Score Triangulation of Polygon](#-lc-1039---minimum-score-triangulation-of-polygon)
+    - [Example Validation: `[1,3,1,4,1,5]`](#example-validation-131415)
+  - [🧠 LC 1312 - Minimum Insertion Steps to Make a String Palindrome](#-lc-1312---minimum-insertion-steps-to-make-a-string-palindrome)
+    - [Example Validation: `"abcba"`](#example-validation-abcba)
+  - [🧮 Additional: DP Table Structure Explanation](#-additional-dp-table-structure-explanation)
+  - [LC 698 Partition to K Equal Sum Subsets](#lc-698-partition-to-k-equal-sum-subsets)
+    - [**Algorithm Type**:](#algorithm-type)
+    - [**Time Complexity**:](#time-complexity)
+    - [**Space Complexity**:](#space-complexity)
+    - [**Code Review Tips**:](#code-review-tips)
+    - [Code:](#code)
+  - [LC 464 Can I Win](#lc-464-can-i-win)
+  - [LC 464 - Can I Win](#lc-464---can-i-win)
+    - [**Algorithm Type**:](#algorithm-type-1)
+    - [**Time Complexity**:](#time-complexity-1)
+    - [**Space Complexity**:](#space-complexity-1)
+    - [✅ Key Points Explained](#-key-points-explained)
+    - [Code](#code)
+    - [🧠 Additional Suggestions:](#-additional-suggestions)
+  - [LC 354 Russian Doll Envelopes](#lc-354-russian-doll-envelopes)
+    - [**Algorithm Type**:](#algorithm-type-2)
+    - [**Time Complexity**:](#time-complexity-2)
+    - [**Space Complexity**:](#space-complexity-2)
+  - [🧠 Key Insights:](#-key-insights)
+    - [🚩 1. Cannot directly apply LIS to 2D arrays](#-1-cannot-directly-apply-lis-to-2d-arrays)
+    - [🚩 2. Special Sorting Technique (Core Trick ⚠️):](#-2-special-sorting-technique-core-trick-)
+    - [🚩 3. Binary Search-Optimized LIS (Explanation of `tails`)](#-3-binary-search-optimized-lis-explanation-of-tails)
+    - [✨ Example](#-example)
+    - [Code](#code-1)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Stage1 - Week3 - Day 2: Dynamic Programming Advanced
 
 ______________________________________________________________________

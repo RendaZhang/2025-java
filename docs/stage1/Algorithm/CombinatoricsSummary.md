@@ -1,3 +1,20 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [🎯 Combinatorics Summary (Unified Perspective · Enhanced Version)](#-combinatorics-summary-unified-perspective-%C2%B7-enhanced-version)
+  - [🧩 Multiset Permutations — The Unifying Core](#-multiset-permutations--the-unifying-core)
+  - [✅ Unified View of Combinatorics Types](#-unified-view-of-combinatorics-types)
+  - [🔍 Deep Dive: Why Combination is a Multiset Permutation](#-deep-dive-why-combination-is-a-multiset-permutation)
+    - [Regular combination C(n, k)](#regular-combination-cn-k)
+    - [Combination with replacement C(n + k - 1, k)](#combination-with-replacement-cn--k---1-k)
+  - [🧠 Knowledge Tree (Text Version)](#-knowledge-tree-text-version)
+  - [🧪 Practice Tips](#-practice-tips)
+  - [✅ Python Example: Multiset Permutation Counter](#-python-example-multiset-permutation-counter)
+  - [📚 Keywords Recap](#-keywords-recap)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # 🎯 Combinatorics Summary (Unified Perspective · Enhanced Version)
 
 Most problems in combinatorics can be understood as **special cases or transformations of multiset permutations**. This document summarizes all major counting types and explains how they relate under one unified framework.
