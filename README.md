@@ -113,7 +113,7 @@
 #### 快速导航
 
 - 一键重建/销毁脚本：`infra/`（Terraform + 脚本）
-- 学习笔记（Google Drive/2025）：按模块对应 Week 5~8
+- 学习笔记（Google Drive/2025）
 
 ### 时间轴 & 核心交付物
 
