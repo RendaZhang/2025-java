@@ -8,12 +8,11 @@
   - [第 1 步：开场与环境就绪（10–15 分钟）](#%E7%AC%AC-1-%E6%AD%A5%E5%BC%80%E5%9C%BA%E4%B8%8E%E7%8E%AF%E5%A2%83%E5%B0%B1%E7%BB%AA1015-%E5%88%86%E9%92%9F)
     - [创建 `docs/interview/QBANK.md`：](#%E5%88%9B%E5%BB%BA-docsinterviewqbankmd)
     - [创建 `docs/interview/elevator_pitch_en.md`](#%E5%88%9B%E5%BB%BA-docsinterviewelevator_pitch_enmd)
-  - [第 2 步：算法训练](#%E7%AC%AC-2-%E6%AD%A5%E7%AE%97%E6%B3%95%E8%AE%AD%E7%BB%83)
-    - [题 A：最短长度子数组和 ≥ S（可变长度滑动窗口）](#%E9%A2%98-a%E6%9C%80%E7%9F%AD%E9%95%BF%E5%BA%A6%E5%AD%90%E6%95%B0%E7%BB%84%E5%92%8C-%E2%89%A5-s%E5%8F%AF%E5%8F%98%E9%95%BF%E5%BA%A6%E6%BB%91%E5%8A%A8%E7%AA%97%E5%8F%A3)
-      - [约束与提示](#%E7%BA%A6%E6%9D%9F%E4%B8%8E%E6%8F%90%E7%A4%BA)
-      - [伪码（按这个思路写就行）](#%E4%BC%AA%E7%A0%81%E6%8C%89%E8%BF%99%E4%B8%AA%E6%80%9D%E8%B7%AF%E5%86%99%E5%B0%B1%E8%A1%8C)
-      - [自测用例（全部应通过）](#%E8%87%AA%E6%B5%8B%E7%94%A8%E4%BE%8B%E5%85%A8%E9%83%A8%E5%BA%94%E9%80%9A%E8%BF%87)
-      - [常见坑](#%E5%B8%B8%E8%A7%81%E5%9D%91)
+  - [第 2 步：算法训练（LeetCode，60–90 分钟）](#%E7%AC%AC-2-%E6%AD%A5%E7%AE%97%E6%B3%95%E8%AE%AD%E7%BB%83leetcode6090-%E5%88%86%E9%92%9F)
+    - [LC 904. Fruit Into Baskets（中等，Sliding Window + HashMap）](#lc-904-fruit-into-baskets%E4%B8%AD%E7%AD%89sliding-window--hashmap)
+    - [LC 167. Two Sum II – Input Array Is Sorted（简单，Two Pointers）](#lc-167-two-sum-ii--input-array-is-sorted%E7%AE%80%E5%8D%95two-pointers)
+    - [LC 209. Minimum Size Subarray Sum（中等，Sliding Window）](#lc-209-minimum-size-subarray-sum%E4%B8%AD%E7%AD%89sliding-window)
+    - [复盘 LC 904](#%E5%A4%8D%E7%9B%98-lc-904)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -86,45 +85,44 @@ Hi, I’m Renda Zhang, a Java backend developer focused on cloud-native microser
 
 ---
 
-## 第 2 步：算法训练
+## 第 2 步：算法训练（LeetCode，60–90 分钟）
 
-### 题 A：最短长度子数组和 ≥ S（可变长度滑动窗口）
+目标：
 
-**要求**：给定正整数数组 `nums` 与目标值 `target`，返回和 ≥ `target` 的最短连续子数组长度；不存在则返回 0。
-**函数签名（Java）**：`int minSubArrayLen(int target, int[] nums)`
+完成 2 题（滑动窗口 + 双指针），可选 1 题挑战；并对其中 1 题做高质量复盘。
 
-#### 约束与提示
+> 小提示：如果某题卡住 >10 分钟再看提示；否则先独立思考。
 
-* 假设 `nums[i] > 0`（全正数，这是滑窗可行的关键）。
-* 目标是 **O(n)** 时间、**O(1)** 额外空间。
-* 窗口右指针向右推进累加；当窗口内和 ≥ target 时，尽量左缩小窗口并更新最小长度。
+### LC 904. Fruit Into Baskets（中等，Sliding Window + HashMap）
 
-#### 伪码（按这个思路写就行）
+- 思路提示：维护一个“最多包含两种元素”的窗口；用 `count[type]` 记录数量；当种类数 > 2 时左指针缩小直到回到 ≤ 2；每轮更新最大窗口长度。
+- 关键不变量：窗口内**水果种类 ≤ 2**。
+- 常见坑：缩窗时记得把 `count[left]` 递减到 0 再删除键；更新答案的位置要在扩窗后每轮都尝试。
+- 自测用例：
+  - `[1,2,1] -> 3`
+  - `[0,1,2,2] -> 3`
+  - `[1,2,3,2,2] -> 4`
 
-```text
-minLen = +∞
-sum = 0
-left = 0
-for right in [0..n-1]:
-  sum += nums[right]
-  while sum >= target:
-    minLen = min(minLen, right - left + 1)
-    sum -= nums[left]
-    left += 1
-return (minLen == +∞) ? 0 : minLen
-```
+### LC 167. Two Sum II – Input Array Is Sorted（简单，Two Pointers）
 
-#### 自测用例（全部应通过）
+- 思路提示：有序数组；左右指针夹逼。`sum < target` 左指针右移；`sum > target` 右指针左移；相等返回（注意题目通常要求 1-based 索引）。
+- 常见坑：越界与死循环；别用哈希表（本题更看重双指针）。
+- 自测用例：`numbers=[2,7,11,15], target=9 -> [1,2]`
 
-* `target=7, nums=[2,3,1,2,4,3]  -> 2`（子数组 `[4,3]`）
-* `target=4, nums=[1,4,4]        -> 1`
-* `target=11, nums=[1,1,1,1,1,1,1,1] -> 0`
-* 边界：`target=1, nums=[1] -> 1`；`target=3, nums=[2] -> 0`
+### LC 209. Minimum Size Subarray Sum（中等，Sliding Window）
 
-#### 常见坑
+- 思路提示：正整数数组；右指针扩张累加，`sum >= target` 时左指针尽可能收缩并更新最短长度。
+- 自测用例：`target=7, nums=[2,3,1,2,4,3] -> 2`
 
-* 更新 `minLen` 后别忘了左缩时把 `sum` 减去 `nums[left]` 再 `left++`。
-* 别把“固定窗口大小的最大/最小和问题”的写法套过来；本题窗口是**可变长**。
-* 返回值为 0 的判定：`minLen` 没被更新时。
+### 复盘 LC 904
 
-> 进阶（可选）：再写一个 `O(n log n)` 的前缀和 + 二分版本，对比两者复杂度与实现复杂度。
+按以下结构写复盘（200–300 字）：
+
+- **Pattern**（滑动窗口/双指针）
+- **Intuition**（为什么这样滑/夹逼）
+- **Steps**（关键循环与收缩/扩张条件）
+- **Complexity**：Time/Space
+- **Edge Cases**（空数组、单元素、全相同、多种类切换等）
+- **Mistakes & Fix**（今天踩过的 1–2 个坑）
+
+---
