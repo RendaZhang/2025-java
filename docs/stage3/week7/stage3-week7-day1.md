@@ -10,10 +10,10 @@
     - [创建 `docs/interview/elevator_pitch_en.md`](#%E5%88%9B%E5%BB%BA-docsinterviewelevator_pitch_enmd)
   - [第 2 步：算法训练](#%E7%AC%AC-2-%E6%AD%A5%E7%AE%97%E6%B3%95%E8%AE%AD%E7%BB%83)
     - [题 A：最短长度子数组和 ≥ S（可变长度滑动窗口）](#%E9%A2%98-a%E6%9C%80%E7%9F%AD%E9%95%BF%E5%BA%A6%E5%AD%90%E6%95%B0%E7%BB%84%E5%92%8C-%E2%89%A5-s%E5%8F%AF%E5%8F%98%E9%95%BF%E5%BA%A6%E6%BB%91%E5%8A%A8%E7%AA%97%E5%8F%A3)
-  - [约束与提示](#%E7%BA%A6%E6%9D%9F%E4%B8%8E%E6%8F%90%E7%A4%BA)
-  - [伪码（按这个思路写就行）](#%E4%BC%AA%E7%A0%81%E6%8C%89%E8%BF%99%E4%B8%AA%E6%80%9D%E8%B7%AF%E5%86%99%E5%B0%B1%E8%A1%8C)
-  - [自测用例（全部应通过）](#%E8%87%AA%E6%B5%8B%E7%94%A8%E4%BE%8B%E5%85%A8%E9%83%A8%E5%BA%94%E9%80%9A%E8%BF%87)
-  - [常见坑](#%E5%B8%B8%E8%A7%81%E5%9D%91)
+      - [约束与提示](#%E7%BA%A6%E6%9D%9F%E4%B8%8E%E6%8F%90%E7%A4%BA)
+      - [伪码（按这个思路写就行）](#%E4%BC%AA%E7%A0%81%E6%8C%89%E8%BF%99%E4%B8%AA%E6%80%9D%E8%B7%AF%E5%86%99%E5%B0%B1%E8%A1%8C)
+      - [自测用例（全部应通过）](#%E8%87%AA%E6%B5%8B%E7%94%A8%E4%BE%8B%E5%85%A8%E9%83%A8%E5%BA%94%E9%80%9A%E8%BF%87)
+      - [常见坑](#%E5%B8%B8%E8%A7%81%E5%9D%91)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -93,13 +93,13 @@ Hi, I’m Renda Zhang, a Java backend developer focused on cloud-native microser
 **要求**：给定正整数数组 `nums` 与目标值 `target`，返回和 ≥ `target` 的最短连续子数组长度；不存在则返回 0。
 **函数签名（Java）**：`int minSubArrayLen(int target, int[] nums)`
 
-## 约束与提示
+#### 约束与提示
 
 * 假设 `nums[i] > 0`（全正数，这是滑窗可行的关键）。
 * 目标是 **O(n)** 时间、**O(1)** 额外空间。
 * 窗口右指针向右推进累加；当窗口内和 ≥ target 时，尽量左缩小窗口并更新最小长度。
 
-## 伪码（按这个思路写就行）
+#### 伪码（按这个思路写就行）
 
 ```text
 minLen = +∞
@@ -114,14 +114,14 @@ for right in [0..n-1]:
 return (minLen == +∞) ? 0 : minLen
 ```
 
-## 自测用例（全部应通过）
+#### 自测用例（全部应通过）
 
 * `target=7, nums=[2,3,1,2,4,3]  -> 2`（子数组 `[4,3]`）
 * `target=4, nums=[1,4,4]        -> 1`
 * `target=11, nums=[1,1,1,1,1,1,1,1] -> 0`
 * 边界：`target=1, nums=[1] -> 1`；`target=3, nums=[2] -> 0`
 
-## 常见坑
+#### 常见坑
 
 * 更新 `minLen` 后别忘了左缩时把 `sum` 减去 `nums[left]` 再 `left++`。
 * 别把“固定窗口大小的最大/最小和问题”的写法套过来；本题窗口是**可变长**。
