@@ -17,13 +17,16 @@
       - [快速导航](#%E5%BF%AB%E9%80%9F%E5%AF%BC%E8%88%AA)
     - [时间轴 & 核心交付物](#%E6%97%B6%E9%97%B4%E8%BD%B4--%E6%A0%B8%E5%BF%83%E4%BA%A4%E4%BB%98%E7%89%A9)
   - [第三阶段 后端 & 全栈 Sprint](#%E7%AC%AC%E4%B8%89%E9%98%B6%E6%AE%B5-%E5%90%8E%E7%AB%AF--%E5%85%A8%E6%A0%88-sprint)
-    - [目标（Goals）](#%E7%9B%AE%E6%A0%87goals)
+    - [目标](#%E7%9B%AE%E6%A0%87)
       - [面向岗位](#%E9%9D%A2%E5%90%91%E5%B2%97%E4%BD%8D)
       - [总目标（至 2025 年底）](#%E6%80%BB%E7%9B%AE%E6%A0%87%E8%87%B3-2025-%E5%B9%B4%E5%BA%95)
       - [分目标](#%E5%88%86%E7%9B%AE%E6%A0%87)
-      - [验收口径（Success Criteria）](#%E9%AA%8C%E6%94%B6%E5%8F%A3%E5%BE%84success-criteria)
-      - [边界与约束（Guardrails）](#%E8%BE%B9%E7%95%8C%E4%B8%8E%E7%BA%A6%E6%9D%9Fguardrails)
-    - [时间轴（Timeline）](#%E6%97%B6%E9%97%B4%E8%BD%B4timeline)
+      - [验收口径](#%E9%AA%8C%E6%94%B6%E5%8F%A3%E5%BE%84)
+      - [边界与约束](#%E8%BE%B9%E7%95%8C%E4%B8%8E%E7%BA%A6%E6%9D%9F)
+    - [目标岗位画像](#%E7%9B%AE%E6%A0%87%E5%B2%97%E4%BD%8D%E7%94%BB%E5%83%8F)
+      - [后端工程师（Java / 云原生）岗位画像](#%E5%90%8E%E7%AB%AF%E5%B7%A5%E7%A8%8B%E5%B8%88java--%E4%BA%91%E5%8E%9F%E7%94%9F%E5%B2%97%E4%BD%8D%E7%94%BB%E5%83%8F)
+      - [全栈工程师（React/TS + Java 后端）岗位画像](#%E5%85%A8%E6%A0%88%E5%B7%A5%E7%A8%8B%E5%B8%88reactts--java-%E5%90%8E%E7%AB%AF%E5%B2%97%E4%BD%8D%E7%94%BB%E5%83%8F)
+    - [时间轴](#%E6%97%B6%E9%97%B4%E8%BD%B4)
       - [Week 7｜准备与能力打底](#week-7%EF%BD%9C%E5%87%86%E5%A4%87%E4%B8%8E%E8%83%BD%E5%8A%9B%E6%89%93%E5%BA%95)
       - [Week 8｜成稿与模拟面试](#week-8%EF%BD%9C%E6%88%90%E7%A8%BF%E4%B8%8E%E6%A8%A1%E6%8B%9F%E9%9D%A2%E8%AF%95)
 
@@ -137,7 +140,7 @@
 
 ## 第三阶段 后端 & 全栈 Sprint
 
-### 目标（Goals）
+### 目标
 
 #### 面向岗位
 
@@ -154,22 +157,92 @@
 - **知识与技能**：完成算法基础肌肉记忆（数组/哈希/链表/栈队列/树/堆/双指针/基础 DP），巩固后端/云原生/全栈必考点（API 设计、数据库与缓存、一致性与消息、并发、K8s 基础、发布与可观测、前端工程化与性能/安全）。
 - **演练**：通过多轮模拟面试（技术问答/系统设计/行为面/英文沟通），建立“题目→答案模板→追问清单→改进记录”的闭环。
 
-#### 验收口径（Success Criteria）
+#### 验收口径
 
 - **材料完备**：上述文档与中/英简历全部到位且相互一致；关键问题能在 **1–3 分钟**内结构化讲清楚。
 - **演练达标**：Week 8 完成 **≥4 场**模拟面试，并为每场产出复盘要点与改进项；英文口述能够流畅完成自我介绍与 2 类常见追问（trade‑off / incident）。
 - **算法达标**：完成一周基础题型覆盖与错题复盘，形成 3–5 个可复用的解题模板（双指针、滑窗、树遍历、堆/TopK、基础 DP）。
 
-#### 边界与约束（Guardrails）
+#### 边界与约束
 
 - 不做或尽量不做新项目实操；如需举例，一律使用白板式伪代码或既有素材。
 - 简历仅写工作经历，不单列项目；不写具体业务数据。
 - 文档要点化、≤5 页/份；**尽量**每日产出最小可追溯记录（题解/要点 bullets/录音/或一次小型 commit）。
 - 保持“后端 + 全栈”双线可讲，但不过度展开，以“可复述、能落地”为准。
 
-### 时间轴（Timeline）
+### 目标岗位画像
 
-> 两周总节奏：每天三件事 = 算法 + 面试能力/知识 + 英语（学习即写文档，按需更新 `architecture.md / interview_qna.md / star_stories.md / elevator_pitch_en.txt`）。
+#### 后端工程师（Java / 云原生）岗位画像
+
+**职责范围**
+
+- 设计与实现微服务 API（REST/gRPC），聚焦鉴权、幂等、限流、重试、熔断、灰度发布。
+- 数据与缓存：关系型数据库建模/索引/事务；读写分离；Redis 缓存与一致性策略。
+- 工程化与交付：Docker 容器化、Kubernetes 上线（常见为 EKS/ACK/TKE）、CI/CD 流水线与回滚。
+- 可观测与稳定性：日志/指标/链路追踪（OpenTelemetry/Prometheus/Grafana）、SLO/告警阈值、事故响应与复盘。
+- 基础云与安全：云服务最佳实践、IAM/OIDC、最小权限策略（如 IRSA）、密钥与配置管理。
+
+**必备技能**
+
+- Java 17+/Spring Boot 3.x、面向对象与并发基础（线程池、可见性、锁/无锁思路、CompletableFuture）。
+- SQL 基础扎实（查询与索引优化、事务隔离），Redis 常见模型（缓存穿透/击穿/雪崩治理）。
+- 微服务设计：服务拆分边界、API 版本化、幂等键/去重、消息队列（Kafka/SQS/RabbitMQ 其一）。
+- 容器化 + K8s（部署、探针、HPA、Config/Secret、PDB），能读 CI/CD YAML 并调试。
+- 可观测（日志聚合、指标与追踪），能从图/日志定位瓶颈并提出权衡。
+
+**加分项**
+
+- IaC（Terraform/CDK）、服务网格、金丝雀/蓝绿、成本与容量规划、Chaos/演练方法论。
+- 安全与合规（CSP/PCI/数据脱敏）、多账号/多环境治理、跨云或跨区域高可用。
+
+**典型面试关注点**
+
+- 设计取舍：一致性 vs 可用性、强一致/最终一致如何落地（Outbox/重试/补偿）。
+- 伸缩与稳定：HPA 策略、探针与就绪/存活、PDB、限流与熔断、发布回滚设计。
+- 诊断能力：一次真实事故的排查路径（指标→日志→追踪→根因→长期修复）。
+- 代码面：中等难度算法/数据结构（数组/哈希/树/图/堆/双指针/基础 DP）+ 可读性与边界意识。
+- 英语沟通（外企常见）：电梯陈述、系统设计阐述、postmortem 复盘要点。
+
+**简历关键词**
+
+- 中文：Java、Spring Boot、微服务、API 设计、鉴权、幂等、限流、消息队列、MySQL、Redis、容器化、Kubernetes、CI/CD、可观测（日志/指标/链路）、SLO、灰度发布、基础云（AWS/阿里云/腾讯云）、最小权限（OIDC/IRSA）、IaC（Terraform/CDK）。
+- English: Java 17+, Spring Boot 3, Microservices, API design, Idempotency, Rate limiting, Messaging (Kafka/SQS), MySQL, Redis, Docker, Kubernetes, CI/CD, Observability (OTel/Prometheus/Grafana), SLO, Canary/Blue-Green, Cloud (AWS/AliCloud/Tencent Cloud), Least-privilege (OIDC/IRSA), IaC (Terraform/CDK).
+
+#### 全栈工程师（React/TS + Java 后端）岗位画像
+
+**职责范围**
+
+- 前端：React 18+/TypeScript，组件化与状态管理、路由、表单、可访问性与性能、SSR/CSR/“岛屿架构”（如 Astro 的选择性水合）。
+- 后端：Java/Spring Boot 提供 BFF/微服务 API（鉴权、会话/JWT、CORS、缓存、风控），与前端约定契约并联调。
+- 工程化：Vite/构建优化、ESLint/Prettier、pre-commit、单元/集成/端到端测试、CSP 与缓存策略、Sentry 监控、CDN/Nginx 发布。
+- DevEx：环境变量治理（前后端一致）、灰度上线与回滚、前后端观测串联。
+
+**必备技能**
+
+- React + TS 熟练，能写清晰的组件与 hooks；网络与渲染基础（HTTP/缓存/首屏/懒加载）。
+- Node/NPM 基础、打包与调试、常用测试框架（Jest/Vitest/Playwright 其一）。
+- Java 后端能力与接口设计；鉴权与常见安全（XSS/CSRF/CORS/CSP）。
+- CI/CD 基本功（构建、扫描、预发/回滚流程），日志/异常上报（Sentry 或等价）。
+
+**加分项**
+
+- Astro/Next.js/SSR/ISR 实战、图片与字体优化、i18n、性能预算与指标治理（LCP/CLS/INP）。
+- GraphQL/BFF、前后端统一错误码与观测字段、基础埋点与数据治理。
+
+**典型面试关注点**
+
+- 端到端题：设计并实现一个小功能（API 契约→后端接口→前端渲染→鉴权/校验→灰度上线）。
+- 性能与安全：从网络与渲染两侧优化；CORS/CSP 的取舍；错误上报与版本回滚。
+- 协作与取舍：与产品/设计约束下的实现策略、可维护性与一致性。
+
+**简历关键词**
+
+- 中文：React、TypeScript、组件化、路由、表单、SSR/CSR/选择性水合、性能优化、Sentry、CSP、Nginx/CDN、CI/CD、BFF、鉴权、安全、Java/Spring Boot。
+- English: React, TypeScript, Component design, Routing, Forms, SSR/CSR/Selective hydration, Performance, Sentry, CSP, Nginx/CDN, CI/CD, BFF, AuthN/Z, Java/Spring Boot.
+
+### 时间轴
+
+> 两周总节奏：每天三件事 = 算法 + 面试能力/知识 + 英语（学习即写文档，按需更新 `architecture.md / QBANK.md / star_stories.md / elevator_pitch_en.md`）。
 
 #### Week 7｜准备与能力打底
 
@@ -182,5 +255,3 @@
 - **D1｜简历日（唯一任务）**：完成中/英一页简历（仅写工作经历；融合后端/全栈与云原生要点；不写具体业务数据）；同步英文电梯陈述。
 - **D2–D6｜模拟面试循环**：每日 1 场 Mock（主题轮换：行为/英语、编码、后端问答、系统设计、全栈与排查）；当日复盘回填材料。
 - **D7｜综合演练**：全流程模拟（代码 + 设计 + 行为 + 英文 Q&A）；输出最终回答模板索引与高频追问清单。
-
-> 备注：岗位 JD 讨论与定向投递策略，将在后续对话中单独对齐，不纳入本时间

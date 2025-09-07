@@ -3,7 +3,7 @@
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
 - [第三阶段 后端 & 全栈 Sprint](#%E7%AC%AC%E4%B8%89%E9%98%B6%E6%AE%B5-%E5%90%8E%E7%AB%AF--%E5%85%A8%E6%A0%88-sprint)
-  - [时间轴（Timeline）](#%E6%97%B6%E9%97%B4%E8%BD%B4timeline)
+  - [时间轴](#%E6%97%B6%E9%97%B4%E8%BD%B4)
     - [Week 7｜准备与能力打底](#week-7%EF%BD%9C%E5%87%86%E5%A4%87%E4%B8%8E%E8%83%BD%E5%8A%9B%E6%89%93%E5%BA%95)
     - [Week 8｜成稿与模拟面试](#week-8%EF%BD%9C%E6%88%90%E7%A8%BF%E4%B8%8E%E6%A8%A1%E6%8B%9F%E9%9D%A2%E8%AF%95)
   - [Week 7｜每日清单](#week-7%EF%BD%9C%E6%AF%8F%E6%97%A5%E6%B8%85%E5%8D%95)
@@ -27,9 +27,9 @@
 
 # 第三阶段 后端 & 全栈 Sprint
 
-## 时间轴（Timeline）
+## 时间轴
 
-> 两周总节奏：每天三件事 = 算法 + 面试能力/知识 + 英语（学习即写文档，按需更新 `architecture.md / interview_qna.md / star_stories.md / elevator_pitch_en.txt`）。
+> 两周总节奏：每天三件事 = 算法 + 面试能力/知识 + 英语（学习即写文档，按需更新 `architecture.md / QBANK.md / star_stories.md / elevator_pitch_en.md`）。
 
 ### Week 7｜准备与能力打底
 
@@ -43,60 +43,58 @@
 - **D2–D6｜模拟面试循环**：每日 1 场 Mock（主题轮换：行为/英语、编码、后端问答、系统设计、全栈与排查）；当日复盘回填材料。
 - **D7｜综合演练**：全流程模拟（代码 + 设计 + 行为 + 英文 Q&A）；输出最终回答模板索引与高频追问清单。
 
-> 备注：岗位 JD 讨论与定向投递策略，将在后续对话中单独对齐，不纳入本时间轴。
-
 ---
 
 ## Week 7｜每日清单
 
-> 每天三件事：**算法（60–90m） + 面试能力/知识（90m） + 英语（30–45m）**，学习即按需更新文档（`architecture.md / interview_qna.md / star_stories.md / elevator_pitch_en.txt`）。不做重型实操。
+> 每天三件事：**算法（60–90m） + 面试能力/知识（90m） + 英语（30–45m）**，学习即按需更新文档（`architecture.md / QBANK.md / star_stories.md / elevator_pitch_en.md`）。不做重型实操。
 
 ### Day 1｜开场与 API 设计
 
 - **算法**：数组/哈希 → 滑动窗口、双指针；做 2–3 题（含 1 题复盘）。
-- **面试能力/知识**：API 设计与可靠性（契约、版本化、鉴权、幂等、限流/重试/熔断、错误码）→ 在 `qna.md#api` 写要点（≤7 条）。
+- **面试能力/知识**：API 设计与可靠性（契约、版本化、鉴权、幂等、限流/重试/熔断、错误码）→ 在 `QBANK.md` 写要点（≤7 条）。
 - **英语**：45 秒英文自我介绍首版；演练 “Why this API design?”（1 分钟）。
 - **当日收尾**：列出本周目标与卡点；提交当日 commit（算法题解+Q\&A）。
 
 ### Day 2｜数据库与缓存
 
 - **算法**：链表 / 栈队列 → 快慢指针、单调栈；做 2–3 题。
-- **面试能力/知识**：数据库索引与事务；读写分离与缓存一致性（穿透/击穿/雪崩治理）→ `qna.md#db_cache` 要点；`architecture.md#数据层` 补 1 小节。
+- **面试能力/知识**：数据库索引与事务；读写分离与缓存一致性（穿透/击穿/雪崩治理）→ `QBANK.md` 要点；`architecture.md` 补 1 小节。
 - **英语**：用英文讲 “如何定位慢查询与索引失效”（1 分钟）。
 - **当日收尾**：错题记录 + 索引排查清单（≤10 行）。
 
 ### Day 3｜消息与一致性
 
 - **算法**：二叉树遍历（前中后/层序，递归 vs 迭代）；做 2–3 题。
-- **面试能力/知识**：消息队列与最终一致性（Outbox、去重键、退避重试、死信队列、顺序性）→ `qna.md#messaging`；画一张简化时序图到 `architecture.md#异步`。
+- **面试能力/知识**：消息队列与最终一致性（Outbox、去重键、退避重试、死信队列、顺序性）→ `QBANK.md`；画一张简化时序图到 `architecture.md`。
 - **英语**：术语双语卡片：at‑least‑once / idempotency / outbox / backoff（各 1 句解释）。
 - **当日收尾**：把“可复用回答模板”写成 5–7 条 bullet。
 
 ### Day 4｜Java 并发
 
 - **算法**：回溯模板（子集/组合/排列之一）；做 2–3 题。
-- **面试能力/知识**：线程池参数、阻塞队列、可见性（volatile）、锁/无锁思路、CompletableFuture → `qna.md#concurrency`。
+- **面试能力/知识**：线程池参数、阻塞队列、可见性（volatile）、锁/无锁思路、CompletableFuture → `QBANK.md`。
 - **英语**：1 分钟回答 “How do you choose thread‑pool parameters?”。
 - **当日收尾**：并发排障清单（死锁/饥饿/线程泄漏）≤10 行。
 
 ### Day 5｜可观测与发布
 
 - **算法**：堆/优先队列（TopK、合并流）；做 2–3 题。
-- **面试能力/知识**：日志/指标/追踪（OTel/Prom/Grafana 基本面）；SLO/告警阈值；发布与回滚（灰度/蓝绿）→ `qna.md#observability_release`；`architecture.md#发布` 补 1 小节。
+- **面试能力/知识**：日志/指标/追踪（OTel/Prom/Grafana 基本面）；SLO/告警阈值；发布与回滚（灰度/蓝绿）→ `QBANK.md`；`architecture.md` 补 1 小节。
 - **英语**：incident postmortem（1 分钟结构化复盘）。
 - **当日收尾**：收集 3 个常见告警场景与处置策略。
 
 ### Day 6｜Kubernetes/云原生最小面
 
 - **算法**：动态规划入门（爬楼梯/打家劫舍思路抽象）；做 2–3 题。
-- **面试能力/知识**：Pod/Service/Ingress、探针、HPA、Config/Secret、PDB、最小权限（OIDC/IRSA）→ `qna.md#k8s_basics`。
+- **面试能力/知识**：Pod/Service/Ingress、探针、HPA、Config/Secret、PDB、最小权限（OIDC/IRSA）→ `QBANK.md`。
 - **英语**：1 分钟说明 “Why HPA + probes + least‑privilege?”。
 - **当日收尾**：把“扩缩容与故障演练”的回答写成 5–7 条 bullet。
 
 ### Day 7｜全栈与一周复盘
 
 - **算法**：周错题复盘 + 计时 1 题（30–45m）。
-- **面试能力/知识**：全栈关键点（React/TS、路由与表单、SSR/CSR/选择性水合、CSP/缓存、Sentry、env 管理）→ `qna.md#fullstack`；`architecture.md#前端集成` 补 1 小节。
+- **面试能力/知识**：全栈关键点（React/TS、路由与表单、SSR/CSR/选择性水合、CSP/缓存、Sentry、env 管理）→ `QBANK.md`；`architecture.md` 补 1 小节。
 - **英语**：解释 “SSR vs CSR vs selective hydration” 的取舍（1 分钟）。
 - **当日收尾**：形成“简历日（Week 8 D1）需要改写的表达与关键词”清单（不写具体业务数据）。
 
@@ -110,7 +108,7 @@
 
 - **前置准备**
   - 打开并备份两份最新简历：`20250622_张人大_Java后端开发.docx` 与 `20250622_RendaZhang_JavaBackendDeveloper.docx`（另存为当日副本）。
-  - 打开对齐材料：`architecture.md / interview_qna.md / star_stories.md / elevator_pitch_en.txt`（用于术语与表述一致）。
+  - 打开对齐材料：`architecture.md / QBANK.md / star_stories.md / elevator_pitch_en.md`（用于术语与表述一致）。
   - 建立一个当日勾选表（纸质/电子皆可），避免漏项。
 - **内容改写（中文→英文同步）**
   1. **最近工作经历（唯一主体）**：改写为 6–8 条职责/方法要点；自然融入后端/云原生/全栈关键词（Java/Spring Boot、微服务、API 设计/鉴权/幂等、消息队列、MySQL/Redis、Docker/Kubernetes、CI/CD、可观测、发布与回滚、React/TypeScript、CSP/Sentry、Nginx/CDN）。**不写具体业务数据**。
@@ -127,7 +125,7 @@
     - 文件名规范：`RendaZhang_Resume_CN_2025W8D1.pdf` / `RendaZhang_Resume_EN_2025W8D1.pdf`。
 - **自检清单：三读 + 两一致 + 一演练**
   1. 三读：事实/语法/版式。
-  2. 两一致：与 `architecture.md / interview_qna.md / star_stories.md` 的术语与说法一致；中英两版相互一致。
+  2. 两一致：与 `architecture.md / QBANK.md / star_stories.md` 的术语与说法一致；中英两版相互一致。
   3. 一演练：对照简历完成 45 秒英文电梯陈述 与 90 秒中文版本；各录音 1 次快速回听。
 - **提交与备份**
   - 将 PDF 与源文件放入 `docs/resume/`（或你的既有路径），Git 提交并 Push；同步一份到网盘/云盘，生成可分享链接。
@@ -143,28 +141,28 @@
 
 - **热身**：10’ 模板回顾（双指针/滑窗/树/堆/基础 DP）。
 - **模拟**：45–60’ 代码题（边思路边实现；口述复杂度与边界）。
-- **复盘**：错因分类（读题/边界/实现/复杂度）；把可复用模板记入 `interview_qna.md#coding_patterns`。
+- **复盘**：错因分类（读题/边界/实现/复杂度）；把可复用模板记入 `QBANK.md`。
 - **收尾**：准备 1 段“如何优化/重构该题”的口述版。
 
 ### Day 4｜Mock #3 后端问答（Java/DB/缓存/并发）
 
 - **热身**：3 分钟口播“数据库索引与缓存一致性”的要点。
 - **模拟**：50’ 后端问答 + 10’ 追问（权衡与落地）。
-- **复盘**：把不会/不稳的问题写成 5–7 条要点 → `interview_qna.md#backend_core`。
+- **复盘**：把不会/不稳的问题写成 5–7 条要点 → `QBANK.md`。
 - **收尾**：为 2 个薄弱点准备“反问与澄清”句式（中/英）。
 
 ### Day 5｜Mock #4 系统设计（服务化与伸缩）
 
 - **热身**：5’ 需求澄清清单 + 5’ 容量/一致性/观测三角形。
 - **模拟**：60’ 设计题（需求→边界→数据/一致性→伸缩/缓存/队列→观测/发布/成本）。
-- **复盘**：把白板方案整理入 `architecture.md#system_design_case`；列出 3 个可替代的权衡点。
+- **复盘**：把白板方案整理入 `architecture.md`；列出 3 个可替代的权衡点。
 - **收尾**：准备 1 分钟“如何做发布回滚与告警阈值”的口述。
 
 ### Day 6｜Mock #5 全栈 & 线上问题排查
 
 - **热身**：前端渲染策略与安全（SSR/CSR/选择性水合、CSP/缓存、Sentry）。
 - **模拟**：30’ 全栈问答（BFF/鉴权/联调）、20’ 线上问题排查（网络/浏览器/后端日志三向定位）。
-- **复盘**：补 `interview_qna.md#fullstack_troubleshooting` 与 `architecture.md#frontend_integration` 要点。
+- **复盘**：补 `QBANK.md` 与 `architecture.md` 要点。
 - **收尾**：把“CORS/CSP/鉴权常见坑”写成 1 页卡片（≤12 条）。
 
 ### Day 7｜Mock #6 综合 Panel（终面演练）
