@@ -1,8 +1,13 @@
-package com.renda.leetcode;
+package com.renda.leetcode.problems;
 
+import com.renda.leetcode.core.LeetCodeProblem;
+import java.util.Arrays;
 import java.util.List;
 
-public class LC120_Triangle {
+/**
+ * LeetCode 120 - Triangle.
+ */
+public class LC120_Triangle implements LeetCodeProblem {
 
     public int minimumTotal(List<List<Integer>> triangle) {
         int[] dp = new int[triangle.getLast().size()];
@@ -20,4 +25,19 @@ public class LC120_Triangle {
         return min_sum;
     }
 
+    @Override
+    public String problemNumber() {
+        return "120";
+    }
+
+    @Override
+    public void run() {
+        List<List<Integer>> triangle = Arrays.asList(
+                List.of(2),
+                Arrays.asList(3,4),
+                Arrays.asList(6,5,7),
+                Arrays.asList(4,1,8,3)
+        );
+        System.out.println("LC120 Triangle: " + minimumTotal(triangle));
+    }
 }

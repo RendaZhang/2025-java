@@ -1,6 +1,11 @@
-package com.renda.leetcode;
+package com.renda.leetcode.problems;
 
-public class LC79_WordSearch {
+import com.renda.leetcode.core.LeetCodeProblem;
+
+/**
+ * LeetCode 79 - Word Search.
+ */
+public class LC79_WordSearch implements LeetCodeProblem {
 
     public boolean exist(char[][] board, String word) {
         int rows = board.length, cols = board[0].length;
@@ -31,4 +36,14 @@ public class LC79_WordSearch {
         return result;
     }
 
+    @Override
+    public String problemNumber() {
+        return "79";
+    }
+
+    @Override
+    public void run() {
+        char[][] board = {{'A','B','C','E'}, {'S','F','C','S'}, {'A','D','E','E'}};
+        System.out.println("LC79 Word Search: " + exist(board, "ABCCED"));
+    }
 }

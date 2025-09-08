@@ -1,25 +1,16 @@
-package com.renda.leetcode;
+package com.renda.leetcode.problems;
 
+import com.renda.leetcode.core.LeetCodeProblem;
 import com.renda.leetcode.util.TreeNode;
+import com.renda.leetcode.util.TreeUtils;
 
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.Queue;
 
 /**
- * Definition for a binary tree node.
- * public class TreeNode {
- * int val;
- * TreeNode left;
- * TreeNode right;
- * TreeNode() {}
- * TreeNode(int val) { this.val = val; }
- * TreeNode(int val, TreeNode left, TreeNode right) {
- * this.val = val;
- * this.left = left;
- * this.right = right;
- * }
- * }
+ * LeetCode 104 - Maximum Depth of Binary Tree.
  */
-public class LC104_MaximumDepthOfBinaryTree {
+public class LC104_MaximumDepthOfBinaryTree implements LeetCodeProblem {
 
     public int maxDepth(TreeNode root) {
         if (root == null) return 0;
@@ -37,5 +28,16 @@ public class LC104_MaximumDepthOfBinaryTree {
             }
         }
         return count;
+    }
+
+    @Override
+    public String problemNumber() {
+        return "104";
+    }
+
+    @Override
+    public void run() {
+        TreeNode root = TreeUtils.buildTree(new Integer[]{3,9,20,null,null,15,7});
+        System.out.println("LC104 Maximum Depth of Binary Tree: " + maxDepth(root));
     }
 }

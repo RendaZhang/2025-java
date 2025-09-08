@@ -3,8 +3,14 @@ package com.renda.leetcode.util;
 import java.util.ArrayDeque;
 import java.util.Queue;
 
+/**
+ * 二叉树辅助工具类，提供构建树等常用方法。
+ */
 public class TreeUtils {
 
+    /**
+     * 根据层序遍历数组构建二叉树。
+     */
     public static TreeNode buildTree(Integer[] integers) {
         if (integers.length == 0 || integers[0] == null) return null;
         TreeNode root = new TreeNode(integers[0]);

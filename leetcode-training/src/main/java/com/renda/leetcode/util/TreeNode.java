@@ -1,5 +1,8 @@
 package com.renda.leetcode.util;
 
+/**
+ * 简单的二叉树节点定义，供树相关的题目使用。
+ */
 public class TreeNode {
 
     public int val;

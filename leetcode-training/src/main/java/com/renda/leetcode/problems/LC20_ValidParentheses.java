@@ -1,6 +1,11 @@
-package com.renda.leetcode;
+package com.renda.leetcode.problems;
 
-public class LC20_ValidParentheses {
+import com.renda.leetcode.core.LeetCodeProblem;
+
+/**
+ * LeetCode 20 - Valid Parentheses.
+ */
+public class LC20_ValidParentheses implements LeetCodeProblem {
 
     public boolean isValid(String s) {
         char[] inputArray = s.toCharArray();
@@ -26,4 +31,13 @@ public class LC20_ValidParentheses {
         return a == '{' && b == '}';
     }
 
+    @Override
+    public String problemNumber() {
+        return "20";
+    }
+
+    @Override
+    public void run() {
+        System.out.println("LC20 Valid Parentheses: " + isValid("()[]{}"));
+    }
 }

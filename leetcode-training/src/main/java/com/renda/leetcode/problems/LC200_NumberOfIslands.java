@@ -1,8 +1,12 @@
-package com.renda.leetcode;
+package com.renda.leetcode.problems;
 
+import com.renda.leetcode.core.LeetCodeProblem;
 import java.util.ArrayDeque;
 
-public class LC200_NumberOfIslands {
+/**
+ * LeetCode 200 - Number of Islands.
+ */
+public class LC200_NumberOfIslands implements LeetCodeProblem {
 
     public int numIslands(char[][] grid) {
         int m = grid.length, n = grid[0].length;
@@ -37,4 +41,14 @@ public class LC200_NumberOfIslands {
         return count;
     }
 
+    @Override
+    public String problemNumber() {
+        return "200";
+    }
+
+    @Override
+    public void run() {
+        char[][] grid = {{'1','1','0','0','0'},{'1','1','0','0','0'},{'0','0','1','0','0'},{'0','0','0','1','1'}};
+        System.out.println("LC200 Number of Islands: " + numIslands(grid));
+    }
 }

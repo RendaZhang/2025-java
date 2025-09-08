@@ -1,8 +1,12 @@
-package com.renda.leetcode;
+package com.renda.leetcode.problems;
 
+import com.renda.leetcode.core.LeetCodeProblem;
 import java.util.*;
 
-public class LC347_TopKFrequentElements {
+/**
+ * LeetCode 347 - Top K Frequent Elements.
+ */
+public class LC347_TopKFrequentElements implements LeetCodeProblem {
 
     public int[] topKFrequent(int[] nums, int k) {
         int n = nums.length;
@@ -18,4 +22,13 @@ public class LC347_TopKFrequentElements {
         return result;
     }
 
+    @Override
+    public String problemNumber() {
+        return "347";
+    }
+
+    @Override
+    public void run() {
+        System.out.println("LC347 Top K Frequent Elements: " + Arrays.toString(topKFrequent(new int[]{1,1,1,2,2,3}, 2)));
+    }
 }

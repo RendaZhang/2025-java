@@ -1,6 +1,11 @@
-package com.renda.leetcode;
+package com.renda.leetcode.problems;
 
-public class LC3_LongestSubstringWithoutRepeatingCharacters {
+import com.renda.leetcode.core.LeetCodeProblem;
+
+/**
+ * LeetCode 3 - Longest Substring Without Repeating Characters.
+ */
+public class LC3_LongestSubstringWithoutRepeatingCharacters implements LeetCodeProblem {
 
     public int lengthOfLongestSubstring(String s) {
         int n = s.length();
@@ -20,4 +25,13 @@ public class LC3_LongestSubstringWithoutRepeatingCharacters {
         return maxLength;
     }
 
+    @Override
+    public String problemNumber() {
+        return "3";
+    }
+
+    @Override
+    public void run() {
+        System.out.println("LC3 Longest Substring Without Repeating Characters: " + lengthOfLongestSubstring("abcabcbb"));
+    }
 }
