@@ -7,6 +7,9 @@ import com.renda.leetcode.core.LeetCodeProblem;
 /**
  * LeetCode 904 - Fruit Into Baskets.
  *
+ * 使用滑动窗口思路，维护了一个“最多包含两种元素”的窗口。
+ *
+ * 优化技巧：
  * 在集合的容量变化不大的情况下，
  * 循环中清空集合,比起每次创建新集合，
  * 可以减少内存分配开销和减少垃圾回收压力。

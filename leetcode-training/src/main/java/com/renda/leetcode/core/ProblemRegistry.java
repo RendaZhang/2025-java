@@ -27,6 +27,7 @@ public final class ProblemRegistry {
         register(new LC200_NumberOfIslands());
         register(new LC347_TopKFrequentElements());
         register(new LC904_FruitIntoBaskets());
+        register(new LC167_TwoSumII_InputArrayIsSorted());
     }
 
     private ProblemRegistry() {
