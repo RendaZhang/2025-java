@@ -1,0 +1,21 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "java",
+      "name": "Run LeetCode Problem",
+      "request": "launch",
+      "mainClass": "com.renda.leetcode.Main",
+      "args": "${input:problemNumber}",
+      "projectName": "leetcode-training"
+    }
+  ],
+  "inputs": [
+    {
+      "id": "problemNumber",
+      "type": "promptString",
+      "description": "输入要运行的题号",
+      "default": "1"
+    }
+  ]
+}

@@ -25,7 +25,8 @@ pom.xml.lock
 nbproject/
 
 # VS Code
-.vscode/
+.vscode/*
+!.vscode/launch.json
 
 # MacOS specific
 .DS_Store
