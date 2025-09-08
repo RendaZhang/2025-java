@@ -8,6 +8,7 @@ import com.renda.leetcode.core.LeetCodeProblem;
  * LeetCode 904 - Fruit Into Baskets.
  *
  * 使用滑动窗口思路，维护了一个“最多包含两种元素”的窗口。
+ * 使用了 HashSet 数据结构配合 curr_max 来模拟 Basket。
  *
  * 优化技巧：
  * 在集合的容量变化不大的情况下，

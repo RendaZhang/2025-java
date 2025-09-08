@@ -28,6 +28,7 @@ public final class ProblemRegistry {
         register(new LC347_TopKFrequentElements());
         register(new LC904_FruitIntoBaskets());
         register(new LC167_TwoSumII_InputArrayIsSorted());
+        register(new LC209_MinimumSizeSubarraySum());
     }
 
     private ProblemRegistry() {
