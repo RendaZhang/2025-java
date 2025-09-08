@@ -11,6 +11,11 @@ import com.renda.leetcode.core.LeetCodeProblem;
  * Runtime 2 ms Beats 15.07%
  * Memory 57.92 MB Beats 81.49%
  *
+ * 总用时：40 min 14 s
+ * 阅读 2 min 22 s
+ * 思考 13 min 44 s
+ * 编码 23 min 38 s
+ * Debug 0
  */
 public class LC209_MinimumSizeSubarraySum implements LeetCodeProblem {
 

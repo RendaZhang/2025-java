@@ -13,6 +13,13 @@
     - [LC 167. Two Sum II – Input Array Is Sorted（简单，Two Pointers）](#lc-167-two-sum-ii--input-array-is-sorted%E7%AE%80%E5%8D%95two-pointers)
     - [LC 209. Minimum Size Subarray Sum（中等，Sliding Window）](#lc-209-minimum-size-subarray-sum%E4%B8%AD%E7%AD%89sliding-window)
     - [复盘 LC 904](#%E5%A4%8D%E7%9B%98-lc-904)
+      - [Pattern](#pattern)
+      - [Intuition](#intuition)
+      - [Steps](#steps)
+      - [Complexity](#complexity)
+      - [Edge Cases](#edge-cases)
+      - [Mistakes & Fix](#mistakes--fix)
+      - [Clean Code（面试友好版，Java）](#clean-code%E9%9D%A2%E8%AF%95%E5%8F%8B%E5%A5%BD%E7%89%88java)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -115,20 +122,60 @@ Hi, I’m Renda Zhang, a Java backend developer focused on cloud-native microser
 
 ### 复盘 LC 904
 
-我使用了滑动窗口的思路解决了 LC 904。
+#### Pattern
 
-一个变量 start 存储了窗口的最左边的位置，让 for 循环的 i 变量代表 窗口的最右边位置；
-使用 curr_max 代表目前窗口的最大长度，使用 result 代表最终的果篮可以装下的最大水果数量；
-使用 HashSet 数据结构类型的 basket 来代表不超过两个类型的装水果的篮子；
-使用 curr_type 存储目前最新的水果类型 和 next_start 记录目前最新水果类型出现的第一个位置；
-只要循环内没有出现第 3 种类型的水果，就一直让 curr_max 增长并且一直让窗口的右侧变大；
-一旦窗口右侧出现了第 3 种类型的水果，就收紧左边的位置 start 到 next_start 存储的移动位置，并且更新 result 的来记录最大的那个 curr_max；
-每次循环里面，都会检查目前最新水果类型是否发生变化，如果发生变化，就更新 curr_type 和 next_start。
+Sliding Window（保持窗口内**至多两种**水果类型）。
 
-这样的窗口滑动可以让篮子里面的水果总是可以保持两种类型，确保了窗口的长度本身就是水果篮子所能装下的有效的总水果数量。
+#### Intuition
 
-时间复杂度是 O(n)，空间复杂度是 O(1)。
+题目等价于：在数组中找到“最多包含两种不同元素”的最长连续子数组长度。自然想到用右指针扩张窗口、当种类数 > 2 时用左指针收缩，直到种类数 ≤ 2 为止，同时记录历史最大长度。
 
-今天踩的坑是在写循环代码逻辑的时候，针对第 3 种类型的水果出现的情况，没有更新最新的水果类型 curr_type 和最新水果类型出现的第一个位置 next_start。
+#### Steps
+
+1. 用一个结构维护窗口内“每种水果的出现次数”（可用 `Map<Integer,Integer>`）。
+2. 右指针 `r` 逐步右移、计数 +1；若窗口的键数 > 2，则移动左指针 `l`，将 `fruits[l]` 计数 -1，减到 0 则从 `Map` 删除该键，直到键数 ≤ 2。
+3. 每次扩张或收缩后，以 `r - l + 1` 更新答案。
+
+> 你的实现等价思路：不显式维护计数，而是用 `next_start` 记录“最近一段连续的最新水果开始位置”。当出现第 3 种时，直接把 `l` 跳到 `next_start`，并重置集合为“上一种 + 当前新种”，从而 O(1) 地完成“批量收缩”。
+
+#### Complexity
+
+* Time：O(n)，每个元素最多进出窗口一次。
+* Space：O(1)，窗口内最多两种类型（`Map`/`Set` 常数级）。
+
+#### Edge Cases
+
+* 全相同元素（如 `[1,1,1,1]`）→ 直接返回数组长度。
+* 只有两种元素交替（如 `[1,2,1,2,1,2]`）→ 返回数组长度。
+* 频繁切换第三种（如 `[1,2,3,2,2]`）→ 注意在出现第 3 种时的收缩与“最新连续段起点”的更新。
+* 极短数组（长度 0/1/2）→ 边界直接返回长度（按题目约束通常 ≥1）。
+
+#### Mistakes & Fix
+
+* **坑点**：在检测到第 3 种水果时，如果没有**先**用历史窗口长度更新答案、**再**正确设置 `start = next_start` 与同步 `curr_type/next_start`，容易丢失最佳解或出现 off-by-one。
+* **修正**：先 `result = max(result, curr_max)`，然后用 `curr_max = curr_max - (next_start - start) + 1`（等价于 `i - next_start + 1`）重置窗口长度，并把 `start` 跳到 `next_start`，最后更新 `curr_type = fruits[i]` 与 `next_start = i`。
+
+#### Clean Code（面试友好版，Java）
+
+```java
+public int totalFruit(int[] fruits) {
+    int n = fruits.length, l = 0, ans = 0;
+    Map<Integer, Integer> freq = new HashMap<>(4);
+    for (int r = 0; r < n; r++) {
+        freq.put(fruits[r], freq.getOrDefault(fruits[r], 0) + 1);
+        while (freq.size() > 2) {
+            int x = fruits[l++];
+            int c = freq.get(x) - 1;
+            if (c == 0) freq.remove(x);
+            else freq.put(x, c);
+        }
+        ans = Math.max(ans, r - l + 1);
+    }
+    return ans;
+}
+```
+
+> 可选变体（纯 O(1) 状态、无 Map）：维护 `last`, `secondLast`, `lastCount`, `currMax` 四个量，遇到第三种时把 `currMax` 设为 `lastCount + 1` 并重置“最近两种”的身份——口述简单，但写码时容错较低。
+
 
 ---
