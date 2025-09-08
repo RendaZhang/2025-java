@@ -26,6 +26,7 @@ public final class ProblemRegistry {
         register(new LC122_BestTimeToBuyAndSellStockII());
         register(new LC200_NumberOfIslands());
         register(new LC347_TopKFrequentElements());
+        register(new LC904_FruitIntoBaskets());
     }
 
     private ProblemRegistry() {
