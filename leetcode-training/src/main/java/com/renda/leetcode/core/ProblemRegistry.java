@@ -29,6 +29,7 @@ public final class ProblemRegistry {
         register(new LC904_FruitIntoBaskets());
         register(new LC167_TwoSumII_InputArrayIsSorted());
         register(new LC209_MinimumSizeSubarraySum());
+        register(new LC739_DailyTemperatures());
     }
 
     private ProblemRegistry() {
