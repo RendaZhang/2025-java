@@ -13,13 +13,6 @@
     - [LC 167. Two Sum II – Input Array Is Sorted（简单，Two Pointers）](#lc-167-two-sum-ii--input-array-is-sorted%E7%AE%80%E5%8D%95two-pointers)
     - [LC 209. Minimum Size Subarray Sum（中等，Sliding Window）](#lc-209-minimum-size-subarray-sum%E4%B8%AD%E7%AD%89sliding-window)
     - [复盘 LC 904](#%E5%A4%8D%E7%9B%98-lc-904)
-      - [Pattern](#pattern)
-      - [Intuition](#intuition)
-      - [Steps](#steps)
-      - [Complexity](#complexity)
-      - [Edge Cases](#edge-cases)
-      - [Mistakes & Fix](#mistakes--fix)
-      - [Clean Code（面试友好版，Java）](#clean-code%E9%9D%A2%E8%AF%95%E5%8F%8B%E5%A5%BD%E7%89%88java)
   - [第 3 步：API 设计与可靠性要点](#%E7%AC%AC-3-%E6%AD%A5api-%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%8F%AF%E9%9D%A0%E6%80%A7%E8%A6%81%E7%82%B9)
     - [要点 1｜契约清晰：资源建模 & 语义化接口（Contract Clarity）](#%E8%A6%81%E7%82%B9-1%EF%BD%9C%E5%A5%91%E7%BA%A6%E6%B8%85%E6%99%B0%E8%B5%84%E6%BA%90%E5%BB%BA%E6%A8%A1--%E8%AF%AD%E4%B9%89%E5%8C%96%E6%8E%A5%E5%8F%A3contract-clarity)
     - [要点 2｜版本化策略：URI vs Header；向后兼容与下线流程](#%E8%A6%81%E7%82%B9-2%EF%BD%9C%E7%89%88%E6%9C%AC%E5%8C%96%E7%AD%96%E7%95%A5uri-vs-header%E5%90%91%E5%90%8E%E5%85%BC%E5%AE%B9%E4%B8%8E%E4%B8%8B%E7%BA%BF%E6%B5%81%E7%A8%8B)
@@ -134,15 +127,15 @@ Hi, I’m Renda Zhang, a Java backend developer focused on cloud-native microser
 
 ### 复盘 LC 904
 
-#### Pattern
+Pattern：
 
 Sliding Window（保持窗口内**至多两种**水果类型）。
 
-#### Intuition
+Intuition：
 
 题目等价于：在数组中找到“最多包含两种不同元素”的最长连续子数组长度。自然想到用右指针扩张窗口、当种类数 > 2 时用左指针收缩，直到种类数 ≤ 2 为止，同时记录历史最大长度。
 
-#### Steps
+Steps：
 
 1. 用一个结构维护窗口内“每种水果的出现次数”（可用 `Map<Integer,Integer>`）。
 2. 右指针 `r` 逐步右移、计数 +1；若窗口的键数 > 2，则移动左指针 `l`，将 `fruits[l]` 计数 -1，减到 0 则从 `Map` 删除该键，直到键数 ≤ 2。
@@ -150,24 +143,24 @@ Sliding Window（保持窗口内**至多两种**水果类型）。
 
 > 你的实现等价思路：不显式维护计数，而是用 `next_start` 记录“最近一段连续的最新水果开始位置”。当出现第 3 种时，直接把 `l` 跳到 `next_start`，并重置集合为“上一种 + 当前新种”，从而 O(1) 地完成“批量收缩”。
 
-#### Complexity
+Complexity：
 
 - Time：O(n)，每个元素最多进出窗口一次。
 - Space：O(1)，窗口内最多两种类型（`Map`/`Set` 常数级）。
 
-#### Edge Cases
+Edge Cases：
 
 - 全相同元素（如 `[1,1,1,1]`）→ 直接返回数组长度。
 - 只有两种元素交替（如 `[1,2,1,2,1,2]`）→ 返回数组长度。
 - 频繁切换第三种（如 `[1,2,3,2,2]`）→ 注意在出现第 3 种时的收缩与“最新连续段起点”的更新。
 - 极短数组（长度 0/1/2）→ 边界直接返回长度（按题目约束通常 ≥1）。
 
-#### Mistakes & Fix
+Mistakes & Fix：
 
 - **坑点**：在检测到第 3 种水果时，如果没有**先**用历史窗口长度更新答案、**再**正确设置 `start = next_start` 与同步 `curr_type/next_start`，容易丢失最佳解或出现 off-by-one。
 - **修正**：先 `result = max(result, curr_max)`，然后用 `curr_max = curr_max - (next_start - start) + 1`（等价于 `i - next_start + 1`）重置窗口长度，并把 `start` 跳到 `next_start`，最后更新 `curr_type = fruits[i]` 与 `next_start = i`。
 
-#### Clean Code（面试友好版，Java）
+Clean Code（面试友好版，Java）：
 
 ```java
 public int totalFruit(int[] fruits) {
