@@ -27,6 +27,12 @@
       - [追问 1（具体数值与权衡）](#%E8%BF%BD%E9%97%AE-1%E5%85%B7%E4%BD%93%E6%95%B0%E5%80%BC%E4%B8%8E%E6%9D%83%E8%A1%A1)
       - [追问 2（如何避免重试风暴）](#%E8%BF%BD%E9%97%AE-2%E5%A6%82%E4%BD%95%E9%81%BF%E5%85%8D%E9%87%8D%E8%AF%95%E9%A3%8E%E6%9A%B4)
       - [追问 3（项目落地&复盘）](#%E8%BF%BD%E9%97%AE-3%E9%A1%B9%E7%9B%AE%E8%90%BD%E5%9C%B0%E5%A4%8D%E7%9B%98)
+    - [错误码与可观察性：统一错误模型 / Trace-ID / 指标-日志-链路关联](#%E9%94%99%E8%AF%AF%E7%A0%81%E4%B8%8E%E5%8F%AF%E8%A7%82%E5%AF%9F%E6%80%A7%E7%BB%9F%E4%B8%80%E9%94%99%E8%AF%AF%E6%A8%A1%E5%9E%8B--trace-id--%E6%8C%87%E6%A0%87-%E6%97%A5%E5%BF%97-%E9%93%BE%E8%B7%AF%E5%85%B3%E8%81%94)
+      - [场景题](#%E5%9C%BA%E6%99%AF%E9%A2%98-5)
+      - [追问 1（设计与规范）](#%E8%BF%BD%E9%97%AE-1%E8%AE%BE%E8%AE%A1%E4%B8%8E%E8%A7%84%E8%8C%83)
+      - [追问 2（工程落地）](#%E8%BF%BD%E9%97%AE-2%E5%B7%A5%E7%A8%8B%E8%90%BD%E5%9C%B0)
+      - [追问 3（质量与风控）](#%E8%BF%BD%E9%97%AE-3%E8%B4%A8%E9%87%8F%E4%B8%8E%E9%A3%8E%E6%8E%A7)
+      - [追问 4（真实案例）](#%E8%BF%BD%E9%97%AE-4%E7%9C%9F%E5%AE%9E%E6%A1%88%E4%BE%8B)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -305,3 +311,81 @@ if (redis.setNx(key, "PROCESSING", ttl)) {
 **你：**
 “凡新那边有次第三方库存端点在半夜抖了 5 分钟，早期我们没做重试预算，导致重试量把线程池打满。复盘后我们引入**预算 + 并发舱壁**（Bulkhead），并把**缓存降级**做成开关，一键打开后 P95 直接回落。
 在麦克尔斯那边，MakerPlace 图片处理链路偶发慢，我们把**超时**从 3s 切到 1.5s 并加熔断，前端降级为**低清图占位**；随后把慢服务拆到**独立队列**限速消费，线上体验稳定了。”
+
+### 错误码与可观察性：统一错误模型 / Trace-ID / 指标-日志-链路关联
+
+> **错误码与可观察性**：统一错误模型（`code/message/traceId/details`）+ 明确 4xx/5xx 映射；W3C trace 贯穿响应体/日志/指标；结构化日志携带 MDC（traceId 等）；RED 指标联动 APM；采样对 5xx/高延迟强制保留；日志脱敏与告警基线到位。
+
+#### 场景题
+
+**面试官：**
+“促销高峰里，你们的下单接口间歇性报错。客服只拿到一条报障：‘结算失败，请稍后重试’。你怎么通过**统一错误码**和**可观测性**（日志、指标、分布式追踪）**迅速定位**是用户错误还是服务端问题？结合你在（深圳市凡新科技 / 麦克尔斯深圳）的实践讲讲。”
+
+**你（口语化回答示范）：**
+“我会把‘错误→定位’做成**一跳直达**：
+
+1. **统一错误模型**让前端/客服拿到**可报障信息**：
+
+```json
+{ "code":"PAYMENT_TIMEOUT", "message":"Payment timeout, please retry",
+  "traceId":"8a3c60f7…", "hint":"retry after 3s",
+  "details":{ "orderId":"o123", "gateway":"stripe" } }
+```
+
+2. **Trace-ID** 贯穿**响应体 + 日志 + 指标 + 链路追踪**：客服把 `traceId` 给我们，我们在日志平台/可观测平台（EKS 上的 OTel/ADOT→Prometheus/Grafana/CloudWatch/X-Ray）就能**直跳到那条请求**。
+3. 指标采用 **RED 法**（Rate/Errors/Duration）：先看该接口 `5xx/4xx` 比例和 P95 是否异常，再通过 `traceId` 打开**分布式链路**定位慢点或失败点（比如外呼支付网关超时 vs 我们的校验 400）。
+   在凡新的库存/订单链路，我们这样能把‘用户填错地址’（**4xx**）和‘支付网关波动’（**5xx/超时**）几分钟内区分清楚；在麦克尔斯的 MakerPlace，我们把 `traceId` 展示在移动端错误页里，客服直接抄给我们。”
+
+#### 追问 1（设计与规范）
+
+**面试官：**“错误码你怎么分层？HTTP 状态码和业务码怎么配？”
+
+**你：**
+“**HTTP 只表达通用语义**，**业务码表达具体原因**：
+
+- 4xx：用户侧/可预期错误，比如 `VALIDATION_FAILED`、`AUTH_REQUIRED`、`RATE_LIMITED`；
+- 5xx：服务侧/依赖侧，比如 `UPSTREAM_TIMEOUT`、`DB_DEADLOCK`、`STOCK_INCONSISTENT`。
+  **映射规则**固定：`400/401/403/404/409/422/429` 用于常见场景；`500/502/503/504` 对应服务端/依赖错误。错误体统一四段：`code/message/traceId/details`；**message 面向人类**（可本地化），`code` 面向程序，`details` 放**可排障字段**（不含敏感信息）。
+  另外我们会规定：**相同幂等键的重放**返回同一业务码，并在响应头加 `Idempotent-Replay:true`，排障更清楚。”
+
+#### 追问 2（工程落地）
+
+**面试官：**“在 Spring Boot / K8s 上，你怎么把 Trace-ID 贯穿并串起‘指标-日志-链路’三件事？”
+
+**你：**
+“落地分三步：
+
+1. **链路追踪**：W3C `traceparent` 头透传（网关→BFF→微服务→下游）；未携带则在网关生成。后端用 **OpenTelemetry SDK** 自动注入 span。
+2. **结构化日志**：日志全用 JSON，`traceId/spanId/tenant/userId` 写进 **MDC**，日志 Appender 自动带上：
+
+```java
+// in a filter
+String traceId = currentTraceIdOrGenerate();
+MDC.put("traceId", traceId);
+// controller logs will carry it; also return in body/header
+```
+
+3. **指标关联**：在计时器/计数器（Micrometer）上打 `api=placeOrder, outcome=success|error, http_status=...` 等标签；Grafana 面板支持按 `traceId` 链接到 APM，形成**点开指标→跳到具体 trace→再看相关日志**的三连。
+   采样方面：默认 **概率采样**（如 5–10%），对 `5xx`/高延迟请求**强制采样**，确保关键问题有完整 trace。”
+
+#### 追问 3（质量与风控）
+
+**面试官：**“怎么避免把隐私或安全数据打到日志？告警怎么设？”
+
+**你：**
+“我们做了两件事：
+
+- **日志脱敏/拦截**：统一的 `LogSanitizer` 过滤 `password/token/card/email` 等字段；**从不**把 Authorization、JWT、银行卡号写日志；错误体的 `details` 也做白名单。
+- **告警基线**：
+  - SLO：如下单成功率 99.5%，**误差预算**消耗≥5% 触发告警；
+  - `5xx` 比例、`429` 命中率、P95 超过阈值持续 5 分钟；
+  - **错误码分布**偏移（例如 `PAYMENT_TIMEOUT` 激增）触发调度，第一时间看依赖健康与熔断状态。
+    这样既安全又可定位。”
+
+#### 追问 4（真实案例）
+
+**面试官：**“讲个你遇到的真实定位案例。”
+
+**你：**
+“凡新一次活动夜里，`/checkout` 的 `5xx` 抬头。我们从 Grafana 上看到 `UPSTREAM_TIMEOUT` 占比升高，随手点进一个 trace，发现**支付网关调用 3s 超时**。同时日志里同一个 `traceId` 显示我们内部处理只有 40ms——很快就定位到是**外部依赖抖动**，切开关走**降级队列**并调低重试预算，几分钟内恢复。
+麦克尔斯那边有次是**4xx**暴涨，错误码 `VALIDATION_FAILED`，trace 里显示是 `postalCode` 校验新规则上线，回滚后即恢复。统一错误码 + trace 贯穿真的省了太多时间。”
