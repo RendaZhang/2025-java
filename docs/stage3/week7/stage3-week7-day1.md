@@ -24,6 +24,7 @@
     - [要点 1｜契约清晰：资源建模 & 语义化接口（Contract Clarity）](#%E8%A6%81%E7%82%B9-1%EF%BD%9C%E5%A5%91%E7%BA%A6%E6%B8%85%E6%99%B0%E8%B5%84%E6%BA%90%E5%BB%BA%E6%A8%A1--%E8%AF%AD%E4%B9%89%E5%8C%96%E6%8E%A5%E5%8F%A3contract-clarity)
     - [要点 2｜版本化策略：URI vs Header；向后兼容与下线流程](#%E8%A6%81%E7%82%B9-2%EF%BD%9C%E7%89%88%E6%9C%AC%E5%8C%96%E7%AD%96%E7%95%A5uri-vs-header%E5%90%91%E5%90%8E%E5%85%BC%E5%AE%B9%E4%B8%8E%E4%B8%8B%E7%BA%BF%E6%B5%81%E7%A8%8B)
     - [要点 3｜鉴权与授权：JWT/OIDC、最小权限、Token 续期与旋转](#%E8%A6%81%E7%82%B9-3%EF%BD%9C%E9%89%B4%E6%9D%83%E4%B8%8E%E6%8E%88%E6%9D%83jwtoidc%E6%9C%80%E5%B0%8F%E6%9D%83%E9%99%90token-%E7%BB%AD%E6%9C%9F%E4%B8%8E%E6%97%8B%E8%BD%AC)
+    - [要点 4｜幂等性：幂等键、PUT vs POST、重试安全](#%E8%A6%81%E7%82%B9-4%EF%BD%9C%E5%B9%82%E7%AD%89%E6%80%A7%E5%B9%82%E7%AD%89%E9%94%AEput-vs-post%E9%87%8D%E8%AF%95%E5%AE%89%E5%85%A8)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -144,20 +145,20 @@ Sliding Window（保持窗口内**至多两种**水果类型）。
 
 #### Complexity
 
-* Time：O(n)，每个元素最多进出窗口一次。
-* Space：O(1)，窗口内最多两种类型（`Map`/`Set` 常数级）。
+- Time：O(n)，每个元素最多进出窗口一次。
+- Space：O(1)，窗口内最多两种类型（`Map`/`Set` 常数级）。
 
 #### Edge Cases
 
-* 全相同元素（如 `[1,1,1,1]`）→ 直接返回数组长度。
-* 只有两种元素交替（如 `[1,2,1,2,1,2]`）→ 返回数组长度。
-* 频繁切换第三种（如 `[1,2,3,2,2]`）→ 注意在出现第 3 种时的收缩与“最新连续段起点”的更新。
-* 极短数组（长度 0/1/2）→ 边界直接返回长度（按题目约束通常 ≥1）。
+- 全相同元素（如 `[1,1,1,1]`）→ 直接返回数组长度。
+- 只有两种元素交替（如 `[1,2,1,2,1,2]`）→ 返回数组长度。
+- 频繁切换第三种（如 `[1,2,3,2,2]`）→ 注意在出现第 3 种时的收缩与“最新连续段起点”的更新。
+- 极短数组（长度 0/1/2）→ 边界直接返回长度（按题目约束通常 ≥1）。
 
 #### Mistakes & Fix
 
-* **坑点**：在检测到第 3 种水果时，如果没有**先**用历史窗口长度更新答案、**再**正确设置 `start = next_start` 与同步 `curr_type/next_start`，容易丢失最佳解或出现 off-by-one。
-* **修正**：先 `result = max(result, curr_max)`，然后用 `curr_max = curr_max - (next_start - start) + 1`（等价于 `i - next_start + 1`）重置窗口长度，并把 `start` 跳到 `next_start`，最后更新 `curr_type = fruits[i]` 与 `next_start = i`。
+- **坑点**：在检测到第 3 种水果时，如果没有**先**用历史窗口长度更新答案、**再**正确设置 `start = next_start` 与同步 `curr_type/next_start`，容易丢失最佳解或出现 off-by-one。
+- **修正**：先 `result = max(result, curr_max)`，然后用 `curr_max = curr_max - (next_start - start) + 1`（等价于 `i - next_start + 1`）重置窗口长度，并把 `start` 跳到 `next_start`，最后更新 `curr_type = fruits[i]` 与 `next_start = i`。
 
 #### Clean Code（面试友好版，Java）
 
@@ -194,14 +195,14 @@ public int totalFruit(int[] fruits) {
 **面试官：**
 “你在跨境电商/库存中台里，如何把**商品/库存**这类核心对象建模，并通过**清晰稳定的 API 契约**让前端、第三方渠道（Shopify/WooCommerce 等）都能稳用？如果上游平台字段各不相同、且业务量在活动期飙升，你会怎么设计接口与返回结构？”（你可以结合你在深圳市凡新科技 & Michaels 的经历来回答）
 
-**你（口语化回答示范）：**
+**你：**
 “我会先做一个**Canonical Model（规范化域模型）**，然后把各平台的字段映射进来，API 对外只暴露**我们的一致语义**。例如把 `Product`、`Variant`、`StockItem` 拆清，`/products/{id}`、`/variants/{id}`、`/stocks?variantId=...&channel=...` 用**语义化 URL**和**查询参数**表达资源与过滤。之所以坚持对外契约稳定，是因为我们的服务在活动期会到 **80k–150k req/day，峰值 \~1.2k QPS**，而且要保持 P95 < 140ms，所以**任何破坏性变更都会造成放大效应**。这在我现在的工作环境里是常态（AWS 上 6 个 Spring Boot 微服务 + 自动扩容），因此我会把契约做成**可文档化、可校验**的，比如 OpenAPI + JSON Schema，前后端都能对齐检查。”
 
 “以**库存**为例，我会规定：
 
-* **ID 与类型**：所有 ID 统一用字符串（避免某些平台 `variant_id` 的长整型在 JS 客户端精度丢失）；金额统一**分为最小货币单位**（如分）、**货币代码**单独字段；时间全用 **RFC3339 UTC**。
-* **分页与排序**：`page/size/sort` 统一格式；对大列表返回 `nextCursor` 以便前端/任务稳定翻页。
-* **并发读写**：读 API 返回 `ETag/Last-Modified`，写 API 支持 `If-Match` 做并发控制；结合缓存（我们线上用 **Redis Cluster + Aurora 只读副本** 做读写分离），读路径可控、延迟稳定。”
+- **ID 与类型**：所有 ID 统一用字符串（避免某些平台 `variant_id` 的长整型在 JS 客户端精度丢失）；金额统一**分为最小货币单位**（如分）、**货币代码**单独字段；时间全用 **RFC3339 UTC**。
+- **分页与排序**：`page/size/sort` 统一格式；对大列表返回 `nextCursor` 以便前端/任务稳定翻页。
+- **并发读写**：读 API 返回 `ETag/Last-Modified`，写 API 支持 `If-Match` 做并发控制；结合缓存（我们线上用 **Redis Cluster + Aurora 只读副本** 做读写分离），读路径可控、延迟稳定。”
 
 “在 **Michaels** 做电商与 MakerPlace 的 API 时，我们也坚持把**登录与用户域**契约化，比如 **JWT 轮换 + OAuth2** 统一安全语义，接口文档清晰，移动端/前端对接成本低；同时在性能上通过**索引与响应结构优化**把接口延迟打下来，证明**契约清晰**有助于定位与优化。 ”
 
@@ -248,9 +249,9 @@ public int totalFruit(int[] fruits) {
 **你：**
 “我们会把**兼容层**做成**可配置的**：
 
-* 先在 v2 内部保留一层**适配器**把 `warehouses` 聚合成 `stockQuantity` 返回给 v1 客户；
-* 在 API 网关对 v1/v2 的**QPS、错误率、延迟**做**分版本监控**，并在每次版本公告后给出**采纳率**；
-* 设一个明确的**日程线**：例如 90 天后进入‘降级窗口’，老版本只做**安全修复**不加新特性；180 天后**强制下线**（返回 410 + 链接到迁移文档）。
+- 先在 v2 内部保留一层**适配器**把 `warehouses` 聚合成 `stockQuantity` 返回给 v1 客户；
+- 在 API 网关对 v1/v2 的**QPS、错误率、延迟**做**分版本监控**，并在每次版本公告后给出**采纳率**；
+- 设一个明确的**日程线**：例如 90 天后进入‘降级窗口’，老版本只做**安全修复**不加新特性；180 天后**强制下线**（返回 410 + 链接到迁移文档）。
   这样我们既不拖累新版本的演进，也给合作方足够时间。”
 
 **面试官：**“Spring Boot 里你怎么同时支持 URI 版本和 Header 版本？”
@@ -258,9 +259,9 @@ public int totalFruit(int[] fruits) {
 **你：**
 “实际做法是**对外统一用 URI 大版本**，对内需要时再开 Header 协商：
 
-* 控制器层：`/api/v1/...` 与 `/api/v2/...` 各有路由；
-* 若同一路径用 Header：在 `@RequestMapping` 的 `produces` 里声明 `application/vnd.renda.stock+json;v=1/2`，并配置 `ContentNegotiationStrategy`；
-* OpenAPI 文档分**两个 group**（v1/v2）生成 swagger，CI 里对两套 **JSON Schema** 做**契约校验**与**向后兼容检查**（新增字段只能是可选、禁止删除/改义）。
+- 控制器层：`/api/v1/...` 与 `/api/v2/...` 各有路由；
+- 若同一路径用 Header：在 `@RequestMapping` 的 `produces` 里声明 `application/vnd.renda.stock+json;v=1/2`，并配置 `ContentNegotiationStrategy`；
+- OpenAPI 文档分**两个 group**（v1/v2）生成 swagger，CI 里对两套 **JSON Schema** 做**契约校验**与**向后兼容检查**（新增字段只能是可选、禁止删除/改义）。
   配合灰度和回滚开关，风险可控。”
 
 ### 要点 3｜鉴权与授权：JWT/OIDC、最小权限、Token 续期与旋转
@@ -270,12 +271,12 @@ public int totalFruit(int[] fruits) {
 **面试官：**
 “你在（深圳市凡新科技 / 麦克尔斯深圳）做订单与库存 API 时，前端（Web/小程序/APP）和三方渠道都要访问。你怎么做**统一登录与鉴权**？具体到 **JWT/OIDC** 的落地细节、**最小权限**的授权设计、以及**Access/Refresh** 的**续期与旋转**，你怎么权衡安全与可用性？”
 
-**你（口语化回答示范）：**
+**你：**
 “我们把**身份认证**统一到 OIDC（例如 IDP：Cognito/Keycloak/公司自建），客户端用 **Auth Code + PKCE** 获取 **短时 Access Token（JWT）** 和 **较长 Refresh Token**。服务端（Spring Boot）作为 **OAuth2 Resource Server** 校验 JWT 的签名与过期，走 **JWKs** 自动拉取公钥并做**缓存**。
 **授权**层面，我坚持**最小权限**：
 
-* 面向外部调用，用 **scope** 粒度（`product:read`、`stock:write`），避免一刀切的 `admin`；
-* 面向内部微服务，采用 **audience（aud）** 与 **资源级/操作级**组合（比如只能改“库存”但不能改“价格”），把权限做成**可配置策略**（如基于角色/属性的 ABAC）。
+- 面向外部调用，用 **scope** 粒度（`product:read`、`stock:write`），避免一刀切的 `admin`；
+- 面向内部微服务，采用 **audience（aud）** 与 **资源级/操作级**组合（比如只能改“库存”但不能改“价格”），把权限做成**可配置策略**（如基于角色/属性的 ABAC）。
   **续期**我用‘短 Access + 可旋转 Refresh’：Access 约 5–15 分钟，Refresh 7–30 天，**刷新时旋转**（旧 Refresh 立即失效），并把 **jti（令牌唯一 ID）** 写进**黑名单/撤销表**（Redis/DB），防止被盗用。
   我们线上有**并发与多设备**，所以刷新接口设计成**幂等**，只承认‘最新签发’的 Refresh；如果同一 Refresh 被重复使用，我会触发**全账户 Refresh 封禁**并发告警。
   对**服务间调用**，我们禁用‘人为生成的长寿命 Token’，而走**客户端凭证流**或云原生临时凭证（比如 IRSA 访问云资源），降低泄漏风险。
@@ -295,9 +296,9 @@ public int totalFruit(int[] fruits) {
 **你：**
 “指标我们会分三类：
 
-* **认证失败率**（签名/过期/撤销命中）、**刷新成功率**、**刷新重放**告警；
-* **授权拒绝率**（403）按 `scope`/`aud` 分维度；
-* **JWKs 拉取与缓存命中率**、**IDP 延迟**。
+- **认证失败率**（签名/过期/撤销命中）、**刷新成功率**、**刷新重放**告警；
+- **授权拒绝率**（403）按 `scope`/`aud` 分维度；
+- **JWKs 拉取与缓存命中率**、**IDP 延迟**。
   我们有**失效演练**（把某用户/某应用加入撤销表；把某把密钥下线），确认 401 生效、刷新被拒并且告警到位。”
 
 **面试官：**“能结合你在凡新/麦克尔斯的经验说个具体例子吗？”
@@ -307,3 +308,62 @@ public int totalFruit(int[] fruits) {
 另外一次移动端升级后，出现**Refresh 重放**，我们通过**旋转 + jti 撤销**挡住了重放，并把这一模式加入**风控告警**。这些属于真实环境里‘安全与可用’的平衡：尽量短的 Access + 自动刷新，搭配清晰的权限边界。”
 
 ---
+
+### 要点 4｜幂等性：幂等键、PUT vs POST、重试安全
+
+> **幂等性（POST 幂等键、PUT/DELETE 自幂等、回调按事件 ID 去重）**：服务端原子占位（Redis SETNX 或 DB 唯一键）+ 响应快照复用；设置幂等窗口 TTL；与**指数退避**配合避免重试风暴；异步链路用 **Outbox + 消费端幂等** 保证最终一致。
+
+**面试官：**
+“促销高峰里，用户可能**连点两次下单**，第三方支付/库存回调也可能**重复推送**。你在（深圳市凡新科技 / 麦克尔斯深圳）如何保证**不会重复创建**订单/扣减库存？你具体怎么设计**幂等键**、**返回语义**，以及**与重试策略的配合**？”
+
+**你：**
+“我把问题分两层：**写接口幂等** + **事件/回调幂等**。
+
+- **写接口（客户端→我们）**：POST 创建类接口要求客户端带 `Idempotency-Key`（或我们在 BFF 生成），幂等键 = `method + path + canonical(body) + user/tenant` 的哈希。服务端先做 **原子占位**（Redis `SETNX`/DB 唯一键），抢到占位才执行业务；执行完把**响应快照**缓存起来（含状态码、关键字段）。后续同键请求直接返回**同一份响应**（201 或 200），而不是再执行业务逻辑。
+- **事件/回调（他们→我们 / 我们→下游）**：以**事件 ID**当幂等键，消费者端先查 `processed_events`（DB/Redis）是否见过，没见过才处理并**原子写入**‘已处理’标记；见过就直接 ACK。
+
+  语义上我会遵守：
+
+1. **PUT/DELETE** 本身具幂等；
+2. **POST** 通过 `Idempotency-Key` 做到‘**功能幂等** + **响应幂等**’；
+3. 返回如果命中幂等缓存，带一个 `Idempotent-Replay: true` 的响应头，方便排障。
+   这套在凡新那边的订单与库存写路径都落了地；在麦克尔斯那边，支付回调我们就是用**回调事件 ID**做幂等键的。”
+
+**面试官：**“你怎么避免并发条件下的**双写**？Redis 会不会不可靠？”
+
+**你：**
+“占位一定要**原子**且**可恢复**：
+
+- Redis 用 `SET key value NX EX=ttl`，抢到才继续；执行完成把**响应摘要**写回同 key，值里存状态与必要字段。
+- 如果担心 Redis 丢数据或需要强一致，我会在 DB 里建一张 `idempotency` 表（`idempotency_key` 唯一索引），业务在**同一事务里**插入占位记录并处理。并发下只有一个事务能成功，其它事务收到**唯一键冲突**后转为读已存在的响应摘要。
+- \*\*TTL（幂等窗口）\*\*按业务风险定，比如创建订单 24h，库存写入 1–3h。窗口内重复请求都命中缓存；窗口外按新请求处理。”
+
+**（伪代码，面试口述用）**
+
+```java
+// before controller
+String key = hash(method, path, canonical(body), userId);
+if (redis.setNx(key, "PROCESSING", ttl)) {
+    Result r = handleBusiness();  // do create order / stock deduct in tx
+    redis.set(key, serialize(r), ttl);   // cache response snapshot
+    return r;                            // 201 Created
+} else {
+    return deserialize(redis.get(key));  // replay same response (201/200)
+}
+```
+
+**面试官：**“如果下游超时了你会怎么重试？怎么避免**重试风暴**？”
+
+**你：**
+“我把**幂等**和**重试**绑在一起设计：
+
+- 客户端/任务统一用**指数退避 + 抖动**（如 200ms、500ms、1.2s…，上限 5–7 次）；
+- 后端在返回体里给出**可重试与否**：`429/503` 搭配 `Retry-After`，**可重试**；`4xx` 里非瞬时错误**不可重试**；
+- 幂等键保证重试**不会产生副作用**；
+- 对**写链路的异步下发**（比如出库通知）用**事务外箱（Transactional Outbox）+ 队列**，消费端也按事件 ID 幂等；如用队列的 FIFO + 去重（SQS FIFO/内容去重）进一步降重。”
+
+**面试官：**“给我一个你真实遇到的例子。”
+
+**你：**
+“凡新那边在大促高峰，有用户在慢网环境**连点两次下单**，以前会出现两张‘相同订单’，后来我们把 BFF 统一生成 `Idempotency-Key`，落到后端做**占位 + 响应快照**，第二次直接重放响应，问题就没了。
+在麦克尔斯那边，**支付平台回调**会在网络抖动时**重复推送** 3–5 次，我们用回调的 `eventId` 做幂等键，消费者先查‘已处理表’，见过就**幂等 ACK**，**不会重复扣款/更新**。这两处上线后，重复写导致的工单几乎归零，告警也更干净。”
