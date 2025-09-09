@@ -5,10 +5,10 @@
 - [Day 1 - 开场与 API 设计（契约与可靠性打底）](#day-1---%E5%BC%80%E5%9C%BA%E4%B8%8E-api-%E8%AE%BE%E8%AE%A1%E5%A5%91%E7%BA%A6%E4%B8%8E%E5%8F%AF%E9%9D%A0%E6%80%A7%E6%89%93%E5%BA%95)
   - [目标](#%E7%9B%AE%E6%A0%87)
     - [步骤清单](#%E6%AD%A5%E9%AA%A4%E6%B8%85%E5%8D%95)
-  - [第 1 步：开场与环境就绪（10–15 分钟）](#%E7%AC%AC-1-%E6%AD%A5%E5%BC%80%E5%9C%BA%E4%B8%8E%E7%8E%AF%E5%A2%83%E5%B0%B1%E7%BB%AA1015-%E5%88%86%E9%92%9F)
+  - [第 1 步：开场与环境就绪](#%E7%AC%AC-1-%E6%AD%A5%E5%BC%80%E5%9C%BA%E4%B8%8E%E7%8E%AF%E5%A2%83%E5%B0%B1%E7%BB%AA)
     - [创建 `docs/interview/QBANK.md`：](#%E5%88%9B%E5%BB%BA-docsinterviewqbankmd)
     - [创建 `docs/interview/elevator_pitch_en.md`](#%E5%88%9B%E5%BB%BA-docsinterviewelevator_pitch_enmd)
-  - [第 2 步：算法训练（LeetCode，60–90 分钟）](#%E7%AC%AC-2-%E6%AD%A5%E7%AE%97%E6%B3%95%E8%AE%AD%E7%BB%83leetcode6090-%E5%88%86%E9%92%9F)
+  - [第 2 步：LeetCode 算法训练](#%E7%AC%AC-2-%E6%AD%A5leetcode-%E7%AE%97%E6%B3%95%E8%AE%AD%E7%BB%83)
     - [LC 904. Fruit Into Baskets（中等，Sliding Window + HashMap）](#lc-904-fruit-into-baskets%E4%B8%AD%E7%AD%89sliding-window--hashmap)
     - [LC 167. Two Sum II – Input Array Is Sorted（简单，Two Pointers）](#lc-167-two-sum-ii--input-array-is-sorted%E7%AE%80%E5%8D%95two-pointers)
     - [LC 209. Minimum Size Subarray Sum（中等，Sliding Window）](#lc-209-minimum-size-subarray-sum%E4%B8%AD%E7%AD%89sliding-window)
@@ -28,6 +28,10 @@
     - [要点 5｜限流-重试-熔断：客户端与服务端协同；退避策略；降级与快速失败](#%E8%A6%81%E7%82%B9-5%EF%BD%9C%E9%99%90%E6%B5%81-%E9%87%8D%E8%AF%95-%E7%86%94%E6%96%AD%E5%AE%A2%E6%88%B7%E7%AB%AF%E4%B8%8E%E6%9C%8D%E5%8A%A1%E7%AB%AF%E5%8D%8F%E5%90%8C%E9%80%80%E9%81%BF%E7%AD%96%E7%95%A5%E9%99%8D%E7%BA%A7%E4%B8%8E%E5%BF%AB%E9%80%9F%E5%A4%B1%E8%B4%A5)
     - [要点 6｜错误码与可观察性：统一错误模型 / Trace-ID / 指标-日志-链路关联](#%E8%A6%81%E7%82%B9-6%EF%BD%9C%E9%94%99%E8%AF%AF%E7%A0%81%E4%B8%8E%E5%8F%AF%E8%A7%82%E5%AF%9F%E6%80%A7%E7%BB%9F%E4%B8%80%E9%94%99%E8%AF%AF%E6%A8%A1%E5%9E%8B--trace-id--%E6%8C%87%E6%A0%87-%E6%97%A5%E5%BF%97-%E9%93%BE%E8%B7%AF%E5%85%B3%E8%81%94)
     - [要点 7｜灰度发布与回滚：逐步放量 / 健康检查 / 一键回滚](#%E8%A6%81%E7%82%B9-7%EF%BD%9C%E7%81%B0%E5%BA%A6%E5%8F%91%E5%B8%83%E4%B8%8E%E5%9B%9E%E6%BB%9A%E9%80%90%E6%AD%A5%E6%94%BE%E9%87%8F--%E5%81%A5%E5%BA%B7%E6%A3%80%E6%9F%A5--%E4%B8%80%E9%94%AE%E5%9B%9E%E6%BB%9A)
+  - [第 4 步：英语口语素材](#%E7%AC%AC-4-%E6%AD%A5%E8%8B%B1%E8%AF%AD%E5%8F%A3%E8%AF%AD%E7%B4%A0%E6%9D%90)
+    - [45s Elevator Pitch（口语版）](#45s-elevator-pitch%E5%8F%A3%E8%AF%AD%E7%89%88)
+    - [1-min Answer — “Why this API design?”](#1-min-answer--why-this-api-design)
+    - [练习与落地（两分钟内搞定）](#%E7%BB%83%E4%B9%A0%E4%B8%8E%E8%90%BD%E5%9C%B0%E4%B8%A4%E5%88%86%E9%92%9F%E5%86%85%E6%90%9E%E5%AE%9A)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -51,7 +55,7 @@
 
 ---
 
-## 第 1 步：开场与环境就绪（10–15 分钟）
+## 第 1 步：开场与环境就绪
 
 在 `docs/interview/` 下创建 2 个文件。
 
@@ -99,7 +103,7 @@ Hi, I’m Renda Zhang, a Java backend developer focused on cloud-native microser
 
 ---
 
-## 第 2 步：算法训练（LeetCode，60–90 分钟）
+## 第 2 步：LeetCode 算法训练
 
 目标：
 
@@ -556,3 +560,61 @@ MDC.put("traceId", traceId);
 
 “凡新有次把**库存写入缓存策略**改成‘写后淘汰’，金丝雀 5% 时 `STOCK_INCONSISTENT` 错误码抬头且 P95 拉长，我们立即**abort 回滚**，切回旧策略，随后排查发现是**并发回写与淘汰顺序**导致短暂不一致；修复后再灰度就稳了。
 麦克尔斯那边，移动端依赖的**图片处理服务**升级了底层库，1% 金丝雀就发现**内存泄漏 + 容器重启**，我们一键回滚并把这条链路拆出**独立队列限速**，再上线就顺滑了。”
+
+---
+
+## 第 4 步：英语口语素材
+
+### 45s Elevator Pitch（口语版）
+
+**要点备忘（不需要念出来）**
+
+- 我是谁：Java 后端 + Cloud-native
+- 做过啥：电商/库存/订单 API，Spring Boot + EKS
+- 方法论：契约清晰、版本化、最小权限、幂等、限流/重试/熔断、统一错误模型+Trace ID
+- 价值：在高峰期稳定可扩展、问题可快速定位
+- 诉求：希望负责核心 API 的设计与可靠性
+
+**脚本**
+
+Hi, I’m **Renda Zhang**, a Java backend engineer focused on **cloud-native microservices**.
+In my recent roles at Shenzhen-based teams, I’ve been building and operating **e-commerce APIs**—products, inventory and checkout—on **Spring Boot** with **Kubernetes/EKS**. I care a lot about **predictable contracts** and **operability**: OpenAPI-driven schemas, **versioning when changes are breaking**, **OIDC/JWT** with least-privilege scopes, **idempotency keys** for writes, and **rate-limit + retry with backoff + circuit breaker** to protect dependencies.
+We also standardized a **unified error model** with **trace IDs**, so incidents are easy to triage during promotion spikes.
+I’m looking to join a team where I can **own core API design and reliability**, and I bring hands-on experience with **EKS, Redis, MySQL/Postgres, and observability pipelines** to keep services both **scalable and debuggable**.
+
+**可替换短句（按岗位画像切换）**
+
+- 如果更偏平台侧：“…and I’ve been productizing these patterns as **reusable starters and policies** so teams ship safer by default.”
+- 如果更偏业务侧：“…and I translate business rules into **clear API contracts** that third-party channels can adopt with minimal friction.”
+
+### 1-min Answer — “Why this API design?”
+
+**要点备忘（不需要念出来）**
+
+- 场景：多渠道商品/库存/下单
+- 非功能约束：流量波动、可演进、排障效率
+- 设计：Canonical Model、版本化、鉴权与最小权限、幂等与重试、限流与熔断、错误模型与可观测
+- 权衡：一致性 vs 延迟、缓存与回写、灰度与回滚
+- 结果：可预测、抗压、易演进
+
+**脚本**
+
+For multi-channel commerce, the API has to be **predictable, evolvable, and observable**.
+First, I define a **canonical domain model**—products, variants, stock items—so different channels map into **one set of meanings**. We keep **contracts explicit** with OpenAPI and **use URL versioning** when a change is breaking.
+Security is **OIDC/JWT** with **least-privilege scopes**; service-to-service calls use short-lived credentials.
+Writes are **idempotent** via an `Idempotency-Key`, so client retries are safe. Around dependencies I add **rate-limit + retry with jitter + circuit breaker**, and I set **sensible timeouts** per call.
+Errors follow a **unified shape**—`code, message, traceId, details`—and we propagate the **trace ID** across logs, metrics and distributed traces, which makes on-call triage straightforward.
+On evolution, we **add fields compatibly** within a version, and for risky changes we go **canary** with clear rollback gates.
+This design lets us **absorb traffic spikes** without surprises, **debug quickly**, and **ship changes confidently**. In my last projects, it’s been a practical balance between **consistency and latency**: cached reads where safe, guarded writes with queues and outbox when needed.
+
+**可能的追问 & 即兴回答**
+
+- Why URL versioning? → “It’s visible and simple for partners; headers are fine internally, but URLs reduce coordination cost across teams.”
+- How do you avoid double-writes? → “Idempotency key + atomic reservation, and we replay the same response if the key repeats.”
+- How do you roll back safely? → “Canary with hard guards on 5xx/P95; DB follows **expand-migrate-contract** so older versions keep working.”
+
+### 练习与落地（两分钟内搞定）
+
+* 把上面两段粘到 `elevator_pitch_en.md`。
+* 大声读三遍，录一次音，检查是否**在 45s / 60s 以内**，语速放慢，句子收尾要干净。
+* 标记 3 个最想强调的词，用手势或停顿突出即可。
