@@ -9,6 +9,7 @@
     - [题 B - LC739. Daily Temperatures（单调栈）](#%E9%A2%98-b---lc739-daily-temperatures%E5%8D%95%E8%B0%83%E6%A0%88)
     - [题 C - LC20. Valid Parentheses（栈）](#%E9%A2%98-c---lc20-valid-parentheses%E6%A0%88)
   - [Step 2：数据库与缓存](#step-2%E6%95%B0%E6%8D%AE%E5%BA%93%E4%B8%8E%E7%BC%93%E5%AD%98)
+    - [索引选型与失效（B+Tree、组合索引、覆盖索引、左前缀）](#%E7%B4%A2%E5%BC%95%E9%80%89%E5%9E%8B%E4%B8%8E%E5%A4%B1%E6%95%88btree%E7%BB%84%E5%90%88%E7%B4%A2%E5%BC%95%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95%E5%B7%A6%E5%89%8D%E7%BC%80)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -134,3 +135,60 @@ public boolean isValid(String s) {
 ---
 
 ## Step 2：数据库与缓存
+
+### 索引选型与失效（B+Tree、组合索引、覆盖索引、左前缀）
+
+> **索引选型与失效**：等值在前、范围在后，`(user_id, status, created_at DESC)` 覆盖列表页；避免函数包列与隐式转换；选择度差用**组合索引**提升；热查询必要时**拆专用索引**，不用指望索引合并；用 `EXPLAIN` 盯 `rows/key/filesort`。
+
+场景题
+
+**面试官**
+
+“你在（深圳市凡新科技 / 麦克尔斯深圳）做订单与库存查询时，最常见的一条查询长这样：
+按 `user_id + status` 过滤，按 `created_at DESC` 排序，取最近 20 条。偶尔还会加上 `channel`（Shopify/WooCommerce）。你会怎么设计**索引**？在什么情况下**索引会失效**，你怎么避免？”
+
+**你**
+
+“我会直接上一个**组合索引**：`(user_id, status, created_at DESC)`。
+
+- 这样 `WHERE user_id=? AND status=?` 命中**最左前缀**，`ORDER BY created_at DESC LIMIT 20` 能做到**顺序读**，几乎不用再做 filesort。
+- 如果查询只返回列表页字段（比如 `order_id, total, created_at, status`），我会把这些字段也纳入**覆盖索引**（只要都在二级索引上，查询就**不回表**）。
+- 如果经常用到 `channel` 维度，我会根据**查询比例**和**选择度**决定是否把索引改成 `(user_id, channel, status, created_at DESC)`，或者再开一条以 `channel` 为第二位的索引（避免一个索引承担所有模式）。
+- 文本模糊搜索我不会指望 B+Tree，`LIKE '%kw%'` 这种我会用**倒排/全文索引**或**ES**，避免全表扫。”
+
+“**可能失效的坑**我会提前规避：
+
+- **函数/计算包住列**：`DATE(created_at)=?` 会让索引失效，我改成 `created_at >= '2025-09-01 00:00:00' AND < '2025-09-02 00:00:00'`。
+- **隐式类型转换**：`user_id` 是 `BIGINT`，但参数传字符串，可能走不到索引，我会在 DAL 层**强类型**。
+- **范围列放前面**：`WHERE created_at > ? AND status = ?`，如果把 `created_at` 放在索引前面，后面的列就用不上索引了；所以把**等值列在前，范围列靠后**。
+- **选择度差**：`status` 只有 3 个值，单列索引没意义，要靠 `user_id + status` 的组合来提高选择度。
+- **回表过多**：遇到‘扫 10 万行再回表’的情况，我会把列表页必要字段放进覆盖索引里，或者改成**先查主键再回表**的两段式。”
+
+“上线前我会用 `EXPLAIN` 看 `type`、`rows`、`key` 和 `Using index/Using filesort`；`rows` 过大就说明选择度不行。慢查询里还会看**扫描行数**与**回表次数**，必要时调整索引顺序或再拆一个更贴近热查询的索引。”
+
+追问 1（实战细节）
+
+**面试官：**“如果同样的查询，偶尔要先按 `channel` 过滤再按 `user_id` 呢？你是加一个新的 `(channel, user_id, status, created_at)` 还是用索引合并？”
+
+**你：**
+
+“我一般会**加一条新索引**，不要指望索引合并（AND 合并常常不稳定且代价高）。判断标准是**这条访问模式的占比**是否值得一条新索引。如果比例不高，我会把这类查询**引导到报表库/异步计算**，避免在 OLTP 上堆太多索引。”
+
+追问 2（排序与覆盖）
+
+**面试官：**“`ORDER BY created_at DESC` 一定能用上索引排序吗？什么情况下会退化成 filesort？”
+
+**你：**
+
+“有两个常见退化点：
+
+1. **排序列不在索引的连续前缀里**（或者方向不一致）；
+2. **查询列不被索引覆盖**且回表顺序与排序不一致，优化器可能选择 filesort。
+   所以我会把 `created_at DESC` 放在组合索引的最后一位，并尽量让列表页**覆盖索引**，这样基本避免 filesort。”
+
+追问 3（真实案例）
+
+**面试官：**“讲一个你线上遇到的‘索引失效’问题。”
+
+**你：**
+“有一次活动页报慢，我们发现 SQL 写了 `WHERE DATE(created_at)=CURDATE()`，直接把索引废了；改成半开区间后 P95 从 900ms 掉到 80ms。还有一次是 `user_id` 参数是字符串，发生了**隐式转换**，修掉参数类型后 `rows` 从十几万降到几百。”
