@@ -8,6 +8,7 @@
     - [题 A - LC141. Linked List Cycle（快慢指针 / Floyd）](#%E9%A2%98-a---lc141-linked-list-cycle%E5%BF%AB%E6%85%A2%E6%8C%87%E9%92%88--floyd)
     - [题 B - LC739. Daily Temperatures（单调栈）](#%E9%A2%98-b---lc739-daily-temperatures%E5%8D%95%E8%B0%83%E6%A0%88)
     - [题 C - LC20. Valid Parentheses（栈）](#%E9%A2%98-c---lc20-valid-parentheses%E6%A0%88)
+  - [Step 2：数据库与缓存](#step-2%E6%95%B0%E6%8D%AE%E5%BA%93%E4%B8%8E%E7%BC%93%E5%AD%98)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -22,8 +23,6 @@
 ---
 
 ## Step 1：LeetCode 算法训练
-
-目标：完成 2 题（必做：LC141 + LC739），选做 1 题（LC20）；并对 LC739 题做“高质量复盘”。
 
 ### 题 A - LC141. Linked List Cycle（快慢指针 / Floyd）
 
@@ -131,3 +130,7 @@ public boolean isValid(String s) {
 **自测**
 
 - `"()[]{}" -> true`，`"(]" -> false`，`"([)]" -> false`，`"{[]}" -> true`。
+
+---
+
+## Step 2：数据库与缓存
