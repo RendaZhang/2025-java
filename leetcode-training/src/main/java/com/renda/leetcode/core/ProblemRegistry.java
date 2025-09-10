@@ -30,6 +30,7 @@ public final class ProblemRegistry {
         register(new LC167_TwoSumII_InputArrayIsSorted());
         register(new LC209_MinimumSizeSubarraySum());
         register(new LC739_DailyTemperatures());
+        register(new LC141_LinkedListCycle());
     }
 
     private ProblemRegistry() {
