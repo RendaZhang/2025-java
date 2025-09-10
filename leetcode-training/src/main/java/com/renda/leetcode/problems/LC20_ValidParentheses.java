@@ -4,6 +4,11 @@ import com.renda.leetcode.core.LeetCodeProblem;
 
 /**
  * LeetCode 20 - Valid Parentheses.
+ *
+ * 遇到左括号入栈；遇到右括号，检查栈顶能否匹配；结束时栈必须空。
+ *
+ * Runtime 1 ms Beats 99.54%
+ * Memory 41.68 MB Beats 86.27%
  */
 public class LC20_ValidParentheses implements LeetCodeProblem {
 
