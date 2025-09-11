@@ -15,6 +15,9 @@
     - [读写分离的坑：主从延迟、读旧值、强一致读 / 亲和策略](#%E8%AF%BB%E5%86%99%E5%88%86%E7%A6%BB%E7%9A%84%E5%9D%91%E4%B8%BB%E4%BB%8E%E5%BB%B6%E8%BF%9F%E8%AF%BB%E6%97%A7%E5%80%BC%E5%BC%BA%E4%B8%80%E8%87%B4%E8%AF%BB--%E4%BA%B2%E5%92%8C%E7%AD%96%E7%95%A5)
     - [缓存一致性：Cache-Aside 双删顺序、消息通知/回源、热键与热点保护](#%E7%BC%93%E5%AD%98%E4%B8%80%E8%87%B4%E6%80%A7cache-aside-%E5%8F%8C%E5%88%A0%E9%A1%BA%E5%BA%8F%E6%B6%88%E6%81%AF%E9%80%9A%E7%9F%A5%E5%9B%9E%E6%BA%90%E7%83%AD%E9%94%AE%E4%B8%8E%E7%83%AD%E7%82%B9%E4%BF%9D%E6%8A%A4)
     - [三座大山：穿透 / 击穿 / 雪崩（识别与治理清单）](#%E4%B8%89%E5%BA%A7%E5%A4%A7%E5%B1%B1%E7%A9%BF%E9%80%8F--%E5%87%BB%E7%A9%BF--%E9%9B%AA%E5%B4%A9%E8%AF%86%E5%88%AB%E4%B8%8E%E6%B2%BB%E7%90%86%E6%B8%85%E5%8D%95)
+  - [Step 3：1 分钟英文口语](#step-31-%E5%88%86%E9%92%9F%E8%8B%B1%E6%96%87%E5%8F%A3%E8%AF%AD)
+    - [1-min Answer — How I diagnose slow queries & index misses](#1-min-answer--how-i-diagnose-slow-queries--index-misses)
+    - [3 个强调点（说话时可加重语气）](#3-%E4%B8%AA%E5%BC%BA%E8%B0%83%E7%82%B9%E8%AF%B4%E8%AF%9D%E6%97%B6%E5%8F%AF%E5%8A%A0%E9%87%8D%E8%AF%AD%E6%B0%94)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -620,3 +623,22 @@ if (locked) {
 **你：**
 
 “按 **Key 前缀/接口** 维度看 `hit ratio、miss burst、db fallback qps、回源耗时、互斥锁命中率、热点 TopN、TTL 分布`。出现 miss 突增且 DB 回源同步拉高，基本就能定位是哪一类问题。”
+
+---
+
+## Step 3：1 分钟英文口语
+
+### 1-min Answer — How I diagnose slow queries & index misses
+
+**Script (≈60s)**
+When a request feels slow, I first check whether it’s database time or app/network time using the slow-query log and basic APM. If it’s DB time, I run **EXPLAIN—ideally EXPLAIN ANALYZE**—and look at four things: the **access type** (`ALL/range/ref/eq_ref`), the **chosen key**, the **estimated rows**, and **Extra** flags like *Using filesort*, *Using temporary*, or *Using index condition*.
+
+If rows examined are high or I see filesort, I align the query with a **composite index** that matches the filter and sort, e.g., `(user_id, status, created_at DESC)`, and try to make the list view **covering** so we avoid table lookups. I also fix typical pitfalls: remove functions on columns (`DATE(created_at)` → range predicates), avoid implicit type casts, and replace large **OFFSET** pagination with **seek** pagination using `(created_at, id)`.
+
+If the plan looks fine but latency remains, I check **locks and waits**—deadlocks, long transactions, or hot rows. The loop is: measure → explain → rewrite or index → re-measure. This usually brings P95 back to target and keeps the plan stable under load.
+
+### 3 个强调点（说话时可加重语气）
+
+* “EXPLAIN **ANALYZE** shows real timing, not just estimates.”
+* “**Covering index** to avoid random I/O.”
+* “**Seek pagination** instead of large OFFSET.”
