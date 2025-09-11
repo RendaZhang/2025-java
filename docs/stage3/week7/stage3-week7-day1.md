@@ -567,7 +567,9 @@ MDC.put("traceId", traceId);
 - HPA：根据 `CPU/内存/自定义 QPS` 指标自动扩，但**不代替**限流；
 - 渐进式交付：**Argo Rollouts/Flagger** 配 `setWeight` 与 `metric` 守卫，失败自动 `abort`；
 - 网关：ALB/NGINX 做**权重路由**；金丝雀阶段把**写操作**路由比例更低。
-  应用侧：
+
+应用侧：
+
 - Spring Boot 加**启动预热**（连接池/缓存）与**优雅停机**；
 - 加**版本与commit id**到 `/actuator/info`；
 - 监控面板预置‘上线看板’：金丝雀 vs 基线对比（RPS/5xx/4xx/P95/CPU/重启数）。这样**发布即实验**就能闭环。”

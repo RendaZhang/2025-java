@@ -14,6 +14,7 @@
   - [DB & Cache](#db--cache)
     - [索引选型与失效（B+Tree、组合索引、覆盖索引、左前缀）](#%E7%B4%A2%E5%BC%95%E9%80%89%E5%9E%8B%E4%B8%8E%E5%A4%B1%E6%95%88btree%E7%BB%84%E5%90%88%E7%B4%A2%E5%BC%95%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95%E5%B7%A6%E5%89%8D%E7%BC%80)
     - [事务与隔离级别：RC / RR；MVCC 的一致性读 vs 当前读；如何避免幻读与超卖](#%E4%BA%8B%E5%8A%A1%E4%B8%8E%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%ABrc--rrmvcc-%E7%9A%84%E4%B8%80%E8%87%B4%E6%80%A7%E8%AF%BB-vs-%E5%BD%93%E5%89%8D%E8%AF%BB%E5%A6%82%E4%BD%95%E9%81%BF%E5%85%8D%E5%B9%BB%E8%AF%BB%E4%B8%8E%E8%B6%85%E5%8D%96)
+    - [慢查询定位：执行计划、扫描行数、回表/下推、坏味道清单](#%E6%85%A2%E6%9F%A5%E8%AF%A2%E5%AE%9A%E4%BD%8D%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92%E6%89%AB%E6%8F%8F%E8%A1%8C%E6%95%B0%E5%9B%9E%E8%A1%A8%E4%B8%8B%E6%8E%A8%E5%9D%8F%E5%91%B3%E9%81%93%E6%B8%85%E5%8D%95)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -464,7 +465,9 @@ MDC.put("traceId", traceId);
 - HPA：根据 `CPU/内存/自定义 QPS` 指标自动扩，但**不代替**限流；
 - 渐进式交付：**Argo Rollouts/Flagger** 配 `setWeight` 与 `metric` 守卫，失败自动 `abort`；
 - 网关：ALB/NGINX 做**权重路由**；金丝雀阶段把**写操作**路由比例更低。
-  应用侧：
+
+应用侧：
+
 - Spring Boot 加**启动预热**（连接池/缓存）与**优雅停机**；
 - 加**版本与commit id**到 `/actuator/info`；
 - 监控面板预置‘上线看板’：金丝雀 vs 基线对比（RPS/5xx/4xx/P95/CPU/重启数）。这样**发布即实验**就能闭环。”
@@ -593,7 +596,7 @@ COMMIT;
 - **幻读/重复写**：RC 下范围条件的 `SELECT … FOR UPDATE` 不锁间隙，可能插入“新纪录”造成幻影 → 改成**条件更新**或**唯一约束 + INSERT IGNORE/ON DUPLICATE KEY** 防重复。
 - **长事务**：RR 下长事务会让 MVCC 的 undo 链变长，吞吐变差、历史回收受阻 → 严控**事务边界**，把计算挪到事务外；UI 上避免“开事务等用户操作”。
 - **死锁**：并发写相同/相邻键很常见 → 统一**加锁顺序**（按主键/索引顺序）、**缩短事务**、**减少回表**（覆盖索引），并在代码里**捕获死锁并指数退避重试**。
-- **隐式类型/函数包列**导致索引失效 → 在写路径尤其要**强类型**和**区间写法**（参见 Day2#1 索引策略）。
+- **隐式类型/函数包列**导致索引失效 → 在写路径尤其要**强类型**和**区间写法**。
 
 **面试官追问 1**
 
@@ -630,3 +633,91 @@ ON DUPLICATE KEY UPDATE touched_at = NOW(); -- 幂等
 
 “凡新那边高峰期遇到过**优惠券重复核销**风控误判，我们一开始用 `SELECT … FOR UPDATE` 查是否核销过，再写入；在 RC 下因为不锁间隙，边界条件下出现并发插入比赛的窗口。后来改成**唯一索引 + 插入即占位**，问题消失。
 在麦克尔斯那边，做**库存预留**时从 RR 改 RC 后，读写冲突少了一半，但我们把关键写全部改为**条件更新模式**，再配幂等与重试，稳定住了。”
+
+### 慢查询定位：执行计划、扫描行数、回表/下推、坏味道清单
+
+> **慢查询定位**：用慢日志与 `EXPLAIN ANALYZE` 定位“扫描多/回表多/排序慢/锁等待”；组合索引对齐过滤+排序并**覆盖**；谓词改写（半开区间、强类型、去函数/OR）；大分页用**seek**，Join 用**小表驱动**。
+
+小清单
+
+- `EXPLAIN ANALYZE` 看真实耗时；盯 `type/key/rows/Extra`
+- 组合索引：等值在前、范围在后；排序方向一致；尽量覆盖索引
+- 谓词改写：半开区间、强类型、去函数包列/避免前置 `%`
+- 分页：大页改**seek**；Join：小表驱动大表
+- 复盘：慢日志 + rows_examined + 统计信息更新
+
+场景题
+
+**面试官**
+
+“你在（深圳市凡新科技 / 麦克尔斯深圳）遇到一个接口偶发 900ms+：按 `user_id + status` 过滤，`ORDER BY created_at DESC LIMIT 20`。请你**在线上**快速判断瓶颈在哪，并说说你会如何**定位 → 证实 → 修复**？”
+
+**你**
+
+“我有一套**五步法**，基本两三分钟就能把方向定下来：
+
+**① 先用慢日志/性能面板确定是‘DB 内慢’，还是‘网络/应用层慢’**
+
+- 看 `rows_examined`、`query_time`、`lock_time`；如果 `query_time` 高但 `rows_examined` 很低，多半是**锁/等待**；如果 `rows_examined` 很大，就是**扫描多**。
+
+**② 上 `EXPLAIN`（MySQL 8 用 `EXPLAIN ANALYZE`）看真实代价**
+
+- 关注 `type`（`ALL`/`range`/`ref`/`eq_ref` 越靠后越好）、`key` 是否命中正确索引、`rows` 估算值、以及 `Extra`：
+  - `Using index`（覆盖）、`Using where`（回表筛）、`Using filesort`、`Using temporary`、`Using index condition`（ICP 下推）。
+- `EXPLAIN ANALYZE`还能看到每步实际耗时与行数，能直接证伪“是不是排序/回表慢”。
+
+**③ 检查‘坏味道’**
+
+- `LIKE '%kw%'`、`DATE(created_at)=…`/对列做函数、隐式类型转换（字符串比 BIGINT）、`OR` 把索引打散、**范围列放在组合索引前**、`ORDER BY` 顺序/方向与索引不一致、`SELECT *` 导致**回表**、大 `OFFSET` 分页。
+
+**④ 快速修法**（优先不改业务）
+
+- **索引对齐**：按这个查询我会用 `(user_id, status, created_at DESC)` 并让列表页字段尽量**覆盖索引**；
+- **改写谓词**：把 `DATE(created_at)` 换半开区间；把字符串参数转成强类型；
+- **排序与分页**：若仍有 `filesort`，用**覆盖+方向一致**避免；超大分页改为**游标/seek**：`WHERE (created_at, id) < (?, ?) LIMIT 20`；
+- **Join 顺序**：小表驱动大表，必要时加 hint；
+- **统计信息**：更新表/索引统计，避免优化器走岔路。
+
+**⑤ 复核与回归**
+
+- 再跑 `EXPLAIN ANALYZE` 与压测，确认 P95/P99 回到目标；把修复写进‘索引设计规范’和‘SQL 代码评审清单’。”
+
+追问 1（动手演示）
+
+**面试官：**“就拿你这条 `user_id+status` 的查询，EXPLAIN 看到了 `Using filesort`，而且 `rows` 很大，你怎么落地修？”
+
+**你：**
+
+“我先看索引：
+
+- 如果当前只有 `(user_id)`，我会改成**组合索引** `(user_id, status, created_at DESC)`；
+- 列表页只用 `order_id, total, status, created_at`，我把这些字段也放进索引，形成**覆盖索引**；
+- 再跑 `EXPLAIN ANALYZE`，目标是看到 `type=range/ref`、`Using index`，没有 `Using filesort`。
+  必要时把 `LIMIT 20` 的大偏移分页改成**seek 分页**，配合 `(created_at DESC, id DESC)` 复合排序键。”
+
+追问 2（索引失效的真实坑）
+
+**面试官：**“说个你遇到的‘一行代码让索引失效’的例子。”
+
+**你：**
+
+“典型就是 `WHERE DATE(created_at)=CURDATE()`，或者把 `user_id` 当字符串传，直接**全表扫**。线上修法：立刻改半开区间/强类型，P95 直接从百毫秒量级掉回两位数。”
+
+追问 3（回表与下推）
+
+**面试官：**“怎么判断是**回表**拖慢还是**排序**拖慢？”
+
+**你：**
+
+“看 `EXPLAIN ANALYZE` 的每步耗时：
+
+- 如果 `Using index condition` + `rows` 很大但 `table` 回主键花时高，是**回表**多 → 做覆盖索引/减少列；
+- 如果 `Using filesort` 的耗时高，说明**排序**是瓶颈 → 调整索引顺序与方向，或改游标分页。”
+
+追问 4（大表 join）
+
+**面试官：**“两张大表 join 变慢呢？”
+
+**你：**
+
+“先确保**连接键都有索引**，让 `type` 到 `ref/eq_ref`；用**小表驱动大表**（或子查询先裁剪大表），避免 `ALL`；必要时做**中间结果落地**或用 **覆盖索引 + 主键回表**两段式。”
