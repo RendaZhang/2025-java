@@ -32,6 +32,7 @@ public final class ProblemRegistry {
         register(new LC739_DailyTemperatures());
         register(new LC141_LinkedListCycle());
         register(new LC94_BinaryTreeInorderTraversal());
+        register(new LC145_BinaryTreePostorderTraversal());
     }
 
     private ProblemRegistry() {

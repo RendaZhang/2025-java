@@ -11,6 +11,11 @@ import java.util.Queue;
 
 /**
  * LeetCode 102 - Binary Tree Level Order Traversal.
+ *
+ * 层序 BFS
+ *
+ * Runtime 1 ms Beats 91.55%
+ * Memory 45.00 MB Beats 76.24%
  */
 public class LC102_BinaryTreeLevelOrderTraversal implements LeetCodeProblem {
 

@@ -7,8 +7,8 @@
   - [Step 1 - 算法（树遍历）](#step-1---%E7%AE%97%E6%B3%95%E6%A0%91%E9%81%8D%E5%8E%86)
     - [LC94. Binary Tree Inorder Traversal（迭代中序 + 栈）](#lc94-binary-tree-inorder-traversal%E8%BF%AD%E4%BB%A3%E4%B8%AD%E5%BA%8F--%E6%A0%88)
     - [LC102. Binary Tree Level Order Traversal（层序 BFS）](#lc102-binary-tree-level-order-traversal%E5%B1%82%E5%BA%8F-bfs)
-    - [LC145. Binary Tree Postorder Traversal（迭代后序）](#lc145-binary-tree-postorder-traversal%E8%BF%AD%E4%BB%A3%E5%90%8E%E5%BA%8F)
     - [LC102 高质量复盘](#lc102-%E9%AB%98%E8%B4%A8%E9%87%8F%E5%A4%8D%E7%9B%98)
+    - [LC145. Binary Tree Postorder Traversal（迭代后序）](#lc145-binary-tree-postorder-traversal%E8%BF%AD%E4%BB%A3%E5%90%8E%E5%BA%8F)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -94,12 +94,22 @@ public List<List<Integer>> levelOrder(TreeNode root) {
 - 用 `for (int i=0; i<q.size(); i++)` 动态读 size 会出错；要先缓存 `sz`。
   **复杂度**：O(n)/O(w)（w 为最大层宽）。
 
+### LC102 高质量复盘
+
+- **Pattern**：队列分层 BFS
+- **Intuition**：用“本层 size”截断，保证每层聚合
+- **Steps**：入队根→循环直到队空；每轮缓存 `sz`，弹 `sz` 次、收集值、把子节点入队
+- **Complexity**：Time O(n)，Space O(w)
+- **Edge Cases**：空树、单节点、极度不平衡树
+- **Mistakes & Fix**：动态读 `q.size()` 导致漏/重复 → 先缓存 `sz`
+
 ### LC145. Binary Tree Postorder Traversal（迭代后序）
 
 **思路提示（双栈法最稳）**
 
-- 栈1出栈即入栈2；先压左再压右，最后栈2逆序就是后序。
-  **Java 模板**
+- 栈 1 出栈即入栈 2；先压左再压右，最后栈 2 逆序就是后序。
+
+**Java 模板**
 
 ```java
 public List<Integer> postorderTraversal(TreeNode root) {
@@ -119,14 +129,5 @@ public List<Integer> postorderTraversal(TreeNode root) {
 ```
 
 **复杂度**：O(n)/O(n)。
-
-### LC102 高质量复盘
-
-- **Pattern**：队列分层 BFS
-- **Intuition**：用“本层 size”截断，保证每层聚合
-- **Steps**：入队根→循环直到队空；每轮缓存 `sz`，弹 `sz` 次、收集值、把子节点入队
-- **Complexity**：Time O(n)，Space O(w)
-- **Edge Cases**：空树、单节点、极度不平衡树
-- **Mistakes & Fix**：动态读 `q.size()` 导致漏/重复 → 先缓存 `sz`
 
 ---
