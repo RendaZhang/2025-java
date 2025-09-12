@@ -56,7 +56,8 @@ public List<Integer> inorderTraversal(TreeNode root) {
 
 - 忘记外层 `|| !st.isEmpty()` 导致遗漏右链。
 - 把访问 `ans.add(cur.val)` 放错到内层 while。
-  **复杂度**：O(n)/O(h)。
+
+**复杂度**：O(n)/O(h)。
 
 ### LC102. Binary Tree Level Order Traversal（层序 BFS）
 

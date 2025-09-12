@@ -31,6 +31,7 @@ public final class ProblemRegistry {
         register(new LC209_MinimumSizeSubarraySum());
         register(new LC739_DailyTemperatures());
         register(new LC141_LinkedListCycle());
+        register(new LC94_BinaryTreeInorderTraversal());
     }
 
     private ProblemRegistry() {
