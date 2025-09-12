@@ -107,7 +107,7 @@ public List<List<Integer>> levelOrder(TreeNode root) {
 
 **思路提示（双栈法最稳）**
 
-- 栈 1 出栈即入栈 2；先压左再压右，最后栈 2 逆序就是后序。
+栈 1 出栈即入栈 2；先压左再压右，最后栈 2 逆序就是后序。
 
 **Java 模板**
 
@@ -129,5 +129,23 @@ public List<Integer> postorderTraversal(TreeNode root) {
 ```
 
 **复杂度**：O(n)/O(n)。
+
+反前序 + 头插：
+
+```java
+public List<Integer> postorderTraversal(TreeNode root) {
+    LinkedList<Integer> res = new LinkedList<>();
+    if (root == null) return res;
+    Deque<TreeNode> stack = new ArrayDeque<>();
+    stack.push(root);
+    while (!stack.isEmpty()) {
+        TreeNode node = stack.pop();
+        res.addFirst(node.val);        // 头插，等价于最终 reverse
+        if (node.left != null)  stack.push(node.left);
+        if (node.right != null) stack.push(node.right);
+    }
+    return res;
+}
+```
 
 ---

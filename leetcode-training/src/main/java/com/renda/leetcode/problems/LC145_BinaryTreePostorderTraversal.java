@@ -2,7 +2,7 @@ package com.renda.leetcode.problems;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.LinkedList;
+import java.util.Deque;
 import java.util.List;
 
 import com.renda.leetcode.core.LeetCodeProblem;
@@ -12,7 +12,7 @@ import com.renda.leetcode.util.TreeUtils;
 /**
  * LeetCode 145 - Binary Tree Postorder Traversal
  *
- * 双栈法
+ * 单栈 + prev 指针
  *
  * Runtime 1 ms Beats 6.81%
  * Memory 41.65 MB Beats 67.31%
@@ -21,36 +21,26 @@ import com.renda.leetcode.util.TreeUtils;
 public class LC145_BinaryTreePostorderTraversal implements LeetCodeProblem {
 
     public List<Integer> postorderTraversal(TreeNode root) {
-        ArrayDeque<TreeNode> stack1 = new ArrayDeque<>();
-        ArrayDeque<TreeNode> stack2 = new ArrayDeque<>();
-        LinkedList<Integer> resultList = new LinkedList<>();
-        if (root == null) return resultList;
-        if (root.left == null && root.right == null) {
-            resultList.add(root.val);
-            return resultList;
-        }
-        while (root != null || !stack1.isEmpty()) {
-            while (root != null) {
-                stack1.push(root);
-                if (root.right != null) stack1.push(root.right);
-                root = root.left;
+        List<Integer> res = new ArrayList<>();
+        Deque<TreeNode> stack = new ArrayDeque<>();
+        TreeNode cur = root, prev = null;
+        while (cur != null || !stack.isEmpty()) {
+            // 一路向左
+            while (cur != null) {
+                stack.push(cur);
+                cur = cur.left;
             }
-            root = stack1.pop();
-            if (root.right == null && root.left == null) {
-                resultList.addLast(root.val);
-                stack2.push(root);
-                if (!stack1.isEmpty()) root = stack1.pop();
-            }
-            while (!stack2.isEmpty() && (root.right == stack2.peek() || root.left == stack2.peek())) {
-                if (!stack2.isEmpty() && root.right == stack2.peek()) stack2.pop();
-                if (!stack2.isEmpty() && root.left == stack2.peek()) stack2.pop();
-                resultList.addLast(root.val);
-                stack2.push(root);
-                if (stack1.isEmpty()) return resultList;
-                root = stack1.pop();
+            TreeNode node = stack.peek();
+            // 右子树不存在，或刚刚处理过右子树 => 可以输出当前节点
+            if (node.right == null || node.right == prev) {
+                res.add(node.val);
+                stack.pop();
+                prev = node;          // 记录“上次输出的是谁”
+            } else {
+                cur = node.right;     // 否则先去处理右子树
             }
         }
-        return resultList;
+        return res;
     }
 
     @Override
