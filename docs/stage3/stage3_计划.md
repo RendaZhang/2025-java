@@ -118,10 +118,33 @@ Week 8 - 成稿与模拟面试：
 
 ### Day 3 - 消息与一致性
 
-- **算法**：二叉树遍历（前中后/层序，递归 vs 迭代）；做 2–3 题。
-- **面试能力/知识**：消息队列与最终一致性（Outbox、去重键、退避重试、死信队列、顺序性）→ `QBANK.md`；画一张简化时序图到 `architecture.md`。
-- **英语**：术语双语卡片：at‑least‑once / idempotency / outbox / backoff（各 1 句解释）。
-- **当日收尾**：把“可复用回答模板”写成 5–7 条 bullet。
+算法（LeetCode｜树遍历）
+
+- **完成**：LC94（中序·迭代栈）、LC102（层序·BFS），（选做）LC145（后序·双栈）。
+- **要点速记**
+  - LC94：外层 `while (cur!=null || !st.isEmpty())`；内层一路压左；出栈访问后转右；O(n)/O(h)。
+  - LC102：先缓存本层 `sz` 再循环出队，避免动态读 `q.size()`；O(n)/O(w)。
+  - LC145：`s1` 出栈进 `s2`，先压左后压右；`s2` 逆序即后序；O(n)/O(n)。
+- **复盘**：已完成 1 篇高质量复盘（建议放在 LC102）。
+
+面试知识（消息与一致性 · 体系化 6 条）
+
+1. **Outbox（事务外箱）**：业务写入与事件写入同库同事务落地；Publisher/CDC “至少一次”投递，失败退避重试。
+2. **幂等消费 & 去重键**：`eventId` 或 `aggregateId+version`；同库事务里先插 `processed_events` 再执行业务写；写法用**条件更新/UPSERT/版本检查**可重放。
+3. **重试策略 & 重试预算**：仅对 `5xx/超时/429` 且**具幂等**的请求重试；**指数退避+抖动**；设置 **≤10% 预算**，熔断打开时停止重试、仅半开探测。
+4. **DLQ / 停车场**：重试上限或不可重试错误“停靠”；可筛选/批量回放，回放走慢车道+令牌桶；记录 `traceId/eventId/aggregateId/error_code/attempts` 便于审计。
+5. **顺序性与分区键**：以 `aggregateId`（如 `orderId`）为分区键，保证**同聚合有序**、全局不强求；消费者维护 `last_version`，重复丢弃、缺口停靠；热点聚合可拆流/分片。
+6. **Exactly-once 的取舍**：端到端 EO 成本高；采用 **Outbox + at-least-once + 幂等消费 + 版本推进 + DLQ 回放** 达到 **effectively-once**；Kafka EOS 仅用于拓扑内、无外部副作用的场景。
+
+英语（口语素材）
+
+- **产出**：≈60s 答案 *“How we guarantee eventual consistency with outbox and idempotent consumers”*（涵盖 Outbox、本地原子性、idempotent writes、version 进位、DLQ/重试预算/分区保序）。
+- **练习要点**：强调三句——“**Outbox = one local transaction**”、“**Idempotent consumers with eventId + version**”、“**Effectively-once > end-to-end exactly-once**”。
+
+今日小结（复盘三问）
+
+- **做得好**：树遍历三板斧成型；一致性从“写→传→落地→回放”形成闭环表述，可直接面试复述。
+- **可改进**：把“重试预算 & 熔断阈值”的**默认参数**沉淀成模板；为 `processed_events/agg_progress` 建表与索引规范清单。
 
 ### Day 4 - Java 并发
 

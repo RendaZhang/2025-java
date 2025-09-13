@@ -18,7 +18,7 @@
     - [Exactly-once 的工程化取舍：追求 “effectively-once” 而非执念 EOS](#exactly-once-%E7%9A%84%E5%B7%A5%E7%A8%8B%E5%8C%96%E5%8F%96%E8%88%8D%E8%BF%BD%E6%B1%82-effectively-once-%E8%80%8C%E9%9D%9E%E6%89%A7%E5%BF%B5-eos)
   - [Step 3：1 分钟英文口语](#step-31-%E5%88%86%E9%92%9F%E8%8B%B1%E6%96%87%E5%8F%A3%E8%AF%AD)
     - [1-min Answer — How we guarantee eventual consistency with outbox and idempotent consumers](#1-min-answer--how-we-guarantee-eventual-consistency-with-outbox-and-idempotent-consumers)
-    - [**3 sound bites to emphasize**](#3-sound-bites-to-emphasize)
+    - [3 sound bites to emphasize](#3-sound-bites-to-emphasize)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -618,7 +618,7 @@ Delivery noise is handled by **exponential backoff with jitter**, small **retry 
 
 We’ve used this in production: instead of fragile 2PC, **local atomicity + at-least-once delivery + idempotent consumers** gives us **effectively-once** outcomes—no double charges, no missed reservations—even during spikes.
 
-### **3 sound bites to emphasize**
+### 3 sound bites to emphasize
 
 * “**Outbox = data change and event in one local transaction.**”
 * “**Idempotent consumers with eventId + version.**”
