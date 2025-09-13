@@ -22,6 +22,7 @@
     - [Outbox（事务外箱）& 本地事务边界](#outbox%E4%BA%8B%E5%8A%A1%E5%A4%96%E7%AE%B1-%E6%9C%AC%E5%9C%B0%E4%BA%8B%E5%8A%A1%E8%BE%B9%E7%95%8C)
     - [幂等消费与去重键：表/Redis 实战与失败补偿](#%E5%B9%82%E7%AD%89%E6%B6%88%E8%B4%B9%E4%B8%8E%E5%8E%BB%E9%87%8D%E9%94%AE%E8%A1%A8redis-%E5%AE%9E%E6%88%98%E4%B8%8E%E5%A4%B1%E8%B4%A5%E8%A1%A5%E5%81%BF)
     - [重试策略与“重试预算”：退避 + 抖动 + 限额；与幂等/熔断的协同](#%E9%87%8D%E8%AF%95%E7%AD%96%E7%95%A5%E4%B8%8E%E9%87%8D%E8%AF%95%E9%A2%84%E7%AE%97%E9%80%80%E9%81%BF--%E6%8A%96%E5%8A%A8--%E9%99%90%E9%A2%9D%E4%B8%8E%E5%B9%82%E7%AD%89%E7%86%94%E6%96%AD%E7%9A%84%E5%8D%8F%E5%90%8C)
+    - [DLQ / 停车场与人工处置：可观察、可回放、可审计](#dlq--%E5%81%9C%E8%BD%A6%E5%9C%BA%E4%B8%8E%E4%BA%BA%E5%B7%A5%E5%A4%84%E7%BD%AE%E5%8F%AF%E8%A7%82%E5%AF%9F%E5%8F%AF%E5%9B%9E%E6%94%BE%E5%8F%AF%E5%AE%A1%E8%AE%A1)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -1178,3 +1179,88 @@ CircuitBreakerConfig cb = CircuitBreakerConfig.ofDefaults(); // 结合错误率�
 **你：**
 
 “早期凡新有一段时间对 503 做**固定间隔**重试，且**无预算**，在第三方 2–3 分钟抖动时把线程池打满。复盘后改为**指数退避 + 抖动 + 10% 预算**，同时把熔断半开探测降到每秒**单次**，问题消失；成功率反而提高，因为我们不再挤占自己资源。”
+
+### DLQ / 停车场与人工处置：可观察、可回放、可审计
+
+> **DLQ/停车场**：重试上限或不可重试错误**停靠**，指标与告警可见；支持**筛选/批量回放**，回放走**慢车道 + 令牌桶**；消息记录 `traceId/eventId/aggregateId/error_code/attempts` 便于审计；回放幂等、设黑名单与冷却期，避免“无限回环”。
+
+场景题
+
+**面试官**
+
+“真实生产里，总会有**毒性消息**（数据缺字段、顺序打乱、对方幂等键冲突）怎么也处理不了。你在（深圳市凡新科技 / 麦克尔斯深圳）如何设计 **DLQ（死信队列）/Parking Lot（停车场）**，做到**不阻塞主线**、**可定位**、**可重放**、**可审计**？”
+
+**你：**
+
+“我的原则是：**主线轻装前进，异常集中停靠**。落地分四件事：**准入到 DLQ 的规则**、**可观察与告警**、**可重放机制**、**审计与防二次伤害**。”
+
+1. **什么时候进 DLQ / 停车场**
+   - **达到重试上限**（比如 10 次指数退避仍失败）或命中特定错误（不可重试类，如 schema 不兼容、幂等冲突）。
+   - **顺序受损**：同一 `aggregateId` 新版本已被处理、旧版本再来 → 直接停靠。
+   - 我们把消息打上**失败原因 code**（`VALIDATION_ERROR / VERSION_CONFLICT / UPSTREAM_4XX`）和**最近一次异常栈摘要**，方便后续归因。
+2. **可观察（第一时间定位）**
+   - 指标：`dlq_size、dlq_in_rate、top_error_code、message_age_p95、redrive_success_rate`。
+   - 日志 / APM：每条 DLQ 消息带 `traceId`、`eventId`、`aggregateId`，能一键跳到当时的业务日志/链路。
+   - 告警：`dlq_in_rate > 基线` 或 `age_p95 > 阈值` 告警到 on-call；并附上**样本消息链接**。
+3. **可重放（安全回放）**
+   - **按钮式回放**：控制台支持按 `eventId` / `aggregateId` / 时间窗口**筛选 + 批量 redrive**。
+   - **回放到哪**：
+     - 修复了数据后，回放到**原主队列**；
+     - 依赖仍不稳时，回放到**隔离的“慢车道”队列**，有更严格的速率/并发。
+   - **回放幂等**：消费者已经是**幂等**，所以即便重复也不会二次扣减/二次下单。
+   - **节流**：redrive 受**令牌桶**保护（例如每秒最多 50 条），避免回放本身造成**二次冲击**。
+4. **审计与防二次伤害**
+   - DLQ 里保留**处理历史**：`first_seen / last_attempt_at / attempts / last_error_code / operator / redrive_at`。
+   - **红/黑名单**：某些 `aggregateId` 连续失败 3 次以上，进入**黑名单**，临时不再回放，等待数据修复。
+   - **保留策略**：保留 7–30 天，超期自动归档到对象存储（便于审计与离线排查）。
+
+**凡新**这边：订单出库事件偶发因**上游字段缺失**失败，我们把它们停靠到 DLQ，填补字段后**按聚合 ID 批量回放**，有速率上限，不影响主线。
+
+**麦克尔斯**那边：作品索引更新在 ES 集群滚更时会失败，我们让 DLQ 回放走**慢车道**消费者，等 ES 恢复就自然清空；整个过程 on-call 看到 `dlq_size`、`age`、`redrive_success_rate` 一目了然。
+
+关键表/队列与接口（示意）
+
+```sql
+-- 停车场记录（可用 DB，也可映射 DLQ 元数据到 DB 里便于查询）
+CREATE TABLE dlq_events (
+  event_id      CHAR(36) PRIMARY KEY,
+  aggregate_id  CHAR(36),
+  error_code    VARCHAR(64),
+  last_error    TEXT,
+  attempts      INT,
+  first_seen    DATETIME,
+  last_attempt  DATETIME,
+  last_operator VARCHAR(64),    -- 谁点的回放/忽略
+  status        ENUM('PENDING','REDRIVEN','IGNORED') DEFAULT 'PENDING'
+);
+```
+
+```text
+POST /ops/dlq/redrive?eventId=...|aggregateId=...|from=...&to=...
+- 校验：黑名单/白名单；幂等：二次点击不重复回放
+- 限速：令牌桶 N/sec
+```
+
+**队列侧实践**
+
+- **Kafka**：DLQ 用独立主题 `topic.DLQ`，消息里保留 `headers`（`traceId、error_code、attempts`）；回放时把 `original_topic/partition/offset` 也带上便于追溯。
+- **SQS**：配置 `redrive policy`（`maxReceiveCount` 达到即进 DLQ），另建一个**人工/批量 redrive**的 Lambda/Job；需要顺序时用 **FIFO + messageGroupId** 的“慢车道”回放。
+
+追问 1（为什么要“停车场”而不是只用 DLQ？）
+
+**你：**
+
+“DLQ 是‘**被动**死信’，停车场是‘**主动**停靠’：当我们识别为**数据质量问题**或**顺序冲突**时，**不等重试上限**就直接停靠，避免无意义的打桩刷屏；修复后再**人工确认**回放，风险更可控。”
+
+追问 2（如何避免“无限回放→再失败”的回环）
+
+**你：**
+
+“回放有**次数上限**与**冷却期**：同一 `eventId` 失败≥N 次后标记 `IGNORED`，需**人工解除**；同时在回放通道加**速率与并发上限**。另外我们会在回放前跑**干跑验证（dry-run）**，例如先校验 payload/schema 与依赖状态。”
+
+追问 3（真实复盘）
+
+**你：**
+
+“凡新一次大促，支付回执 Schema 升级，部分字段名变化导致消费者报 `VALIDATION_ERROR`；我们 5 分钟内把错误集中到 DLQ、修正映射、**分批回放**，排队清空且用户侧无感知。
+麦克尔斯那边，ES 扩容期间出现 `UPSTREAM_5XX`，我们把回放切到**慢车道**并降低速率，指标稳定后再全量回放。”
