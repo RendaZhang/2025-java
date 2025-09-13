@@ -18,6 +18,8 @@
     - [读写分离的坑：主从延迟、读旧值、强一致读 / 亲和策略](#%E8%AF%BB%E5%86%99%E5%88%86%E7%A6%BB%E7%9A%84%E5%9D%91%E4%B8%BB%E4%BB%8E%E5%BB%B6%E8%BF%9F%E8%AF%BB%E6%97%A7%E5%80%BC%E5%BC%BA%E4%B8%80%E8%87%B4%E8%AF%BB--%E4%BA%B2%E5%92%8C%E7%AD%96%E7%95%A5)
     - [缓存一致性：Cache-Aside 双删顺序、消息通知/回源、热键与热点保护](#%E7%BC%93%E5%AD%98%E4%B8%80%E8%87%B4%E6%80%A7cache-aside-%E5%8F%8C%E5%88%A0%E9%A1%BA%E5%BA%8F%E6%B6%88%E6%81%AF%E9%80%9A%E7%9F%A5%E5%9B%9E%E6%BA%90%E7%83%AD%E9%94%AE%E4%B8%8E%E7%83%AD%E7%82%B9%E4%BF%9D%E6%8A%A4)
     - [三座大山：穿透 / 击穿 / 雪崩（识别与治理清单）](#%E4%B8%89%E5%BA%A7%E5%A4%A7%E5%B1%B1%E7%A9%BF%E9%80%8F--%E5%87%BB%E7%A9%BF--%E9%9B%AA%E5%B4%A9%E8%AF%86%E5%88%AB%E4%B8%8E%E6%B2%BB%E7%90%86%E6%B8%85%E5%8D%95)
+  - [Message and Consistency](#message-and-consistency)
+    - [Outbox（事务外箱）& 本地事务边界](#outbox%E4%BA%8B%E5%8A%A1%E5%A4%96%E7%AE%B1-%E6%9C%AC%E5%9C%B0%E4%BA%8B%E5%8A%A1%E8%BE%B9%E7%95%8C)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -960,3 +962,81 @@ if (locked) {
 **你：**
 
 “按 **Key 前缀/接口** 维度看 `hit ratio、miss burst、db fallback qps、回源耗时、互斥锁命中率、热点 TopN、TTL 分布`。出现 miss 突增且 DB 回源同步拉高，基本就能定位是哪一类问题。”
+
+---
+
+## Message and Consistency
+
+### Outbox（事务外箱）& 本地事务边界
+
+> Outbox：单库事务落数据+事件，Publisher 异步发布；至少一次发送 + 幂等消费（`eventId`/`aggregateId+version` 去重）≈ 几乎一次；分区键保证同聚合顺序；失败退避重试，CDC/归档保性能。
+
+场景题
+
+**面试官**
+
+“下单成功要**占库存**并**通知**支付/仓库/搜索。如何保证**写数据库**和**发消息**‘要么都成功，要么都不成功’，避免双写不一致？你在（深圳市凡新科技 / 麦克尔斯深圳）是怎么落地的？”
+
+**你：**
+
+“我们用**事务外箱**（Outbox）把‘数据变更’和‘事件生成’放到**同一个本地事务**里：
+
+- **应用事务**里做两步：① `INSERT/UPDATE` 业务表（orders/stock…）② `INSERT outbox(event)`。只要事务提交，**两者一定同时落地**。
+- 事务外的**Publisher**轮询/CDC 读取 `outbox`：`SELECT ... FOR UPDATE SKIP LOCKED LIMIT N`，发布到 Kafka/SQS/Redis Stream，成功后把这行标记 `SENT`，失败就**退避重试**并回写 `attempts/next_retry_at`。
+- **消费端幂等**：事件里自带 `eventId`（或 `aggregateId+version`），消费者先查 `processed_events`（唯一键），**见过就直接 ACK**，没见过才处理并插入标记。
+  总体语义是**至少一次发送 + 幂等消费 = 几乎一次（effectively-once）**。我们在凡新下单→扣减库存→异步出库通知这条链路就是这么做的；在麦克尔斯，作品发布→索引更新→通知订阅者也同理。”
+
+**简化表结构（示意）**
+
+```sql
+CREATE TABLE outbox (
+  id           CHAR(36) PRIMARY KEY,      -- eventId (UUID)
+  aggregate_id CHAR(36) NOT NULL,         -- 订单/商品ID
+  aggregate_type VARCHAR(32) NOT NULL,    -- ORDER / STOCK ...
+  event_type   VARCHAR(64) NOT NULL,      -- OrderCreated / StockReserved...
+  payload      JSON NOT NULL,
+  version      INT NOT NULL,              -- 聚合版本，用于顺序/去重
+  status       ENUM('NEW','SENT','FAILED') DEFAULT 'NEW',
+  attempts     INT DEFAULT 0,
+  available_at DATETIME NOT NULL,         -- 下次可重试时间（退避）
+  created_at   DATETIME NOT NULL
+);
+
+CREATE TABLE processed_events (
+  event_id CHAR(36) PRIMARY KEY,          -- 去重键
+  processed_at DATETIME NOT NULL
+);
+```
+
+**应用层伪代码**
+
+```java
+// Tx begin
+insertOrder(...);                 // 业务写
+insertOutbox(event(orderId,...)); // 同库插入消息
+// Tx commit  => 原子性成立
+```
+
+**Publisher 轮询（要点）**
+
+- 批量拉取 `status=NEW AND available_at<=now()`，用 `FOR UPDATE SKIP LOCKED` 防并发争抢；
+- 发布成功 → `status=SENT`；失败 → `attempts++`，按 `min(backoff*2^attempts, cap)` 回写 `available_at`；
+- **崩溃边界**：如果“已发布但未标记 SENT”重启后会再发一次，所以**消费者必须幂等**。
+
+**顺序性与分区**
+
+- 需要**同一订单的事件按序**：Kafka 用 `partitionKey=orderId`；SQS 用 **FIFO**，`messageGroupId=orderId`；Redis Stream 按 stream per-aggregate 或在消费者端序列化处理。
+- 跨聚合全局顺序一般**不保证**，用**因果字段**（version/timestamp）校正。
+
+**真实落地小例子**
+
+- 凡新：`OrderCreated` 与 `StockReserveRequested` 一起落库；Publisher 发 SQS，消费者是库存服务；出现网络抖动时，**重复消息**被 `processed_events` 吸收，不再重复扣减。
+- 麦克尔斯：作品发布事件走 Kafka，搜索索引消费者先做**去重**再写 ES；Publisher 用**退避+抖动**，避免抖动期把队列压爆。
+
+**追问 1：为什么不用 DB 里直接调用消息系统事务？**
+
+“跨资源的**分布式事务**（2PC）复杂且脆弱，Outbox 把一致性**收敛在单库事务**里，外围只需‘至少一次 + 幂等’，工程成本更低、恢复性更好。”
+
+**追问 2：如果消息量很大，轮询会不会很慢？**
+
+“生产里我们更倾向**CDC（如 Debezium）**或**分片轮询**：按时间或主键区间扫描；并用**归档/TTL**压缩 `SENT` 行，保持表小而快。”
