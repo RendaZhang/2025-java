@@ -6,6 +6,7 @@
   - [Self Introduction](#self-introduction)
   - [API Design](#api-design)
   - [Slow queries & index misses](#slow-queries--index-misses)
+  - [Message and Consistency](#message-and-consistency)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -86,3 +87,27 @@ If the plan looks fine but latency remains, I check **locks and waits**—deadlo
 * “EXPLAIN **ANALYZE** shows real timing, not just estimates.”
 * “**Covering index** to avoid random I/O.”
 * “**Seek pagination** instead of large OFFSET.”
+
+---
+
+## Message and Consistency
+
+How we guarantee eventual consistency with outbox and idempotent consumers?
+
+**Script (≈60s)**
+We guarantee eventual consistency by **collapsing strong guarantees locally** and making the rest **safe to retry**.
+On the write side, the service uses an **Outbox pattern**: in one local transaction we both **update the business table** and **insert an outbox event**. If the transaction commits, the change and the event are durably recorded together. A background publisher or CDC then delivers the event to Kafka/SQS with **at-least-once** semantics.
+
+On the read/apply side, consumers are **idempotent**. Each event carries an **eventId** and an **aggregateVersion**. The consumer first records `eventId` in a `processed_events` table (unique key), then applies the change using **idempotent writes**—for example, a **conditional update**
+`UPDATE stock SET qty = qty - n WHERE sku = ? AND qty >= n`,
+or an **UPSERT**. We also track `last_version(aggregateId)` so repeats are ignored and **gaps** trigger a **parking lot/DLQ** for safe redrive.
+
+Delivery noise is handled by **exponential backoff with jitter**, small **retry budgets**, and **per-aggregate partitioning** to keep order without sacrificing throughput. Everything is observable: unified error shape plus **trace IDs** across logs and metrics.
+
+We’ve used this in production: instead of fragile 2PC, **local atomicity + at-least-once delivery + idempotent consumers** gives us **effectively-once** outcomes—no double charges, no missed reservations—even during spikes.
+
+**3 sound bites to emphasize**
+
+* “**Outbox = data change and event in one local transaction.**”
+* “**Idempotent consumers with eventId + version.**”
+* “**Effectively-once > expensive end-to-end exactly-once.**”

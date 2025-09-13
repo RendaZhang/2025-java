@@ -16,6 +16,9 @@
     - [DLQ / 停车场与人工处置：可观察、可回放、可审计](#dlq--%E5%81%9C%E8%BD%A6%E5%9C%BA%E4%B8%8E%E4%BA%BA%E5%B7%A5%E5%A4%84%E7%BD%AE%E5%8F%AF%E8%A7%82%E5%AF%9F%E5%8F%AF%E5%9B%9E%E6%94%BE%E5%8F%AF%E5%AE%A1%E8%AE%A1)
     - [顺序性与分区键：按“聚合维度”保序，吞吐与热点的权衡](#%E9%A1%BA%E5%BA%8F%E6%80%A7%E4%B8%8E%E5%88%86%E5%8C%BA%E9%94%AE%E6%8C%89%E8%81%9A%E5%90%88%E7%BB%B4%E5%BA%A6%E4%BF%9D%E5%BA%8F%E5%90%9E%E5%90%90%E4%B8%8E%E7%83%AD%E7%82%B9%E7%9A%84%E6%9D%83%E8%A1%A1)
     - [Exactly-once 的工程化取舍：追求 “effectively-once” 而非执念 EOS](#exactly-once-%E7%9A%84%E5%B7%A5%E7%A8%8B%E5%8C%96%E5%8F%96%E8%88%8D%E8%BF%BD%E6%B1%82-effectively-once-%E8%80%8C%E9%9D%9E%E6%89%A7%E5%BF%B5-eos)
+  - [Step 3：1 分钟英文口语](#step-31-%E5%88%86%E9%92%9F%E8%8B%B1%E6%96%87%E5%8F%A3%E8%AF%AD)
+    - [1-min Answer — How we guarantee eventual consistency with outbox and idempotent consumers](#1-min-answer--how-we-guarantee-eventual-consistency-with-outbox-and-idempotent-consumers)
+    - [**3 sound bites to emphasize**](#3-sound-bites-to-emphasize)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -594,3 +597,29 @@ BEGIN;
   ELSE ROLLBACK; -- 发现缺口，停靠等待
 END;
 ```
+
+好，给你 **≈60s 英文口语稿**（现场可直接朗读）。贴到当日文档或 `elevator_pitch_en.md` 的 “Eventual consistency” 小节即可。
+
+---
+
+## Step 3：1 分钟英文口语
+
+### 1-min Answer — How we guarantee eventual consistency with outbox and idempotent consumers
+
+**Script (≈60s)**
+We guarantee eventual consistency by **collapsing strong guarantees locally** and making the rest **safe to retry**.
+On the write side, the service uses an **Outbox pattern**: in one local transaction we both **update the business table** and **insert an outbox event**. If the transaction commits, the change and the event are durably recorded together. A background publisher or CDC then delivers the event to Kafka/SQS with **at-least-once** semantics.
+
+On the read/apply side, consumers are **idempotent**. Each event carries an **eventId** and an **aggregateVersion**. The consumer first records `eventId` in a `processed_events` table (unique key), then applies the change using **idempotent writes**—for example, a **conditional update**
+`UPDATE stock SET qty = qty - n WHERE sku = ? AND qty >= n`,
+or an **UPSERT**. We also track `last_version(aggregateId)` so repeats are ignored and **gaps** trigger a **parking lot/DLQ** for safe redrive.
+
+Delivery noise is handled by **exponential backoff with jitter**, small **retry budgets**, and **per-aggregate partitioning** to keep order without sacrificing throughput. Everything is observable: unified error shape plus **trace IDs** across logs and metrics.
+
+We’ve used this in production: instead of fragile 2PC, **local atomicity + at-least-once delivery + idempotent consumers** gives us **effectively-once** outcomes—no double charges, no missed reservations—even during spikes.
+
+### **3 sound bites to emphasize**
+
+* “**Outbox = data change and event in one local transaction.**”
+* “**Idempotent consumers with eventId + version.**”
+* “**Effectively-once > expensive end-to-end exactly-once.**”
