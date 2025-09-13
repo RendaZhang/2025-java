@@ -24,6 +24,7 @@
     - [重试策略与“重试预算”：退避 + 抖动 + 限额；与幂等/熔断的协同](#%E9%87%8D%E8%AF%95%E7%AD%96%E7%95%A5%E4%B8%8E%E9%87%8D%E8%AF%95%E9%A2%84%E7%AE%97%E9%80%80%E9%81%BF--%E6%8A%96%E5%8A%A8--%E9%99%90%E9%A2%9D%E4%B8%8E%E5%B9%82%E7%AD%89%E7%86%94%E6%96%AD%E7%9A%84%E5%8D%8F%E5%90%8C)
     - [DLQ / 停车场与人工处置：可观察、可回放、可审计](#dlq--%E5%81%9C%E8%BD%A6%E5%9C%BA%E4%B8%8E%E4%BA%BA%E5%B7%A5%E5%A4%84%E7%BD%AE%E5%8F%AF%E8%A7%82%E5%AF%9F%E5%8F%AF%E5%9B%9E%E6%94%BE%E5%8F%AF%E5%AE%A1%E8%AE%A1)
     - [顺序性与分区键：按“聚合维度”保序，吞吐与热点的权衡](#%E9%A1%BA%E5%BA%8F%E6%80%A7%E4%B8%8E%E5%88%86%E5%8C%BA%E9%94%AE%E6%8C%89%E8%81%9A%E5%90%88%E7%BB%B4%E5%BA%A6%E4%BF%9D%E5%BA%8F%E5%90%9E%E5%90%90%E4%B8%8E%E7%83%AD%E7%82%B9%E7%9A%84%E6%9D%83%E8%A1%A1)
+    - [Exactly-once 的工程化取舍：追求 “effectively-once” 而非执念 EOS](#exactly-once-%E7%9A%84%E5%B7%A5%E7%A8%8B%E5%8C%96%E5%8F%96%E8%88%8D%E8%BF%BD%E6%B1%82-effectively-once-%E8%80%8C%E9%9D%9E%E6%89%A7%E5%BF%B5-eos)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -1347,3 +1348,62 @@ BEGIN;
 **你：**
 
 “我们更偏向‘**几乎一次（effectively-once）**’：生产端至少一次 + **幂等消费者 + 版本推进**。Kafka 的 EOS（事务性生产/消费）对堆栈/运维要求更高，只有在**单主题内计算**且强一致计费等场景才考虑。”
+
+### Exactly-once 的工程化取舍：追求 “effectively-once” 而非执念 EOS
+
+> **Exactly-once 取舍**：端到端 EO 成本高；工程上以 **Outbox + 至少一次传输 + 幂等消费（去重键/条件更新/UPSERT/版本推进）+ DLQ 回放** 达到 **effectively-once**；Kafka EOS 仅限**拓扑内**且无外部副作用场景，涉及外部系统仍靠幂等落地。
+
+场景题
+
+**面试官**
+
+“你在（深圳市凡新科技 / 麦克尔斯深圳）做‘下单→扣库存→出库通知→索引刷新’这条链路时，怎么保证**不多扣、不漏扣**？你会不会上**Exactly-once**？如果不用，怎么做到 **几乎一次（effectively-once）** 的工程效果？”
+
+**你：**
+
+“我的原则是：**跨系统端到端的 Exactly-once 很难、代价高**；我们在生产里更推崇 **‘至少一次 + 幂等 + 去重 + 版本推进 = effectively-once’**。
+
+- **源头**（订单服务）用 **Outbox**：数据变更与事件同库同事务落地，**保证不丢**。
+- **传输**（Kafka/SQS）默认**至少一次**，接受**可能重复**。
+- **落地**（库存/搜索）把**幂等**做到数据模型里：
+  - **去重键**：`eventId` 或 `aggregateId+version`；
+  - **条件更新 / UPSERT**：`UPDATE stock SET qty=qty-:n WHERE sku=:sku AND qty>=:n`；
+  - **版本推进**：维护 `last_version(aggregateId)`，只接收 `= last+1`；小于等于是重放，**零影响**；大于则**停靠/缓冲**处理顺序。
+- **失败与顺序异常**进 **DLQ/停车场**，修复后**限速回放**。
+  这套在凡新的订单库存、以及麦克尔斯的作品索引链路都跑得很稳：**不靠分布式 2PC**，靠**局部原子 + 全链路幂等**把效果做到位。”
+
+**那 Kafka 的 EOS（事务性生产/消费）要不要用？**
+
+“**只在局部计算拓扑内**（Kafka→Kafka 的流式作业、无外部 DB 副作用），并且**团队熟练/运维可控**时才考虑：比如用 idempotent producer + transactional producer/consumer 保证 **‘每条消息要么处理一次并写入目标主题，要么不处理’**。
+
+一旦涉及 **外部系统（数据库/ES/第三方）**，仍然回到 **幂等写 + 版本推进**。EOS 会带来**事务协调开销、故障恢复复杂度**，不适合所有链路。”
+
+**如何验证你真的达到了 effectively-once？**
+
+“我做两个验证：
+
+1. **对账/幂等监控**：落库端统计 `duplicate_drop_rate`、`version_gap_count`；库存余额做**定时对账**（DB 与事件总量核对）。
+2. **混沌/重放演练**：把一批事件**重复投递**、**乱序投递**、甚至**模拟丢失后回放**，确认业务端只产生**一次**净效应且可收敛。”
+
+**真实取舍例子**
+
+“凡新：我们评估过‘订单→库存’用分布式事务，复杂度和脆弱点太多，最终选 **Outbox + 幂等消费**，重复率有但**净效果只一次**；
+
+麦克尔斯：搜索索引刷新不要求强事务一致，就用 **at-least-once + 幂等 upsert**；需要‘感知因果’时靠 `aggregateVersion` 和‘版本推进表’保证**先后关系**。”
+
+**小片段（消费端事务伪码）**
+
+```sql
+BEGIN;
+  -- 去重 + 保序
+  INSERT INTO processed_events(event_id) VALUES(:eid);  -- 若重复则失败回滚
+  SELECT last_version FROM agg_progress WHERE id=:aid FOR UPDATE;
+  IF :ver = last_version + 1 THEN
+      -- 业务写，幂等/条件更新
+      UPDATE stock SET qty = qty - :n WHERE sku=:sku AND qty >= :n;
+      UPDATE agg_progress SET last_version=:ver WHERE id=:aid;
+      COMMIT;
+  ELSEIF :ver <= last_version THEN ROLLBACK; -- 重放，忽略
+  ELSE ROLLBACK; -- 发现缺口，停靠等待
+END;
+```
