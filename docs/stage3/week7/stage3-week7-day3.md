@@ -11,6 +11,7 @@
     - [LC145. Binary Tree Postorder Traversal（迭代后序）](#lc145-binary-tree-postorder-traversal%E8%BF%AD%E4%BB%A3%E5%90%8E%E5%BA%8F)
   - [Step 2 - 消息与一致性（Outbox & 去重 & 重试闭环）](#step-2---%E6%B6%88%E6%81%AF%E4%B8%8E%E4%B8%80%E8%87%B4%E6%80%A7outbox--%E5%8E%BB%E9%87%8D--%E9%87%8D%E8%AF%95%E9%97%AD%E7%8E%AF)
     - [Outbox（事务外箱）& 本地事务边界](#outbox%E4%BA%8B%E5%8A%A1%E5%A4%96%E7%AE%B1-%E6%9C%AC%E5%9C%B0%E4%BA%8B%E5%8A%A1%E8%BE%B9%E7%95%8C)
+    - [幂等消费与去重键：表/Redis 实战与失败补偿](#%E5%B9%82%E7%AD%89%E6%B6%88%E8%B4%B9%E4%B8%8E%E5%8E%BB%E9%87%8D%E9%94%AE%E8%A1%A8redis-%E5%AE%9E%E6%88%98%E4%B8%8E%E5%A4%B1%E8%B4%A5%E8%A1%A5%E5%81%BF)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -227,3 +228,68 @@ insertOutbox(event(orderId,...)); // 同库插入消息
 **追问 2：如果消息量很大，轮询会不会很慢？**
 
 “生产里我们更倾向**CDC（如 Debezium）**或**分片轮询**：按时间或主键区间扫描；并用**归档/TTL**压缩 `SENT` 行，保持表小而快。”
+
+### 幂等消费与去重键：表/Redis 实战与失败补偿
+
+> **幂等消费**：`eventId`（或 `aggregateId+version`）做去重键；**同库事务**里先插 `processed_events` 再执行业务写；写法用**条件更新/UPSERT/版本检查**做到可重放；Redis `SETNX+TTL` 快速挡重复，DB 约束兜底；失败走 **DLQ+重放**，顺序用**分区键/FIFO**。
+
+场景题
+
+**面试官**
+
+“支付平台和库存系统都会**重复投递**事件（网络抖动/重试）。你在（深圳市凡新科技 / 麦克尔斯深圳）如何保证**消费端幂等**？具体怎么做**去重键**、**落库顺序**、**失败补偿**？”
+
+**你：**
+
+“我的做法是把 ‘**去重 + 业务落库**’ 放进同一个本地事务里，保证 ‘**要么都成功，要么都回滚**’，并且提供**双层去重**（DB 强约束 + Redis 快速挡重复）。
+
+1. **去重键**
+   - 统一使用 `eventId`（UUID）或 `aggregateId + version` 作为**全局唯一键**。
+   - **DB 层**建 `processed_events(event_id PK)`，天然幂等；
+   - **Redis 快速去重**：`SETNX de:{eventId} 1 EX <TTL>` 抢到再处理，没抢到直接 ACK（避免同一时刻并发重复执行）。
+2. **同库事务顺序**（Inbox 模式）
+    ```sql
+    -- 在一次事务内完成两件事：业务变更 & 去重落账
+    BEGIN;
+    -- ① 先插 processed_events（如果已存在直接报错/返回）
+    INSERT INTO processed_events(event_id, processed_at) VALUES(:eid, NOW());
+    -- ② 再做业务落库（UPDATE/INSERT ...）
+    UPDATE stock SET qty = qty - :n
+        WHERE sku=:sku AND qty >= :n;  -- 条件更新，重复执行也不会二次扣
+    COMMIT;
+    ```
+    > 这样如果第二次收到同一事件，`INSERT processed_events` 会**冲突**，直接回滚，业务不会再落一次。
+3. **幂等写法**
+   - **条件更新**：`UPDATE ... WHERE qty>=:n`；
+   - **UPSERT**：`INSERT ... ON DUPLICATE KEY UPDATE ...`（比如“首次创建订单，重复则更新状态/时间”）；
+   - **版本检查**：`WHERE version = :old` 成功后 `version=version+1`，重复事件因版本不匹配**零影响**。
+4. **失败补偿**
+   - **指数退避 + 尝试上限**：消费失败 `attempts++`，超过阈值（如 10 次）投递到 **DLQ/停车场**；
+   - **人工/自动重放**：DLQ 可按 `eventId` 批量重放；
+   - **顺序性**：按 `aggregateId` 做**分区键/FIFO**，单聚合同一消费者串行处理，避免乱序导致的版本冲突。
+
+在凡新：支付回调/库存事件会**重复 3–5 次**，我们用 `processed_events` 做硬去重，外层再加 Redis TTL 去重，**99% 的重复在入口被挡**；在麦克尔斯：作品索引更新走 Kafka，消费者先插 `processed_events`，再写 ES，重复消息直接被忽略，**不会重复建索引**。”
+
+追问 1（Redis 被逐出或丢失怎么办）
+
+**面试官：**“如果 Redis 因为内存淘汰把 `de:{eventId}` 清掉了，会不会又重复处理？”
+
+**你：**
+
+“不会，因为**DB 层还有硬约束**。Redis 只是**快速挡**；真正的幂等保证靠 `processed_events` 主键或**业务唯一约束**（例如 `user_id+coupon_id` 唯一）。即使 Redis 丢了，DB 也会拒绝重复写。”
+
+追问 2（顺序与并发）
+
+**面试官：**“同一 `orderId` 的事件要按顺序消费，怎么做？”
+
+**你：**
+
+“把 `orderId` 当作**分区键**（Kafka partition / SQS messageGroupId），确保同聚合到同一队列分区，由**单个消费者串行**处理。确需并发就用**乐观版本**：版本不匹配的更新返回 0 行，进入**重试/停靠**。”
+
+追问 3（真实事故）
+
+**面试官：**“讲个你们因为没做幂等导致的事故。”
+
+**你：**
+
+“早期库存扣减没做条件更新，重复消息会**二次扣**。修复后改成‘`processed_events` PK 去重 + `UPDATE … WHERE qty>=`’，重复消息变成幂等重放，工单直接清零。”
