@@ -120,6 +120,7 @@ public int[] topKFrequent(int[] nums, int k) {
 
 - 目标是找第 `k` 大，等价于找索引 `n - k`（升序位置）；
 - 随机选主元，分区后只在一侧递归/迭代。
+- Three-Way Partitioning: `<pivot | =pivot | >pivot`
 
 **Java 模板（迭代 + 随机 pivot）**
 
@@ -154,14 +155,50 @@ private static void swap(int[] a, int i, int j) {
 
 **思路 2：大小为 k 的最小堆（O(n log k)）**
 
+手写最小堆（维护大小为 k 的堆）。
+
+用长度为 k 的最小堆保存目前最大的 k 个数；新数大于堆顶才替换并下沉。
+最终堆顶就是第 k 大。
+
 ```java
-public int findKthLargestHeap(int[] nums, int k) {
-    PriorityQueue<Integer> pq = new PriorityQueue<>();
-    for (int x : nums) {
-        pq.offer(x);
-        if (pq.size() > k) pq.poll();
+public int findKthLargest(int[] nums, int k) {
+    int[] heap = new int[k];
+    // 先放入前 k 个元素并建堆（最小堆）
+    System.arraycopy(nums, 0, heap, 0, k);
+    buildMinHeap(heap);
+
+    // 扫描剩余元素：只有比堆顶大的才有资格进入 top-k
+    for (int i = k; i < nums.length; i++) {
+        if (nums[i] > heap[0]) {
+            heap[0] = nums[i];
+            siftDown(heap, 0, k);
+        }
     }
-    return pq.peek();
+    return heap[0]; // 第 k 大
+}
+
+// 自底向上建最小堆
+private void buildMinHeap(int[] a) {
+    for (int i = (a.length >>> 1) - 1; i >= 0; i--) {
+        siftDown(a, i, a.length);
+    }
+}
+
+// 下沉（最小堆）
+private void siftDown(int[] a, int i, int n) {
+    while (true) {
+        int l = (i << 1) + 1;
+        if (l >= n) break;
+        int r = l + 1;
+        int smallest = (r < n && a[r] < a[l]) ? r : l;
+        if (a[i] <= a[smallest]) break;
+        swap(a, i, smallest);
+        i = smallest;
+    }
+}
+
+private void swap(int[] a, int i, int j) {
+    int t = a[i]; a[i] = a[j]; a[j] = t;
 }
 ```
 

@@ -34,6 +34,7 @@ public final class ProblemRegistry {
         register(new LC94_BinaryTreeInorderTraversal());
         register(new LC145_BinaryTreePostorderTraversal());
         register(new LC215_KthLargestElementInAnArray());
+        register(new LC23_MergeKSortedLists());
     }
 
     private ProblemRegistry() {
