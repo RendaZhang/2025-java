@@ -60,6 +60,7 @@ public int[] topKFrequent(int[] nums, int k) {
 ```
 
 **复杂度**：建表 O(n)，堆操作 O(m log k)（m 为不同元素数，m ≤ n），总 O(n log k)，空间 O(m)。
+
 **易错点**：
 
 - 堆比较器要按**频次**而非数值；
@@ -67,7 +68,41 @@ public int[] topKFrequent(int[] nums, int k) {
 - 若要稳定输出顺序，需二次排序（本题不要求）。
   **自测**：`[1,1,1,2,2,3], k=2 -> [1,2]`；`[4,1,-1,2,-1,2,3], k=2 -> [-1,2]`。
 
-> 复盘建议（可复制到文档）：为什么选择**最小堆**而不是把所有元素放**最大堆**；当 `k` 远小于 `m` 时的优势；与“桶排序”的对比。
+> 为什么选择**最小堆**而不是把所有元素放**最大堆**；当 `k` 远小于 `m` 时的优势；与“桶排序”的对比。
+
+桶排序：
+
+```java
+public int[] topKFrequent(int[] nums, int k) {
+    Map<Integer, Integer> freqMap = new HashMap<>();
+    for (int num : nums) {
+        freqMap.put(num, freqMap.getOrDefault(num, 0) + 1);
+    }
+
+    // 初始化桶数组，下标 = 出现频率，值 = 所有具有该频率的元素列表
+    List<Integer>[] buckets = new List[nums.length + 1];
+    for (Map.Entry<Integer, Integer> entry : freqMap.entrySet()) {
+        int freq = entry.getValue();
+        if (buckets[freq] == null) buckets[freq] = new ArrayList<>();
+        buckets[freq].add(entry.getKey());
+    }
+
+    // 倒序遍历桶，直到找到前 k 个高频元素
+    List<Integer> resultList = new ArrayList<>();
+    for (int i = buckets.length - 1; i >= 0 && resultList.size() < k; i--) {
+        if (buckets[i] != null) {
+            resultList.addAll(buckets[i]);
+        }
+    }
+
+    // 转成数组
+    int[] result = new int[k];
+    for (int i = 0; i < k; i++) {
+        result[i] = resultList.get(i);
+    }
+    return result;
+}
+```
 
 ### LC347 高质量复盘
 

@@ -5,6 +5,11 @@ import java.util.*;
 
 /**
  * LeetCode 347 - Top K Frequent Elements.
+ *
+ * 哈希计数 + 最大堆
+ *
+ * Runtime 13 ms Beats 75.63%
+ * Memory 48.79 MB Beats 54.68%
  */
 public class LC347_TopKFrequentElements implements LeetCodeProblem {
 
