@@ -7,10 +7,13 @@ import com.renda.leetcode.util.ListUtils;
 /**
  * LeetCode 23 - Merge K Sorted Lists
  *
- * Wrong Answer 71 / 134 testcases passed
- * Input: [[-8,-7,-7,-5,1,1,3,4],[-2],[-10,-10,-7,0,1,3],[2]]
- * Output: [-10,-10,-7,-2,0,-8,-7,-7,-5,1,1,1,2,3,3,4]
- * Expected: [-10,-10,-8,-7,-7,-7,-5,-2,0,1,1,1,2,
+ * 小顶堆合并
+ *
+ * - 把每条链表的头节点入**小顶堆**（按 `val`）；
+ * - 每次弹出最小节点接到结果链，若该节点有 `next` 则把 `next` 入堆。
+ *
+ * Runtime 2 ms Beats 88.19%
+ * Memory 44.49 MB Beats 66.00%
  *
  */
 public class LC23_MergeKSortedLists implements LeetCodeProblem {
@@ -71,7 +74,8 @@ public class LC23_MergeKSortedLists implements LeetCodeProblem {
         }
     }
 
-    private int lcIndex(int i) { return i << 1 + 1; }
+    // 在 Java 里，+ 的优先级 高于 <<，所以需要给 << 运算加上括号。
+    private int lcIndex(int i) { return (i << 1) + 1; } // 2*i + 1
 
     private int pIndex(int i) { return (i - 1) / 2; }
 
@@ -101,15 +105,24 @@ public class LC23_MergeKSortedLists implements LeetCodeProblem {
             ListUtils.buildList(new int[]{}),
             ListUtils.buildList(new int[]{1})
         };
+        ListNode[] list5 = new ListNode[]{
+            ListUtils.buildList(new int[]{-8,-7,-7,-5,1,1,3,4}),
+            ListUtils.buildList(new int[]{-2}),
+            ListUtils.buildList(new int[]{-10,-10,-7,0,1,3}),
+            ListUtils.buildList(new int[]{2})
+        };
         System.out.println("LC23 Merge K Sorted Lists: ");
         System.out.println(mergeKLists(list1));
         System.out.println(mergeKLists(list2));
         System.out.println(mergeKLists(list3));
         System.out.println(mergeKLists(list4));
+        System.out.println(mergeKLists(list5));
         // Expected Output:
         // [1,1,2,3,4,4,5,6]
         // []
         // []
+        // [1]
+        // [-10,-10,-8,-7,-7,-7,-5,-2,0,1,1,1,2,3,3,4]
     }
 
 }
