@@ -124,26 +124,32 @@ public int[] topKFrequent(int[] nums, int k) {
 **Java 模板（迭代 + 随机 pivot）**
 
 ```java
+private static final java.util.Random RAND = new java.util.Random();
+
 public int findKthLargest(int[] nums, int k) {
-    int n = nums.length, target = n - k;
-    Random rand = new Random();
-    int l = 0, r = n - 1;
-    while (l <= r) {
-        int p = l + rand.nextInt(r - l + 1);
-        int pivot = nums[p];
-        swap(nums, p, r);
-        int i = l;
-        for (int j = l; j < r; j++) {
-            if (nums[j] < pivot) swap(nums, i++, j);
+    int target = nums.length - k; // 第 k 大 → 升序下标 n-k
+    int lo = 0, hi = nums.length - 1;
+    while (lo <= hi) {
+        int pivotIdx = lo + RAND.nextInt(hi - lo + 1);
+        int pivot = nums[pivotIdx];
+        // 三向切分：<pivot | =pivot | >pivot
+        int lt = lo, i = lo, gt = hi;
+        while (i <= gt) {
+            if (nums[i] < pivot) swap(nums, lt++, i++);
+            else if (nums[i] > pivot) swap(nums, i, gt--);
+            else i++;
         }
-        swap(nums, i, r); // i 为 pivot 的最终位置
-        if (i == target) return nums[i];
-        else if (i < target) l = i + 1;
-        else r = i - 1;
+        // 现在 [lo..lt-1] < pivot, [lt..gt] == pivot, [gt+1..hi] > pivot
+        if (target < lt) hi = lt - 1;
+        else if (target > gt) lo = gt + 1;
+        else return nums[target]; // 命中 equals 区间
     }
-    return -1; // 不会到这
+    throw new AssertionError("Unreachable");
 }
-private void swap(int[] a, int i, int j) { int t = a[i]; a[i] = a[j]; a[j] = t; }
+
+private static void swap(int[] a, int i, int j) {
+    int t = a[i]; a[i] = a[j]; a[j] = t;
+}
 ```
 
 **思路 2：大小为 k 的最小堆（O(n log k)）**
@@ -160,12 +166,14 @@ public int findKthLargestHeap(int[] nums, int k) {
 ```
 
 **复杂度**：快选均摊 O(n)，最坏 O(n²)（随机化可规避）；堆法 O(n log k)。
+
 **易错点**：
 
 - `k` 转为索引 `n-k`；
 - 分区条件要与“升序位置”对应；
 - 不要忘了随机化 pivot。
-  **自测**：`[3,2,1,5,6,4], k=2 -> 5`；`[3,2,3,1,2,4,5,5,6], k=4 -> 4`。
+
+**自测**：`[3,2,1,5,6,4], k=2 -> 5`；`[3,2,3,1,2,4,5,5,6], k=4 -> 4`。
 
 ### LC23. Merge k Sorted Lists（小顶堆合并）
 

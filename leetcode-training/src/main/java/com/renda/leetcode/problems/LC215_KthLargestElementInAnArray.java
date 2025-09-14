@@ -1,52 +1,32 @@
 package com.renda.leetcode.problems;
 
-import java.util.LinkedList;
-import java.util.ListIterator;
+import java.util.PriorityQueue;
 
 import com.renda.leetcode.core.LeetCodeProblem;
 
 /**
  * LeetCode 215 - Kth Largest Element in an Array
  *
- * Time Limit Exceeded
- * 38 / 44 testcases passed
+ * 堆
+ *
+ * 维持一个大小为 k 的最小堆
+ *
+ * Runtime 43 ms Beats 62.54%
+ * Memory 57.61 MB Beats 68.32%
  */
 public class LC215_KthLargestElementInAnArray implements LeetCodeProblem {
 
     public int findKthLargest(int[] nums, int k) {
-        if (nums.length == 1) {
-            return nums[0];
-        }
-        LinkedList<Integer> topKLinkedList = new LinkedList<>();
-        for (int i = 0; i < k; i++) {
-            topKLinkedList.add(Integer.MIN_VALUE);
-        }
-        for (int i = 0; i < nums.length; i++) {
-            ListIterator<Integer> iterator1 = topKLinkedList.listIterator();
-            ListIterator<Integer> iterator2 = topKLinkedList.listIterator(k);
-            if (nums[i] <= topKLinkedList.getLast()) {
-                continue;
-            }
-            while (iterator1.hasNext() && iterator2.hasPrevious()) {
-                Integer element1 = iterator1.next();
-                Integer element2 = iterator2.previous();
-                if (nums[i] <= element2) {
-                    iterator2.next();
-                    iterator2.add(nums[i]);
-                    topKLinkedList.removeLast();
-                    break;
-                } else {
-                    if (nums[i] >= element1) {
-                        iterator1.previous();
-                        iterator1.add(nums[i]);
-                        topKLinkedList.removeLast();
-                        break;
-                    }
-                }
-                if (iterator1.nextIndex() > iterator2.nextIndex()) break;
+        PriorityQueue<Integer> queue = new PriorityQueue<>();
+        for (int n : nums) {
+            if (queue.size() < k) {
+                queue.offer(n);
+            } else if (n > queue.peek()) {
+                queue.poll();
+                queue.offer(n);
             }
         }
-        return topKLinkedList.getLast();
+        return queue.peek();
     }
 
     @Override
