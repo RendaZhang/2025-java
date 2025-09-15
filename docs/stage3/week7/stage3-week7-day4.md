@@ -15,6 +15,8 @@
     - [`ThreadPoolExecutor` 七参数、队列取舍与拒绝策略](#threadpoolexecutor-%E4%B8%83%E5%8F%82%E6%95%B0%E9%98%9F%E5%88%97%E5%8F%96%E8%88%8D%E4%B8%8E%E6%8B%92%E7%BB%9D%E7%AD%96%E7%95%A5)
     - [`CompletableFuture` 任务编排：并行、超时、取消与自定义 Executor](#completablefuture-%E4%BB%BB%E5%8A%A1%E7%BC%96%E6%8E%92%E5%B9%B6%E8%A1%8C%E8%B6%85%E6%97%B6%E5%8F%96%E6%B6%88%E4%B8%8E%E8%87%AA%E5%AE%9A%E4%B9%89-executor)
     - [并发诊断与排障：死锁、线程池饱和、阻塞点定位，5 分钟 SOP](#%E5%B9%B6%E5%8F%91%E8%AF%8A%E6%96%AD%E4%B8%8E%E6%8E%92%E9%9A%9C%E6%AD%BB%E9%94%81%E7%BA%BF%E7%A8%8B%E6%B1%A0%E9%A5%B1%E5%92%8C%E9%98%BB%E5%A1%9E%E7%82%B9%E5%AE%9A%E4%BD%8D5-%E5%88%86%E9%92%9F-sop)
+  - [Step 3 - 并发场景题](#step-3---%E5%B9%B6%E5%8F%91%E5%9C%BA%E6%99%AF%E9%A2%98)
+    - [突发流量 + 下游限速，线程池怎么“吸收不作死”？](#%E7%AA%81%E5%8F%91%E6%B5%81%E9%87%8F--%E4%B8%8B%E6%B8%B8%E9%99%90%E9%80%9F%E7%BA%BF%E7%A8%8B%E6%B1%A0%E6%80%8E%E4%B9%88%E5%90%B8%E6%94%B6%E4%B8%8D%E4%BD%9C%E6%AD%BB)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -697,3 +699,63 @@ class TimedLock implements AutoCloseable {
 - 看 `Thread.print` 顶部是否有 “**Found one Java-level deadlock**”；
 - 找到两个（或多）线程互相 `BLOCKED`，标出**锁对象**与**获取顺序**；
 - **修复**：统一获取顺序；或拆一把锁；或把其中一个改为 `tryLock` + 超时退避。
+
+## Step 3 - 并发场景题
+
+### 突发流量 + 下游限速，线程池怎么“吸收不作死”？
+
+场景题
+
+**面试官：**
+
+“促销 5 分钟峰值打过来，你们要并发调用库存与优惠服务。现在的线程池**队列越积越多**、尾延迟飙升，偶尔还 OOM。请你说说你会怎么设计 `ThreadPoolExecutor`（参数、队列、拒绝策略），以及怎么和**超时/重试/熔断**配合，既吃下突发又不把下游打穿？最好结合你在（深圳市凡新科技 / 麦克尔斯深圳）的经历给一组**可落地**的参数。”
+
+**你：**
+
+“我把线程池当**背压阀**来用，不当仓库。落地分四步：
+
+1. **按依赖分池（Bulkhead）**
+   支付、库存、优惠**各一组**线程池，互不拖累；`CompletableFuture` 一律用**自定义池**，不占 `commonPool`。
+2. **有界队列 + 适度弹性**
+   我选 `ArrayBlockingQueue`，把队列容量当作**等待预算**而不是垃圾桶。凡新那次活动我用过一组参数：
+   - `core = max(8, CPU核)`，`max ≈ 核数 * 4`（IO 阻塞型业务）；
+   - `queueCap = 2000`（能接受在本层最多囤 2k 个请求，再多就宁可拒）；
+   - `keepAlive = 60s`，`allowCoreThreadTimeOut(true)`（峰值后尽快回收）；
+   - 队列**坚决不用无界 `LinkedBlockingQueue`**，也不会在这种场景用 `SynchronousQueue`（太容易把下游打穿）。
+3. **拒绝策略 = 把压力推回去**
+   用 `CallerRunsPolicy` 或 `AbortPolicy`：
+   - **CallerRuns**：调用线程自己跑，**自然限速**（BFF 线程被占就降速了）；
+   - **Abort**：直接抛异常，BFF 把它转成**清晰的降级/受理中**。
+     命中拒绝时我会**记录指标**（`rejectedCount`）并触发**灰度降入口 RPS**。
+4. **协同：超时 / 重试预算 / 熔断**
+   - 外呼**硬超时**（300–800ms 一档），总体**deadline**（比如 1.2s）；
+   - **只对幂等**请求重试，**指数退避 + 抖动**，**预算 ≤10%**；
+   - 下游错误/超时率越线**打开熔断**，熔断期**不再重试**，仅半开探测；
+   - 命中 `429` 尊重 `Retry-After`，把下一次退避对齐。
+
+**实战口径**
+
+- 在**凡新**，库存外呼池我们配了：`core=12, max=48, queue=2000, CallerRuns`，外呼 HTTP 客户端 `read/connect=500ms`，命中拒绝就**快速失败 + 幂等重试**（预算 10%）。峰值时**rejected**会上来，但尾延迟收敛，下游也没有被打穿。
+- 在**麦克尔斯**，图片索引原本用无界队列，直接把 GC 顶爆。改成**有界 + Abort** 后，前端拿到“受理中”占位；等消费链路恢复我们**异步补齐**，整体体验反而更稳。”
+
+**一段可复用代码（骨架）**
+
+```java
+int cores = Runtime.getRuntime().availableProcessors();
+ThreadPoolExecutor pool = new ThreadPoolExecutor(
+    Math.max(cores, 8),
+    Math.max(cores * 4, 32),
+    60, TimeUnit.SECONDS,
+    new ArrayBlockingQueue<>(2000),
+    r -> { Thread t = new Thread(r, "outbound-stock-" + r.hashCode()); t.setDaemon(true); return t; },
+    new ThreadPoolExecutor.CallerRunsPolicy() // 或 AbortPolicy
+);
+pool.allowCoreThreadTimeOut(true);
+```
+
+**面试官可能追问 & 我会补充**
+
+- **为什么不用无界队列？** → 它把延迟藏起来，最后以 OOM/长尾爆雷。
+- **为什么不用 `SynchronousQueue`？** → 直传 + 下游慢会疯狂拉起线程或大量阻塞，风险更大。
+- **如何判定“队列该多大”？** → 结合**SLA × 目标吞吐**估算最大在途数；超出就拒绝/降级，而不是堆。
+- **监控看什么？** → `active/queue/rejected/p95`；看到队列高位稳定 5 分钟，就**降入口/扩下游**而不是加线程。
