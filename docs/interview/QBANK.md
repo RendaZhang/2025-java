@@ -27,9 +27,10 @@
     - [Exactly-once 的工程化取舍：追求 “effectively-once” 而非执念 EOS](#exactly-once-%E7%9A%84%E5%B7%A5%E7%A8%8B%E5%8C%96%E5%8F%96%E8%88%8D%E8%BF%BD%E6%B1%82-effectively-once-%E8%80%8C%E9%9D%9E%E6%89%A7%E5%BF%B5-eos)
   - [Java Concurrency](#java-concurrency)
     - [内存模型 & 可见性：happens-before / `volatile` 的边界](#%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B--%E5%8F%AF%E8%A7%81%E6%80%A7happens-before--volatile-%E7%9A%84%E8%BE%B9%E7%95%8C)
-    - [`synchronized` vs `ReentrantLock`：可中断 / 定时 / 公平 / 条件队列（外加：锁粗化与分段）](#synchronized-vs-reentrantlock%E5%8F%AF%E4%B8%AD%E6%96%AD--%E5%AE%9A%E6%97%B6--%E5%85%AC%E5%B9%B3--%E6%9D%A1%E4%BB%B6%E9%98%9F%E5%88%97%E5%A4%96%E5%8A%A0%E9%94%81%E7%B2%97%E5%8C%96%E4%B8%8E%E5%88%86%E6%AE%B5)
-    - [`ThreadPoolExecutor` 七参数、队列取舍与拒绝策略（含反模式与调参示例）](#threadpoolexecutor-%E4%B8%83%E5%8F%82%E6%95%B0%E9%98%9F%E5%88%97%E5%8F%96%E8%88%8D%E4%B8%8E%E6%8B%92%E7%BB%9D%E7%AD%96%E7%95%A5%E5%90%AB%E5%8F%8D%E6%A8%A1%E5%BC%8F%E4%B8%8E%E8%B0%83%E5%8F%82%E7%A4%BA%E4%BE%8B)
+    - [`synchronized` vs `ReentrantLock`：可中断 / 定时 / 公平 / 条件队列](#synchronized-vs-reentrantlock%E5%8F%AF%E4%B8%AD%E6%96%AD--%E5%AE%9A%E6%97%B6--%E5%85%AC%E5%B9%B3--%E6%9D%A1%E4%BB%B6%E9%98%9F%E5%88%97)
+    - [`ThreadPoolExecutor` 七参数、队列取舍与拒绝策略](#threadpoolexecutor-%E4%B8%83%E5%8F%82%E6%95%B0%E9%98%9F%E5%88%97%E5%8F%96%E8%88%8D%E4%B8%8E%E6%8B%92%E7%BB%9D%E7%AD%96%E7%95%A5)
     - [`CompletableFuture` 任务编排：并行、超时、取消与自定义 Executor](#completablefuture-%E4%BB%BB%E5%8A%A1%E7%BC%96%E6%8E%92%E5%B9%B6%E8%A1%8C%E8%B6%85%E6%97%B6%E5%8F%96%E6%B6%88%E4%B8%8E%E8%87%AA%E5%AE%9A%E4%B9%89-executor)
+    - [并发诊断与排障：死锁、线程池饱和、阻塞点定位，5 分钟 SOP](#%E5%B9%B6%E5%8F%91%E8%AF%8A%E6%96%AD%E4%B8%8E%E6%8E%92%E9%9A%9C%E6%AD%BB%E9%94%81%E7%BA%BF%E7%A8%8B%E6%B1%A0%E9%A5%B1%E5%92%8C%E9%98%BB%E5%A1%9E%E7%82%B9%E5%AE%9A%E4%BD%8D5-%E5%88%86%E9%92%9F-sop)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -1479,7 +1480,7 @@ class ConfHolder {
 
 “凡新那边促销统计我们一开始用 `AtomicLong`，峰值下自旋热点明显；换成 `LongAdder` 后 CPU 降了不少。Michaels 的开关配置用的是**不可变配置 + volatile 引用**，热更新后前端请求马上生效，不需要重启。”
 
-### `synchronized` vs `ReentrantLock`：可中断 / 定时 / 公平 / 条件队列（外加：锁粗化与分段）
+### `synchronized` vs `ReentrantLock`：可中断 / 定时 / 公平 / 条件队列
 
 > **锁的选择**：短小互斥→`synchronized`；需要**可中断/定时/多条件/可观测**→`ReentrantLock`。公平锁减吞吐；`unlock` 一定放 `finally`；条件队列要**循环检查**；读多写少可上 `ReentrantReadWriteLock`（只允许**降级**）；热点用**锁分段**，长等待用 **tryLock(timeout)+重试/降级**。
 
@@ -1569,7 +1570,7 @@ class BoundedBuffer<T> {
 
 “凡新那边库存预留把热点 SKU 的临界区改成 `ReentrantLock.tryLock(100ms)`，拿不到就**快速失败 + 幂等重试**，线程池再也没被‘长等待’拖死。麦克尔斯那边有个有界队列用两个 `Condition` 做 `notEmpty/notFull`，比 `wait/notify` 可读且不容易误唤醒。”
 
-### `ThreadPoolExecutor` 七参数、队列取舍与拒绝策略（含反模式与调参示例）
+### `ThreadPoolExecutor` 七参数、队列取舍与拒绝策略
 
 > **线程池 = 背压阀**：**有界队列 + 合理 core/max + CallerRuns/Abort 推回上游**；按**依赖分池**（Bulkhead），外呼**强制超时**，命中拒绝→**降级+退避**；拒绝把 `LinkedBlockingQueue` 用成**无界**；SynchronousQueue 需配强限流；观测 `active/queue/rejected/p95` 做动态调度。
 
@@ -1743,3 +1744,125 @@ Result r = new Result(
 **项目口径**
 
 “凡新那边我们把 checkout 的四个外呼**并行**起来，子任务 `250–400ms` 超时，各自有 fallback；总体 **1.2s deadline** 到就**取消其余**并回前端‘受理中’。麦克尔斯那边把默认 `commonPool` 全部替换成**分池**，p95 立即下降，且**拒绝数**成了清晰的背压信号。”
+
+### 并发诊断与排障：死锁、线程池饱和、阻塞点定位，5 分钟 SOP
+
+> **并发排障 SOP**：指标判型（active/queue/rejected、CPU/GC、依赖 P95）→ 采样线程栈（`Thread.print` 连打 2–3 次）定位 **I/O/锁/CPU** → 当场止血（超时/降级/背压/熔断/收紧并发）→ 根因修复（有界池+超时、分池、加锁顺序、`tryLock`、降对象膨胀、重试预算）。出现 “deadlock” 即统一**锁顺序**或使用超时锁。
+
+场景题
+
+**面试官：**
+
+“促销高峰里接口 P95 飙升、线程池不出活。你如何 **5 分钟内** 判断是**CPU 打满**、**下游阻塞**、还是**锁竞争/死锁**，并给出**止血**与**根因**？”
+
+**你：**
+
+“我有一套 **SOP**：**看指标 → 采样线程栈 → 对症止血 → 复盘修复**。”
+
+① 先看指标（1 分钟：判型）
+
+- **线程池四件套**：`activeCount / poolSize / queueSize / rejectedCount`
+  - `queueSize` 持续攀升 + `rejectedCount` 抬头 → **池饱和/背压生效**；
+  - `active≈max` 且出活慢 → 任务**被阻塞**（I/O、锁）。
+- **CPU/GC**：CPU 100% + GC 次数/停顿上升 → **计算/分配压力**或**对象膨胀**（大队列）。
+- **依赖红灯**：下游 P95、超时率、熔断状态；若依赖同时抬头，优先判断**下游阻塞**。
+
+> 结论模板：
+> - CPU 高 + 线程大多 RUNNABLE → **CPU 绑定/自旋/热点**；
+> - CPU 不高 + 队列涨/超时多 → **外部 I/O 或锁等待**。
+
+② 线程栈取证（2 分钟：定位）
+
+**命令**（连打 2–3 次，间隔 5s）：
+
+```
+jcmd <pid> Thread.print -l > tdump1.txt
+jcmd <pid> Thread.print -l > tdump2.txt
+```
+
+**怎么看**
+
+- 大量线程 `TIMED_WAITING on java.net...` / `WAITING on java.util.concurrent.CompletableFuture$Signaller` → **I/O/下游慢**或**无超时**。
+- `BLOCKED (on object monitor)` / `parking to wait for <...AQS>` → **锁竞争**；若 dump 顶部出现
+  `Found one Java-level deadlock` → **死锁**。
+- 线程名可读（建议命名如 `outbound-stock-*`），一眼看出**哪条依赖**卡住。
+- **热点类目**：
+  - `AbstractQueuedSynchronizer`：`synchronized/ReentrantLock/CountDownLatch` 等等待；
+  - `ForkJoinPool.commonPool-worker-*`：阻塞任务误入 **commonPool**；
+  - `SynchronousQueue`：直传队列 + 下游慢 ⇒ **堆线程/打穿**。
+
+**补刀**
+
+```
+jcmd <pid> GC.class_histogram > histo.txt   # 看大对象/队列膨胀
+jfr start duration=60s filename=profile.jfr # 1 分钟 JFR 看锁/IO热点
+```
+
+③ 当场止血（1 分钟：控损）
+
+- **强制超时/限速**：临时把外呼客户端 read/connect timeout 降到 300–800ms；尊重 `Retry-After`；将**重试预算**降为 ≤5%。
+- **打开降级/熔断**：对“非关键读”直接旧值/占位；关键写**受理中**。
+- **收紧并发**：把问题依赖的线程池 **max/queue** 下调，命中 `CallerRuns/Abort` 让**上游减速**（背压）；或直接**临时摘除**问题下游。
+- **杀环路**：发现死锁或嵌套等待，**关闭相关入口**（灰度下线）并重启单实例释放锁。
+
+④ 根因与修复（+ 事后规范）
+
+**常见根因 → 修复清单**
+
+1. **无超时/大超时** → 所有外呼**必须**配置超时（请求 deadline 统一 ≤1.5–2s）；`CompletableFuture.orTimeout / TimeLimiter` 落地。
+2. **池饱和（无界队列）** → 改为**有界** `ArrayBlockingQueue`；拒绝策略用 `CallerRuns/Abort`；建立**背压指标**。
+3. **阻塞任务跑在 commonPool** → 给 CF 指定**自定义 Executor**（按依赖分池）。
+4. **锁竞争/死锁** →
+   - 固化**加锁顺序**；
+   - 长等待改 `tryLock(timeout)+重试/降级`；
+   - 缩小临界区/**锁分段**；
+   - 用 `ReentrantReadWriteLock`/`LongAdder` 降低写冲突。
+5. **对象膨胀/GC**（大队列/大集合） → **控队列上限**、分批处理、减少中间对象。
+6. **重试风暴** → **指数退避 + 抖动 + 预算**；熔断打开期间不重试，仅半开探测。
+
+代码小工具（两段，线上非常好用）
+
+**A. 线程池探针（日志 + 指标）**
+
+```java
+class InstrumentedExecutor extends ThreadPoolExecutor {
+  InstrumentedExecutor(int core, int max, int q) {
+    super(core, max, 60, TimeUnit.SECONDS, new ArrayBlockingQueue<>(q),
+      r -> new Thread(r, "outbound-stock-" + r.hashCode()),
+      new CallerRunsPolicy());
+    allowCoreThreadTimeOut(true);
+  }
+  @Override protected void beforeExecute(Thread t, Runnable r) {
+    // 采样记录排队时长/开始时间（可放到 MDC）
+  }
+  @Override protected void afterExecute(Runnable r, Throwable t) {
+    // 上报耗时/异常，若 t!=null 记录
+  }
+}
+```
+
+**B. 锁看门狗（持锁超时报警）**
+
+```java
+class TimedLock implements AutoCloseable {
+  private final ReentrantLock lock; private final long start=System.nanoTime();
+  TimedLock(ReentrantLock l, long warnMs) {
+    this.lock = l;
+    try { if(!l.tryLock(warnMs, TimeUnit.MILLISECONDS))
+            throw new RuntimeException("lock timeout"); }
+    catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+  }
+  public void close() {
+    long costMs=(System.nanoTime()-start)/1_000_000;
+    if (costMs > 200) log.warn("Lock held {} ms", costMs);
+    lock.unlock();
+  }
+}
+// 用法：try (var g=new TimedLock(lock,100)) { /*临界区*/ }
+```
+
+死锁“一句话排查”
+
+- 看 `Thread.print` 顶部是否有 “**Found one Java-level deadlock**”；
+- 找到两个（或多）线程互相 `BLOCKED`，标出**锁对象**与**获取顺序**；
+- **修复**：统一获取顺序；或拆一把锁；或把其中一个改为 `tryLock` + 超时退避。
