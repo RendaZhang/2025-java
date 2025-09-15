@@ -12,7 +12,8 @@
   - [Step 2 - Java 并发核心梳理](#step-2---java-%E5%B9%B6%E5%8F%91%E6%A0%B8%E5%BF%83%E6%A2%B3%E7%90%86)
     - [内存模型 & 可见性：happens-before / `volatile` 的边界](#%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B--%E5%8F%AF%E8%A7%81%E6%80%A7happens-before--volatile-%E7%9A%84%E8%BE%B9%E7%95%8C)
     - [`synchronized` vs `ReentrantLock`：可中断 / 定时 / 公平 / 条件队列（外加：锁粗化与分段）](#synchronized-vs-reentrantlock%E5%8F%AF%E4%B8%AD%E6%96%AD--%E5%AE%9A%E6%97%B6--%E5%85%AC%E5%B9%B3--%E6%9D%A1%E4%BB%B6%E9%98%9F%E5%88%97%E5%A4%96%E5%8A%A0%E9%94%81%E7%B2%97%E5%8C%96%E4%B8%8E%E5%88%86%E6%AE%B5)
-    - [`ThreadPoolExecutor` 七参数、队列取舍与拒绝策略（含反模式与调参示例）](#threadpoolexecutor-%E4%B8%83%E5%8F%82%E6%95%B0%E9%98%9F%E5%88%97%E5%8F%96%E8%88%8D%E4%B8%8E%E6%8B%92%E7%BB%9D%E7%AD%96%E7%95%A5%E5%90%AB%E5%8F%8D%E6%A8%A1%E5%BC%8F%E4%B8%8E%E8%B0%83%E5%8F%82%E7%A4%BA%E4%BE%8B)
+    - [`ThreadPoolExecutor` 七参数、队列取舍与拒绝策略](#threadpoolexecutor-%E4%B8%83%E5%8F%82%E6%95%B0%E9%98%9F%E5%88%97%E5%8F%96%E8%88%8D%E4%B8%8E%E6%8B%92%E7%BB%9D%E7%AD%96%E7%95%A5)
+    - [`CompletableFuture` 任务编排：并行、超时、取消与自定义 Executor](#completablefuture-%E4%BB%BB%E5%8A%A1%E7%BC%96%E6%8E%92%E5%B9%B6%E8%A1%8C%E8%B6%85%E6%97%B6%E5%8F%96%E6%B6%88%E4%B8%8E%E8%87%AA%E5%AE%9A%E4%B9%89-executor)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -399,7 +400,7 @@ class BoundedBuffer<T> {
 
 “凡新那边库存预留把热点 SKU 的临界区改成 `ReentrantLock.tryLock(100ms)`，拿不到就**快速失败 + 幂等重试**，线程池再也没被‘长等待’拖死。麦克尔斯那边有个有界队列用两个 `Condition` 做 `notEmpty/notFull`，比 `wait/notify` 可读且不容易误唤醒。”
 
-### `ThreadPoolExecutor` 七参数、队列取舍与拒绝策略（含反模式与调参示例）
+### `ThreadPoolExecutor` 七参数、队列取舍与拒绝策略
 
 > **线程池 = 背压阀**：**有界队列 + 合理 core/max + CallerRuns/Abort 推回上游**；按**依赖分池**（Bulkhead），外呼**强制超时**，命中拒绝→**降级+退避**；拒绝把 `LinkedBlockingQueue` 用成**无界**；SynchronousQueue 需配强限流；观测 `active/queue/rejected/p95` 做动态调度。
 
@@ -429,7 +430,7 @@ class BoundedBuffer<T> {
 2 - 队列选型（取舍）
 
 - **`ArrayBlockingQueue(cap)`（推荐）**：**有界 FIFO**，简单可控，最符合“背压”。
-- **`LinkedBlockingQueue`**：默认**无界**（反模式，可能 OOM）；如用务必**指定上限**。
+- **`LinkedBlockingQueue`**：默认**无界**（反模式 / 坑，可能 OOM）；如用务必**指定上限**。
 - **`SynchronousQueue`**：**零容量**直传；适合**低延迟 + 可弹性扩线程**，但**极易打穿下游**，除非有**强兜底**（限流/熔断）。
 - **`PriorityBlockingQueue`**：有优先级但**可能饿死**低优先任务；仅在确需优先级时用。
 
@@ -439,7 +440,7 @@ class BoundedBuffer<T> {
 - **`AbortPolicy`**：抛 `RejectedExecutionException` → **快速失败**，让上层走**降级/重试**。
 - **`DiscardPolicy/DiscardOldestPolicy`**：静默丢弃/丢最老任务，**不建议**用于关键业务（难排障）。
 
-4 - 反模式 RISK 清单
+4 - 反模式 RISK 清单（常见坑）
 
 - **无界队列 + 巨大 max**：看似稳，其实**无限排队 → 高尾延迟/OOM**。
 - **一个池干所有事**：CPU 任务与 IO 任务**混用** → 互相拖垮（饥饿/死锁）。
@@ -490,3 +491,86 @@ pool.allowCoreThreadTimeOut(true); // 突发过后及时收缩
 “凡新我们给每个外呼（支付、库存）各一组**有界池 + CallerRuns**，配上**重试预算**，高峰期把压力稳稳**卡在调用方**，尾延迟大幅收敛；
 
 麦克尔斯把原来单池改成**按依赖分池**，并给 `CompletableFuture` 指定自定义 Executor，解决了**默认池被阻塞任务吃光**的问题。”
+
+### `CompletableFuture` 任务编排：并行、超时、取消与自定义 Executor
+
+> **CF 编排**：总是用**自定义有界线程池**；子任务 `orTimeout/completeOnTimeout + 降级`，总体 `allOf` 加 **deadline**，超时**取消 siblings**；竞速用 `anyOf`；避免在 commonPool 跑阻塞 IO；通过装饰器传递 **MDC/traceId**；别在任务里嵌套阻塞等待。
+
+场景题
+
+**面试官：**
+
+“在（深圳市凡新科技 / 麦克尔斯深圳）的下单页，你需要**并行**查询：价格、库存、优惠、地址校验。要求**总体超时 1.2s**，任何子调用超时要**快速降级**，并且**不要把公共线程池卡死**。你怎么用 `CompletableFuture` 编排？”
+
+**你：**
+
+“我有四个原则：**自定义 Executor**、**fail-fast 超时**、**可取消**、**清晰降级**。默认 `commonPool` 是 `ForkJoinPool`，**不能塞阻塞 IO**，所以我总是传入**专用线程池**（按依赖分池）。整体用 `allOf` 聚合，子任务统一 `orTimeout` + `exceptionally` 降级；一旦总体超时或关键任务失败，**取消其余**。”
+
+**代码骨架（并行 + 超时 + 降级 + 取消）**
+
+```java
+Executor ioPool = outboundPool("checkout-io"); // 你的自定义、有界线程池
+
+CompletableFuture<Price> fPrice = CompletableFuture
+    .supplyAsync(() -> priceApi.get(sku), ioPool)
+    .orTimeout(400, TimeUnit.MILLISECONDS)                // 子调用超时
+    .exceptionally(e -> Price.fallback());                // 明确降级
+
+CompletableFuture<Stock> fStock = CompletableFuture
+    .supplyAsync(() -> stockApi.get(sku), ioPool)
+    .orTimeout(300, TimeUnit.MILLISECONDS)
+    .exceptionally(e -> Stock.unknown());                 // 可返回未知/保守值
+
+CompletableFuture<Coupon> fCoupon = CompletableFuture
+    .supplyAsync(() -> couponApi.check(user), ioPool)
+    .orTimeout(300, TimeUnit.MILLISECONDS)
+    .exceptionally(e -> Coupon.empty());
+
+CompletableFuture<AddressCheck> fAddr = CompletableFuture
+    .supplyAsync(() -> addrApi.validate(addr), ioPool)
+    .orTimeout(250, TimeUnit.MILLISECONDS)
+    .exceptionally(e -> AddressCheck.skip());
+
+CompletableFuture<Void> all = CompletableFuture.allOf(fPrice, fStock, fCoupon, fAddr);
+
+// 总体超时 + 取消其余
+try {
+    all.orTimeout(1200, TimeUnit.MILLISECONDS).join();
+} catch (CompletionException e) {
+    // overall timeout/fail-fast，取消还在跑的子任务（若 API 支持中断/超时，会尽快返回）
+    fPrice.cancel(true); fStock.cancel(true); fCoupon.cancel(true); fAddr.cancel(true);
+}
+// 聚合结果（子任务已各自降级，getNow 不会抛异常）
+Result r = new Result(
+    fPrice.getNow(Price.fallback()),
+    fStock.getNow(Stock.unknown()),
+    fCoupon.getNow(Coupon.empty()),
+    fAddr.getNow(AddressCheck.skip())
+);
+```
+
+**常用模式**
+
+- **Fail-fast 聚合**：关键依赖失败就**立即返回**（而不是等其它都完成）。做法：给关键依赖单独 `orTimeout/exceptionally`，并在 `handle/whenComplete` 里触发**取消 siblings**。
+- **Fastest-wins（竞速）**：`anyOf(f1, f2, ...)` 选最快结果（如多机房并发读），其余任务在 `thenAccept` 里**best effort cancel**。
+- **串并混排**：`thenCompose` 串行依赖（拿到 user 再查优惠）、`thenCombine` 汇合独立分支。
+- **超时占位**：`completeOnTimeout(fallback, 300, ms)` —— 超时直接返回**默认值**，不抛异常。
+
+**异常与上下文**
+
+- **不要 `get()`/`join()` 早取**，统一在末端聚合；
+- 用 `exceptionally/handle` 明确每个子任务的**降级逻辑**；
+- **MDC/traceId 传递**：`CompletableFuture` 不会自动继承 MDC，包一层 `Supplier` 复制/恢复 MDC（或用装饰器 Executor）；
+- **中断语义**：取消只是一种信号，确保下游客户端**尊重超时/中断**（HTTP 客户端配置 read/connect timeout），否则线程仍被占。
+
+**反模式（常见坑）**
+
+- 把阻塞 IO 跑在 `ForkJoin commonPool`；
+- `LinkedBlockingQueue` 无界池接 CF 任务 → **无限排队**；
+- 在任务内部**同步等待另一个 CF**（嵌套 `get()`）→ **线程互等**；
+- 没有 `orTimeout/completeOnTimeout`，导致**整体任务无上限**；
+- 降级不明确，异常被吞掉，排障困难。
+
+**项目口径**
+
+“凡新那边我们把 checkout 的四个外呼**并行**起来，子任务 `250–400ms` 超时，各自有 fallback；总体 **1.2s deadline** 到就**取消其余**并回前端‘受理中’。麦克尔斯那边把默认 `commonPool` 全部替换成**分池**，p95 立即下降，且**拒绝数**成了清晰的背压信号。”
