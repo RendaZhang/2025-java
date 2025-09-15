@@ -9,6 +9,8 @@
     - [LC347 高质量复盘](#lc347-%E9%AB%98%E8%B4%A8%E9%87%8F%E5%A4%8D%E7%9B%98)
     - [LC215. Kth Largest Element in an Array（快速选择 or 堆）](#lc215-kth-largest-element-in-an-array%E5%BF%AB%E9%80%9F%E9%80%89%E6%8B%A9-or-%E5%A0%86)
     - [LC23. Merge k Sorted Lists（小顶堆合并）](#lc23-merge-k-sorted-lists%E5%B0%8F%E9%A1%B6%E5%A0%86%E5%90%88%E5%B9%B6)
+  - [Step 2 - Java 并发核心梳理](#step-2---java-%E5%B9%B6%E5%8F%91%E6%A0%B8%E5%BF%83%E6%A2%B3%E7%90%86)
+    - [内存模型 & 可见性：happens-before / `volatile` 的边界](#%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B--%E5%8F%AF%E8%A7%81%E6%80%A7happens-before--volatile-%E7%9A%84%E8%BE%B9%E7%95%8C)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -240,3 +242,67 @@ public ListNode mergeKLists(ListNode[] lists) {
 **自测**：`[[1,4,5],[1,3,4],[2,6]] -> [1,1,2,3,4,4,5,6]`。
 
 ---
+
+## Step 2 - Java 并发核心梳理
+
+### 内存模型 & 可见性：happens-before / `volatile` 的边界
+
+> **可见性 vs 原子性**：`volatile` 保障**可见/有序**不保障**复合原子**；计数/聚合用 `LongAdder/Atomic*` 或串行队列；**安全发布**用“不可变对象 + volatile 引用”；DCL 单例需 `volatile`；跨线程顺序靠 `start/join`、`synchronized unlock/lock`、`volatile write/read` 的 happens-before。
+
+场景题
+
+**面试官：**
+
+“你们在（深圳市凡新科技 / 麦克尔斯深圳）有个**库存曝光服务**：多个线程持续累加访问量并在 1s 定时刷到 Redis。偶发地，页面 PV/库存快照会**落后**或**计数丢失**。请你解释 Java 内存模型里的 **happens-before** 关系、`volatile` 能/不能解决什么，并给出代码级修正。”
+
+**你：**
+
+“我先分两件事：**可见性/有序性** 和 **原子性**。
+
+- `volatile` 只保证**写→读**的可见性和一定的**指令有序**（建立 happens-before：对同一变量 `volatile write` 先于后续线程的 `volatile read`），**不保证复合操作的原子性**。
+- 对‘计数丢失’这种++操作，我会用 **原子类**（`AtomicLong`/热点高时用 `LongAdder`）或把更新放进**单线程/串行化**的队列；
+- 对‘配置刷新/开关不生效’这种 **发布-订阅/开关切换**，我会用 `volatile` 或 **不可变对象 + volatile 引用**做**安全发布**。”
+
+**反例 & 修正**
+
+```java
+// 反例：可见性不可靠 + 原子性缺失
+class CounterBad {
+  private long pv = 0;                 // 非 volatile，且 ++ 非原子
+  void inc() { pv++; }                 // 读-改-写竞争
+  long get() { return pv; }            // 可能读到旧值（CPU 缓存未刷回）
+}
+
+// 修正 1：高并发计数 —— LongAdder 更抗热点
+class CounterGood {
+  private final LongAdder pv = new LongAdder();
+  void inc() { pv.increment(); }       // 分段计数，聚合时冲突少
+  long get() { return pv.sum(); }
+}
+
+// 修正 2：配置热更新 —— 不可变对象 + volatile 引用
+class Config { final int ttl; final boolean enable; Config(int t, boolean e){ttl=t;enable=e;} }
+class ConfHolder {
+  private volatile Config cfg = new Config(60, true); // 安全发布
+  Config get(){ return cfg; }
+  void reload(){ cfg = loadFromDb(); }                // 对所有线程立即可见
+}
+```
+
+**happens-before 你要说得出的 4 条常用规则**
+
+1. 程序次序规则：同一线程内的代码顺序。
+2. **监视器**：对同一锁，`unlock` 先于后续线程的 `lock`（`synchronized`）。
+3. **volatile**：对同一变量的 `write` 先于后续线程的 `read`。
+4. **线程启动/终止**：`Thread.start()` 先于子线程内操作；子线程内操作先于 `Thread.join()` 返回。
+
+**易错场景 & 取舍**
+
+- **双重检查单例（DCL）**必须把实例引用设为 `volatile`，否则可能看到**半初始化对象**。
+- **组合操作**（如 `check-then-act`、`put-if-absent`）用 `ConcurrentHashMap.computeIfAbsent` 或锁/CAS 保护；仅靠 `volatile` 不够。
+- **计数/埋点**：热点极高时 `AtomicLong` 会退化自旋，**LongAdder**冲突更小；但**要快照**（求准确值）时用 `sum()`，它与上一刻的 `inc()` 有极小窗口差。
+- **有序性**：`volatile` 可阻止相关指令重排，但**不能**代替锁来“临界区互斥”。
+
+**项目实话实说**
+
+“凡新那边促销统计我们一开始用 `AtomicLong`，峰值下自旋热点明显；换成 `LongAdder` 后 CPU 降了不少。Michaels 的开关配置用的是**不可变配置 + volatile 引用**，热更新后前端请求马上生效，不需要重启。”
