@@ -35,6 +35,7 @@
     - [`CompletableFuture` 并行编排要做到：fail-fast + 可取消 + 明确降级](#completablefuture-%E5%B9%B6%E8%A1%8C%E7%BC%96%E6%8E%92%E8%A6%81%E5%81%9A%E5%88%B0fail-fast--%E5%8F%AF%E5%8F%96%E6%B6%88--%E6%98%8E%E7%A1%AE%E9%99%8D%E7%BA%A7)
     - [锁竞争 / 死锁如何 5 分钟内定位并修复？](#%E9%94%81%E7%AB%9E%E4%BA%89--%E6%AD%BB%E9%94%81%E5%A6%82%E4%BD%95-5-%E5%88%86%E9%92%9F%E5%86%85%E5%AE%9A%E4%BD%8D%E5%B9%B6%E4%BF%AE%E5%A4%8D)
     - [线程池饱和 + 重试风暴，如何协同治理？](#%E7%BA%BF%E7%A8%8B%E6%B1%A0%E9%A5%B1%E5%92%8C--%E9%87%8D%E8%AF%95%E9%A3%8E%E6%9A%B4%E5%A6%82%E4%BD%95%E5%8D%8F%E5%90%8C%E6%B2%BB%E7%90%86)
+    - [线程池监控与告警：看哪些指标？阈值怎么定？](#%E7%BA%BF%E7%A8%8B%E6%B1%A0%E7%9B%91%E6%8E%A7%E4%B8%8E%E5%91%8A%E8%AD%A6%E7%9C%8B%E5%93%AA%E4%BA%9B%E6%8C%87%E6%A0%87%E9%98%88%E5%80%BC%E6%80%8E%E4%B9%88%E5%AE%9A)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -2097,3 +2098,105 @@ sleep(wait);
 **一句话总结**
 
 > **有界池 + 背压（CallerRuns/Abort）** 吸收突发，**重试=预算化+退避抖动**，**熔断**在异常期切断正反馈，入口**令牌桶**稳节奏——四管齐下才能把风暴压成可控波动。
+
+### 线程池监控与告警：看哪些指标？阈值怎么定？
+
+**面试官：**
+
+“你在（深圳市凡新科技 / 麦克尔斯深圳）如何给 `ThreadPoolExecutor` 做**可观测**？具体**哪些指标**、**告警阈值**、**看板布局**，以及**值班 SOP**怎么写？”
+
+**你：**
+
+“我用‘**SLO → 指标 → 告警 → 看板 → Runbook**’五件套。”
+
+1 - 指标（Pool 维度 + 任务维度）
+
+**Pool 维度（核心）**
+
+- `pool_active`（当前活跃线程数）
+- `pool_max` / `pool_core`
+- `queue_size` / `queue_capacity`（求 `queue_fill_ratio = size/cap`）
+- `rejected_total`（按原因分：`abort`/`callerRuns`/`discard`…）
+- `completed_total`、`task_submitted_total`
+
+**任务维度（直观反映体验）**
+
+- `task_exec_seconds` 直方图（P50/P95/P99）
+- `task_wait_seconds`（入队→开始执行的排队时间）
+- `timeout_total`、`cancelled_total`（CF/HTTP 客户端统计）
+- 依赖侧：外呼 **成功率**、**超时率**、**429/5xx** 比例（对齐重试/熔断）
+
+> 线程命名要可读（如 `outbound-stock-*`），日志和 dump 一眼定位。
+
+2 - 告警（Prometheus/语义）
+
+**饱和预警（持续 2–5m）**
+
+- `active/max > 0.8` **并且** `queue_fill_ratio > 0.7` 且上升
+- 或 `rate(rejected_total[1m]) > 0` 连续 3 分钟
+- 或 `task_exec_seconds{quantile="0.95"} > SLA×1.5` 持续 5 分钟
+
+**风暴/退化**
+
+- `rate(rejected_total[1m]) > 50`（硬拒绝暴涨）
+- `rate(timeout_total[1m]) > X` 且 熔断**关闭** → 提醒**开启熔断**
+- `rate(callerRuns_total[1m])` 持续上升 → **上游被背压**（通知降入口）
+
+**示例规则（伪 PromQL）**
+
+```yaml
+- alert: PoolSaturation
+  expr: (executor_active / executor_max > 0.8)
+        and (executor_queue_size / executor_queue_cap > 0.7)
+        and on(pool) (deriv(executor_queue_size[2m]) > 0)
+  for: 3m
+  labels: {severity: warning}
+  annotations: {runbook: "rb-threadpool-saturation"}
+
+- alert: PoolRejectSpike
+  expr: rate(executor_rejected_total[1m]) > 20
+  for: 2m
+  labels: {severity: critical}
+  annotations: {runbook: "rb-threadpool-reject"}
+```
+
+3 - 看板布局（1 屏能判型）
+
+- **Top 行（总体）**：P95 延迟、成功率、重试率、熔断状态。
+- **中间（Pool）**：`active/max`、`queue_size/cap`、`rejected`、`callerRuns` 叠图 + 斜率；
+- **底部（任务）**：`task_wait_seconds` 与 `task_exec_seconds` 分布；依赖侧 5xx/429/超时趋势。
+- 边上放**实例 TopN**（按 `queue_size` 和 `rejected` 排），便于点名。
+
+4 - 采集与埋点（Micrometer 示例）
+
+```java
+MeterRegistry r = ...;
+ThreadPoolExecutor p = /* 你的有界池 */;
+Gauge.builder("executor_active", p, ThreadPoolExecutor::getActiveCount).register(r);
+Gauge.builder("executor_queue_size", p, e -> e.getQueue().size()).register(r);
+Gauge.builder("executor_queue_cap", p, e -> ((ArrayBlockingQueue<?>)e.getQueue()).remainingCapacity()
+                                  + e.getQueue().size()).register(r);
+Counter rejected = Counter.builder("executor_rejected_total")
+    .tag("pool","outbound-stock").register(r);
+// 在自定义 RejectedExecutionHandler 里 rejected.increment();
+Timer execTimer = Timer.builder("task_exec_seconds").publishPercentiles(0.5,0.95,0.99).register(r);
+// 在 InstrumentedExecutor.afterExecute 里记录耗时；waitTime 可在 beforeExecute 采样
+```
+
+5 - 值班 Runbook（5 条当场动作）
+
+1. **判断类型**：看 `active/max`、`queue_fill_ratio`、`rejected`、依赖侧 P95。
+2. **当场止血**：
+   - 降**客户端 read/connect 超时**到 300–800ms，开启/收紧**熔断**；
+   - 降入口 RPS 或开**灰度降级**；
+   - 临时**下调 pool.max/queueCap**，让 `CallerRuns/Abort` 生效（把压力推回）。
+3. **重试收敛**：把**固定间隔重试**切换为**预算 ≤10% + 指数退避**。
+4. **排查根因**：`jcmd Thread.print -l` ×3，确认 I/O/锁/CPU；必要时 JFR 60s。
+5. **复盘修复**：无界队列→有界；阻塞任务→自定义池；热点锁→`tryLock(timeout)`/分段；默认 CF 池→分池。
+
+**项目口径（口语）**
+“凡新我们把‘队列斜率>0’作为**早预警**，常能在拒绝暴涨前降入口；麦克尔斯把 `callerRuns_total` 暴露出来，一看到上升就知道**上游已被背压**，能协同前端做降级。”
+
+**一句话总结**
+
+> **看“饱和 + 斜率 + 拒绝”三件事**：`active/max`、`queue_fill_ratio`、`rejected`。告警触发时按 Runbook：**限时/熔断/降入口/收紧池/退避重试**；看板一屏判型、指标能回放，问题就很难失控。
