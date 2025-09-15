@@ -17,6 +17,7 @@
     - [并发诊断与排障：死锁、线程池饱和、阻塞点定位，5 分钟 SOP](#%E5%B9%B6%E5%8F%91%E8%AF%8A%E6%96%AD%E4%B8%8E%E6%8E%92%E9%9A%9C%E6%AD%BB%E9%94%81%E7%BA%BF%E7%A8%8B%E6%B1%A0%E9%A5%B1%E5%92%8C%E9%98%BB%E5%A1%9E%E7%82%B9%E5%AE%9A%E4%BD%8D5-%E5%88%86%E9%92%9F-sop)
   - [Step 3 - 并发场景题](#step-3---%E5%B9%B6%E5%8F%91%E5%9C%BA%E6%99%AF%E9%A2%98)
     - [突发流量 + 下游限速，线程池怎么“吸收不作死”？](#%E7%AA%81%E5%8F%91%E6%B5%81%E9%87%8F--%E4%B8%8B%E6%B8%B8%E9%99%90%E9%80%9F%E7%BA%BF%E7%A8%8B%E6%B1%A0%E6%80%8E%E4%B9%88%E5%90%B8%E6%94%B6%E4%B8%8D%E4%BD%9C%E6%AD%BB)
+    - [`CompletableFuture` 并行编排要做到：fail-fast + 可取消 + 明确降级](#completablefuture-%E5%B9%B6%E8%A1%8C%E7%BC%96%E6%8E%92%E8%A6%81%E5%81%9A%E5%88%B0fail-fast--%E5%8F%AF%E5%8F%96%E6%B6%88--%E6%98%8E%E7%A1%AE%E9%99%8D%E7%BA%A7)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -255,8 +256,6 @@ public ListNode mergeKLists(ListNode[] lists) {
 
 > **可见性 vs 原子性**：`volatile` 保障**可见/有序**不保障**复合原子**；计数/聚合用 `LongAdder/Atomic*` 或串行队列；**安全发布**用“不可变对象 + volatile 引用”；DCL 单例需 `volatile`；跨线程顺序靠 `start/join`、`synchronized unlock/lock`、`volatile write/read` 的 happens-before。
 
-场景题
-
 **面试官：**
 
 “你们在（深圳市凡新科技 / 麦克尔斯深圳）有个**库存曝光服务**：多个线程持续累加访问量并在 1s 定时刷到 Redis。偶发地，页面 PV/库存快照会**落后**或**计数丢失**。请你解释 Java 内存模型里的 **happens-before** 关系、`volatile` 能/不能解决什么，并给出代码级修正。”
@@ -317,9 +316,8 @@ class ConfHolder {
 
 > **锁的选择**：短小互斥→`synchronized`；需要**可中断/定时/多条件/可观测**→`ReentrantLock`。公平锁减吞吐；`unlock` 一定放 `finally`；条件队列要**循环检查**；读多写少可上 `ReentrantReadWriteLock`（只允许**降级**）；热点用**锁分段**，长等待用 **tryLock(timeout)+重试/降级**。
 
-场景题
-
 **面试官：**
+
 “在（深圳市凡新科技 / 麦克尔斯深圳）的大促高峰，你们有个**库存预留**的热点段：偶发下游抖动时，线程在等待锁期间**堆积**，无法快速取消，导致**线程池被占死**。你会选择 `synchronized` 还是 `ReentrantLock`？为什么？”
 
 **你：**
@@ -406,8 +404,6 @@ class BoundedBuffer<T> {
 ### `ThreadPoolExecutor` 七参数、队列取舍与拒绝策略
 
 > **线程池 = 背压阀**：**有界队列 + 合理 core/max + CallerRuns/Abort 推回上游**；按**依赖分池**（Bulkhead），外呼**强制超时**，命中拒绝→**降级+退避**；拒绝把 `LinkedBlockingQueue` 用成**无界**；SynchronousQueue 需配强限流；观测 `active/queue/rejected/p95` 做动态调度。
-
-场景题
 
 **面试官：**
 
@@ -499,8 +495,6 @@ pool.allowCoreThreadTimeOut(true); // 突发过后及时收缩
 
 > **CF 编排**：总是用**自定义有界线程池**；子任务 `orTimeout/completeOnTimeout + 降级`，总体 `allOf` 加 **deadline**，超时**取消 siblings**；竞速用 `anyOf`；避免在 commonPool 跑阻塞 IO；通过装饰器传递 **MDC/traceId**；别在任务里嵌套阻塞等待。
 
-场景题
-
 **面试官：**
 
 “在（深圳市凡新科技 / 麦克尔斯深圳）的下单页，你需要**并行**查询：价格、库存、优惠、地址校验。要求**总体超时 1.2s**，任何子调用超时要**快速降级**，并且**不要把公共线程池卡死**。你怎么用 `CompletableFuture` 编排？”
@@ -581,8 +575,6 @@ Result r = new Result(
 ### 并发诊断与排障：死锁、线程池饱和、阻塞点定位，5 分钟 SOP
 
 > **并发排障 SOP**：指标判型（active/queue/rejected、CPU/GC、依赖 P95）→ 采样线程栈（`Thread.print` 连打 2–3 次）定位 **I/O/锁/CPU** → 当场止血（超时/降级/背压/熔断/收紧并发）→ 根因修复（有界池+超时、分池、加锁顺序、`tryLock`、降对象膨胀、重试预算）。出现 “deadlock” 即统一**锁顺序**或使用超时锁。
-
-场景题
 
 **面试官：**
 
@@ -704,8 +696,6 @@ class TimedLock implements AutoCloseable {
 
 ### 突发流量 + 下游限速，线程池怎么“吸收不作死”？
 
-场景题
-
 **面试官：**
 
 “促销 5 分钟峰值打过来，你们要并发调用库存与优惠服务。现在的线程池**队列越积越多**、尾延迟飙升，偶尔还 OOM。请你说说你会怎么设计 `ThreadPoolExecutor`（参数、队列、拒绝策略），以及怎么和**超时/重试/熔断**配合，既吃下突发又不把下游打穿？最好结合你在（深圳市凡新科技 / 麦克尔斯深圳）的经历给一组**可落地**的参数。”
@@ -759,3 +749,73 @@ pool.allowCoreThreadTimeOut(true);
 - **为什么不用 `SynchronousQueue`？** → 直传 + 下游慢会疯狂拉起线程或大量阻塞，风险更大。
 - **如何判定“队列该多大”？** → 结合**SLA × 目标吞吐**估算最大在途数；超出就拒绝/降级，而不是堆。
 - **监控看什么？** → `active/queue/rejected/p95`；看到队列高位稳定 5 分钟，就**降入口/扩下游**而不是加线程。
+
+### `CompletableFuture` 并行编排要做到：fail-fast + 可取消 + 明确降级
+
+**面试官：**
+
+“下单页要并行查：价格、库存、优惠、地址校验。要求**1.2s 总超时**；任何**关键依赖失败要立刻返回（fail-fast）**；其余子任务要**可取消**；每个子任务都要有**明确降级**。你会怎么写？（结合你在凡新/麦克尔斯的做法说说）”
+
+**你：**
+
+“我的套路是：**自定义有界线程池** + **每个子任务 orTimeout + 降级**，再加一段‘**首个失败即取消其他**’的钩子，整体再套一层**deadline**。”
+
+```java
+// 1) 专用有界线程池（别用 commonPool）
+Executor ioPool = outboundPool("checkout-io"); // 有界 + CallerRuns/Abort
+
+// 2) 子任务：各自 timeout + 明确降级（fallback）
+var fPrice = CompletableFuture.supplyAsync(() -> priceApi.get(sku), ioPool)
+    .orTimeout(400, MILLISECONDS)
+    .exceptionally(e -> Price.fallback());
+
+var fStock = CompletableFuture.supplyAsync(() -> stockApi.get(sku), ioPool)
+    .orTimeout(300, MILLISECONDS)
+    .exceptionally(e -> Stock.unknown());
+
+var fCoupon = CompletableFuture.supplyAsync(() -> couponApi.check(user), ioPool)
+    .orTimeout(300, MILLISECONDS)
+    .exceptionally(e -> Coupon.empty());
+
+var fAddr = CompletableFuture.supplyAsync(() -> addrApi.validate(addr), ioPool)
+    .orTimeout(250, MILLISECONDS)
+    .exceptionally(e -> AddressCheck.skip());
+
+// 3) fail-fast：任一“关键依赖”异常 → 取消其余（best-effort）
+List<CompletableFuture<?>> all = List.of(fPrice, fStock, fCoupon, fAddr);
+all.forEach(f -> f.whenComplete((r, ex) -> {
+    if (ex != null) all.forEach(o -> { if (o != f) o.cancel(true); });
+}));
+// 关键依赖你可以只挂在价格/库存上；非关键（比如优惠、地址）失败不触发取消
+
+// 4) 总体 deadline（1.2s）
+try {
+    CompletableFuture.allOf(fPrice, fStock, fCoupon, fAddr)
+        .orTimeout(1200, MILLISECONDS).join();
+} catch (CompletionException e) {
+    // 总体超时或关键失败：日志打点 + 统一降级响应（受理中/稍后刷新）
+    fPrice.cancel(true); fStock.cancel(true); fCoupon.cancel(true); fAddr.cancel(true);
+}
+
+// 5) 聚合结果（getNow 避免再抛异常）
+var result = new CheckoutView(
+    fPrice.getNow(Price.fallback()),
+    fStock.getNow(Stock.unknown()),
+    fCoupon.getNow(Coupon.empty()),
+    fAddr.getNow(AddressCheck.skip())
+);
+```
+
+**工程要点**
+
+- 在线上，**HTTP 客户端也要配置 connect/read 超时**，不然 CF 取消不了真正的阻塞。
+- **关键依赖失败即刻取消**能把平均资源占用降下来，凡新促销时我们就是这么做的；麦克尔斯把图片/地址校验标成**非关键**，失败只降级，不触发 fail-fast。
+- 观测：按接口维度暴露 `timeout_count / cancelled_count / fallback_ratio / pool_rejected`，一眼看出是**下游慢**还是**线程池饱和**。
+
+**常见坑 & 一句话纠偏**
+
+- 把阻塞 IO 跑在 `commonPool` → **改自定义有界池**；
+- 没 `orTimeout/completeOnTimeout` → **加子任务超时**，避免整体被拖死；
+- 在子任务里 `get()` 等另外一个 CF → **用组合算子 (`thenCombine/anyOf`)**，别嵌套阻塞；
+- 只取消 CF 不设置客户端超时 → **取消信号传不到下游**；
+- 降级不明确 → **每个分支都 `.exceptionally(e -> fallback)`**。
