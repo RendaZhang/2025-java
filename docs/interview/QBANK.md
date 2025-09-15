@@ -33,6 +33,7 @@
     - [并发诊断与排障：死锁、线程池饱和、阻塞点定位，5 分钟 SOP](#%E5%B9%B6%E5%8F%91%E8%AF%8A%E6%96%AD%E4%B8%8E%E6%8E%92%E9%9A%9C%E6%AD%BB%E9%94%81%E7%BA%BF%E7%A8%8B%E6%B1%A0%E9%A5%B1%E5%92%8C%E9%98%BB%E5%A1%9E%E7%82%B9%E5%AE%9A%E4%BD%8D5-%E5%88%86%E9%92%9F-sop)
     - [突发流量 + 下游限速，线程池怎么“吸收不作死”？](#%E7%AA%81%E5%8F%91%E6%B5%81%E9%87%8F--%E4%B8%8B%E6%B8%B8%E9%99%90%E9%80%9F%E7%BA%BF%E7%A8%8B%E6%B1%A0%E6%80%8E%E4%B9%88%E5%90%B8%E6%94%B6%E4%B8%8D%E4%BD%9C%E6%AD%BB)
     - [`CompletableFuture` 并行编排要做到：fail-fast + 可取消 + 明确降级](#completablefuture-%E5%B9%B6%E8%A1%8C%E7%BC%96%E6%8E%92%E8%A6%81%E5%81%9A%E5%88%B0fail-fast--%E5%8F%AF%E5%8F%96%E6%B6%88--%E6%98%8E%E7%A1%AE%E9%99%8D%E7%BA%A7)
+    - [锁竞争 / 死锁如何 5 分钟内定位并修复？](#%E9%94%81%E7%AB%9E%E4%BA%89--%E6%AD%BB%E9%94%81%E5%A6%82%E4%BD%95-5-%E5%88%86%E9%92%9F%E5%86%85%E5%AE%9A%E4%BD%8D%E5%B9%B6%E4%BF%AE%E5%A4%8D)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -1946,3 +1947,83 @@ var result = new CheckoutView(
 - 在子任务里 `get()` 等另外一个 CF → **用组合算子 (`thenCombine/anyOf`)**，别嵌套阻塞；
 - 只取消 CF 不设置客户端超时 → **取消信号传不到下游**；
 - 降级不明确 → **每个分支都 `.exceptionally(e -> fallback)`**。
+
+### 锁竞争 / 死锁如何 5 分钟内定位并修复？
+
+**面试官：**
+
+“高峰期你们的下单接口 P95 飙升，线程池 `active≈max` 但出活很慢。线程栈里很多 `BLOCKED`/`parking to wait for <...AQS>`。请你说说**如何快速确认是不是锁竞争/死锁**，以及**当场止血 + 代码层修复**？”
+
+**你：**
+
+“我会按 **SOP** 来：**看指标→打线程栈→当场止血→代码修复**。
+
+**① 判型（1 分钟）**
+
+- 线程池：`active≈max`、`queue↑`、`rejected↑`；CPU 不高（<60%），说明多半是**等待**而不是算力。
+- 依赖侧 P95 正常 → 更像**锁竞争**；若依赖也慢，则优先处理下游。
+
+**② 线程栈取证（2 分钟）**
+
+```
+jcmd <pid> Thread.print -l > tdump1.txt
+jcmd <pid> Thread.print -l > tdump2.txt
+```
+
+- 看到大量 `BLOCKED (on object monitor)`（`synchronized`）或 `parking to wait for <...AbstractQueuedSynchronizer>`（`ReentrantLock`），并且 dump 顶部若出现
+  `Found one Java-level deadlock` → **确定死锁**。
+- 记录**锁对象地址**与**调用栈**，确认是否存在**交叉获取顺序**。
+
+**③ 当场止血（1 分钟）**
+
+- 暂时把热点路径换成 **`tryLock(timeout)` + 快速降级/重试**，避免长时间占用线程；
+- **缩小临界区**（把远程调用/IO 移出锁内）；
+- 对热点 key 做**分段锁**（`stripe = hash(key)%N`），立刻摊薄争用；
+- 如果确认死锁且可灰度，**摘流/重启**单实例解除僵持，同时拉低入口 RPS。
+
+**④ 代码修复（复盘落地）**
+
+- **统一加锁顺序**（最根本）：所有线程都按同一顺序获取 `lockA → lockB`；
+- **避免嵌套等待**：临界区只做数据结构操作；
+- **可中断/超时**：用 `ReentrantLock.lockInterruptibly()` / `tryLock(t,unit)`；
+- 读多写少改 **`ReentrantReadWriteLock`**；计数热点用 **`LongAdder`** 替代全局锁。
+
+**反例（易死锁写法）**
+
+```java
+// T1 顺序：A -> B，T2 顺序：B -> A  => 经典死锁
+synchronized (lockA) {
+  // ...
+  synchronized (lockB) { /* ... */ }
+}
+synchronized (lockB) {
+  // ...
+  synchronized (lockA) { /* ... */ }
+}
+```
+
+**修正（统一顺序 / 超时退避）**
+
+```java
+// 统一获取顺序：按 hash 比较决定 A/B 的先后
+Object first = System.identityHashCode(a) < System.identityHashCode(b) ? a : b;
+Object second = first == a ? b : a;
+synchronized (first) {
+  synchronized (second) { /* 临界区仅做内存操作 */ }
+}
+
+// 或改 ReentrantLock + 超时，避免长等待卡死线程池
+boolean ok = lock.tryLock(80, TimeUnit.MILLISECONDS);
+if (!ok) return fallback(); // 快速降级/重试（具幂等）
+try { /* 临界区 */ }
+finally { lock.unlock(); }
+```
+
+**真实口径（结合经历）**
+
+- **凡新**：活动页库存热 key 竞争，早期把**HTTP 调用放在锁内**导致队列暴涨；修复为**缩小临界区 + tryLock(100ms)**，拿不到就降级成“受理中”，线程池不再被拖死。
+- **麦克尔斯**：图片处理链路出现互相持有两把锁的交叉顺序，`Thread.print` 直接报 deadlock；统一锁顺序后问题根除，并加了**锁看门狗**（持锁>200ms报警）。
+
+**一句话总结**
+
+> 判断：`BLOCKED/AQS` + CPU 不高 → 锁问题。止血：`tryLock(timeout)`/缩小临界区/分段锁/降级。修复：**统一锁顺序**、可中断/超时获取、读写分离与热点规避。”
