@@ -7,7 +7,7 @@
   - [Step 1 - 算法：堆 / 数据流](#step-1---%E7%AE%97%E6%B3%95%E5%A0%86--%E6%95%B0%E6%8D%AE%E6%B5%81)
     - [LC703. Kth Largest Element in a Stream（数据流第 K 大）](#lc703-kth-largest-element-in-a-stream%E6%95%B0%E6%8D%AE%E6%B5%81%E7%AC%AC-k-%E5%A4%A7)
     - [LC378. Kth Smallest in a Sorted Matrix（有序矩阵第 K 小）](#lc378-kth-smallest-in-a-sorted-matrix%E6%9C%89%E5%BA%8F%E7%9F%A9%E9%98%B5%E7%AC%AC-k-%E5%B0%8F)
-  - [LC378 高质量复盘](#lc378-%E9%AB%98%E8%B4%A8%E9%87%8F%E5%A4%8D%E7%9B%98)
+    - [LC378 高质量复盘](#lc378-%E9%AB%98%E8%B4%A8%E9%87%8F%E5%A4%8D%E7%9B%98)
     - [LC373. Find K Pairs with Smallest Sums（两数组和最小的 K 对）](#lc373-find-k-pairs-with-smallest-sums%E4%B8%A4%E6%95%B0%E7%BB%84%E5%92%8C%E6%9C%80%E5%B0%8F%E7%9A%84-k-%E5%AF%B9)
     - [LC295. Find Median from Data Stream（数据流中位数）](#lc295-find-median-from-data-stream%E6%95%B0%E6%8D%AE%E6%B5%81%E4%B8%AD%E4%BD%8D%E6%95%B0)
 
@@ -28,6 +28,7 @@
 ### LC703. Kth Largest Element in a Stream（数据流第 K 大）
 
 **思路**
+
 维护**大小为 k 的最小堆**；堆内始终是“当前最大的 k 个数”，堆顶即第 k 大。
 
 **Java 模板**
@@ -50,11 +51,13 @@ class KthLargest {
 ```
 
 **复杂度**：初始化/每次 `add` 皆 O(log k)；空间 O(k)
+
 **易错点**：`k` 可能 > 初始数组长度（先填够 k 再比较）；不要把堆写成**最大堆**。
 
 ### LC378. Kth Smallest in a Sorted Matrix（有序矩阵第 K 小）
 
 **推荐思路：二分答案 + 计数**
+
 矩阵每行、每列递增。设值域 `[lo, hi] = [matrix[0][0], matrix[n-1][n-1]]`；二分 `mid`，用“**从左下角/右上角起数 ≤mid 的元素个数**”来决定收缩区间。
 
 **Java 模板（值域二分）**
@@ -81,17 +84,18 @@ private int countLE(int[][] a, int x) {
 ```
 
 **复杂度**：计数 O(n)，二分约 `log(hi-lo)` 次 → 总 O(n log V)；空间 O(1)
+
 **替代**：小顶堆合并法 O(k log n)（把每行首元素入堆，弹出 k-1 次）。
 
 **易错点**：`mid` 取法避免溢出；计数函数从**左下角或右上角**出发更易写对。
 
-## LC378 高质量复盘
+### LC378 高质量复盘
 
-* **为什么选“值域二分 + 计数”**（对比堆法的适用性与复杂度）
-* **关键不变量**：`countLE(mid) >= k` → 答案在左半区含 `mid`；计数的“Z 字走法”
-* **复杂度**：O(n log V)；当值域很大但 `n` 小时与堆法对比
-* **边界**：重复元素、单行/单列、极值（k=1 或 k=n²）
-* **踩坑**：计数方向写反、二分死循环、溢出
+- **为什么选“值域二分 + 计数”**（对比堆法的适用性与复杂度）
+- **关键不变量**：`countLE(mid) >= k` → 答案在左半区含 `mid`；计数的“Z 字走法”
+- **复杂度**：O(n log V)；当值域很大但 `n` 小时与堆法对比
+- **边界**：重复元素、单行/单列、极值（k=1 或 k=n²）
+- **踩坑**：计数方向写反、二分死循环、溢出
 
 ### LC373. Find K Pairs with Smallest Sums（两数组和最小的 K 对）
 
@@ -137,3 +141,5 @@ class MedianFinder {
 ```
 
 **复杂度**：单次插入 O(log n)，查询 O(1)
+
+---
