@@ -36,6 +36,7 @@
     - [锁竞争 / 死锁如何 5 分钟内定位并修复？](#%E9%94%81%E7%AB%9E%E4%BA%89--%E6%AD%BB%E9%94%81%E5%A6%82%E4%BD%95-5-%E5%88%86%E9%92%9F%E5%86%85%E5%AE%9A%E4%BD%8D%E5%B9%B6%E4%BF%AE%E5%A4%8D)
     - [线程池饱和 + 重试风暴，如何协同治理？](#%E7%BA%BF%E7%A8%8B%E6%B1%A0%E9%A5%B1%E5%92%8C--%E9%87%8D%E8%AF%95%E9%A3%8E%E6%9A%B4%E5%A6%82%E4%BD%95%E5%8D%8F%E5%90%8C%E6%B2%BB%E7%90%86)
     - [线程池监控与告警：看哪些指标？阈值怎么定？](#%E7%BA%BF%E7%A8%8B%E6%B1%A0%E7%9B%91%E6%8E%A7%E4%B8%8E%E5%91%8A%E8%AD%A6%E7%9C%8B%E5%93%AA%E4%BA%9B%E6%8C%87%E6%A0%87%E9%98%88%E5%80%BC%E6%80%8E%E4%B9%88%E5%AE%9A)
+    - [把并发策略整合落地：一段可直接用于面试的完整口语回答](#%E6%8A%8A%E5%B9%B6%E5%8F%91%E7%AD%96%E7%95%A5%E6%95%B4%E5%90%88%E8%90%BD%E5%9C%B0%E4%B8%80%E6%AE%B5%E5%8F%AF%E7%9B%B4%E6%8E%A5%E7%94%A8%E4%BA%8E%E9%9D%A2%E8%AF%95%E7%9A%84%E5%AE%8C%E6%95%B4%E5%8F%A3%E8%AF%AD%E5%9B%9E%E7%AD%94)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -2200,3 +2201,57 @@ Timer execTimer = Timer.builder("task_exec_seconds").publishPercentiles(0.5,0.95
 **一句话总结**
 
 > **看“饱和 + 斜率 + 拒绝”三件事**：`active/max`、`queue_fill_ratio`、`rejected`。告警触发时按 Runbook：**限时/熔断/降入口/收紧池/退避重试**；看板一屏判型、指标能回放，问题就很难失控。
+
+### 把并发策略整合落地：一段可直接用于面试的完整口语回答
+
+**面试官：**
+
+“黑五/双 11 高峰时，你如何**端到端**保证下单链路既扛得住突发、又不把下游打穿？请结合你在（深圳市凡新科技 / 麦克尔斯深圳）的实战，说清楚：线程池/队列/拒绝策略、超时与取消、重试与熔断、锁/热点治理、监控与止血动作。最好给出可以落地的参数与结果。”
+
+**你：**
+
+“我把它当一条‘**受控的水路**’来设计：入口限流 → 线程池背压 → 可取消的并行调用 → 预算化重试 + 熔断 → 热点锁治理 → 可观测与值班 SOP。
+
+1. **入口节拍**
+   - 网关上**令牌桶**先限速，避免把洪水一次性压到应用。命中 `429` 带 `Retry-After`。
+2. **线程池 = 背压阀，不是仓库**
+   - 按依赖**分池**（支付/库存/优惠各一组），避免相互拖垮；
+   - 用**有界队列** `ArrayBlockingQueue`，队列容量就是**等待预算**；
+   - 拒绝策略用 **CallerRuns**（让上游自然减速）或 **Abort**（快速降级）。
+   - 在凡新库存外呼上，我们落了：`core=12, max=48, queue=2000, keepAlive=60s, allowCoreTimeout=true, CallerRuns`。
+   ```java
+   ThreadPoolExecutor pool = new ThreadPoolExecutor(
+       12, 48, 60, TimeUnit.SECONDS,
+       new ArrayBlockingQueue<>(2000),
+       r -> new Thread(r, "outbound-stock-" + r.hashCode()),
+       new ThreadPoolExecutor.CallerRunsPolicy()
+   );
+   pool.allowCoreThreadTimeOut(true);
+   ```
+3. **并行外呼：fail-fast + 可取消 + 明确降级**
+   - `CompletableFuture` 一律用**自定义有界池**，子调用 `orTimeout`，总体加 **deadline**；关键依赖失败**立刻取消 siblings**：
+   - 价格/库存 250–400ms 超时；总 **1.2s** deadline；每个分支 `exceptionally` 落到明确的 fallback（例如“受理中”/“未知库存”）。
+4. **重试=预算化 + 退避抖动；熔断切回路**
+   - 只对**幂等**请求重试；**指数退避 + full jitter**，**预算 ≤10%**（`retry_count ≤ 0.1 * success + 50`）；
+   - 熔断打开期间**不重试**，仅半开做少量探测；命中 `429` 对齐 `Retry-After`。
+5. **热点与锁**
+   - 把**远程调用移出临界区**，热点路径改 `tryLock(80–100ms)+降级`，必要时做**锁分段**（`stripe = hash(key)%64`）；
+   - 计数/埋点用 **LongAdder** 替代全局锁；读多写少的结构换 **读写锁**（只允许降级）。
+6. **可观测 & 值班 SOP**
+   - 指标：`active/max、queue_size/cap、rejected、task_wait/exec p95、timeout、cancelled、依赖侧 5xx/429`；
+   - 告警阈值：`active/max>0.8 && queue_fill>0.7 && 斜率>0` 连续 3 分钟；`rejected` 突增；`p95>SLA×1.5`。
+   - 止血流程（5 分钟）：
+     1. 降 HTTP **read/connect** 超时到 300–800ms；
+     2. 开/收紧**熔断**与**降级**；
+     3. **下调 pool.max/queueCap** 让背压生效；
+     4. 降入口 RPS；
+     5. `jcmd Thread.print -l`×3 判断是 I/O 还是锁，必要时 **tryLock+降级** 或热重启单实例解除死锁。
+
+**结果（实话实说）**
+
+- 在**凡新**，活动高峰把库存外呼从“无界队列+固定重试”改为上述方案后，**尾延迟 P95 从 ~1.8s 降到 ~350ms**，即使 `rejected` 有抬头，下游 QPS 仍稳定、不被打穿；
+- 在**麦克尔斯**，图片索引链路原先 OOM，是无界排队 + 固定重试导致。我们切到**有界 + Abort + 预算化重试 + 慢车道回放**，**GC 恢复稳定**，用户侧得到“受理中/稍后刷新”的一致体验。”
+
+**一句话总结**
+
+> 限流稳节拍，**有界池+CallerRuns/Abort** 做背压，`CF` **超时+取消+降级**，重试**预算化**并与**熔断**协同，热点锁用 **tryLock/分段/缩小临界区**，配上指标与 SOP——这套在我们两家公司的高峰都扛过实战。”
