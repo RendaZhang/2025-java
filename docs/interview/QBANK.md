@@ -28,6 +28,7 @@
   - [Java Concurrency](#java-concurrency)
     - [内存模型 & 可见性：happens-before / `volatile` 的边界](#%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B--%E5%8F%AF%E8%A7%81%E6%80%A7happens-before--volatile-%E7%9A%84%E8%BE%B9%E7%95%8C)
     - [`synchronized` vs `ReentrantLock`：可中断 / 定时 / 公平 / 条件队列（外加：锁粗化与分段）](#synchronized-vs-reentrantlock%E5%8F%AF%E4%B8%AD%E6%96%AD--%E5%AE%9A%E6%97%B6--%E5%85%AC%E5%B9%B3--%E6%9D%A1%E4%BB%B6%E9%98%9F%E5%88%97%E5%A4%96%E5%8A%A0%E9%94%81%E7%B2%97%E5%8C%96%E4%B8%8E%E5%88%86%E6%AE%B5)
+    - [`ThreadPoolExecutor` 七参数、队列取舍与拒绝策略（含反模式与调参示例）](#threadpoolexecutor-%E4%B8%83%E5%8F%82%E6%95%B0%E9%98%9F%E5%88%97%E5%8F%96%E8%88%8D%E4%B8%8E%E6%8B%92%E7%BB%9D%E7%AD%96%E7%95%A5%E5%90%AB%E5%8F%8D%E6%A8%A1%E5%BC%8F%E4%B8%8E%E8%B0%83%E5%8F%82%E7%A4%BA%E4%BE%8B)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -1566,3 +1567,95 @@ class BoundedBuffer<T> {
 **项目口径**
 
 “凡新那边库存预留把热点 SKU 的临界区改成 `ReentrantLock.tryLock(100ms)`，拿不到就**快速失败 + 幂等重试**，线程池再也没被‘长等待’拖死。麦克尔斯那边有个有界队列用两个 `Condition` 做 `notEmpty/notFull`，比 `wait/notify` 可读且不容易误唤醒。”
+
+### `ThreadPoolExecutor` 七参数、队列取舍与拒绝策略（含反模式与调参示例）
+
+> **线程池 = 背压阀**：**有界队列 + 合理 core/max + CallerRuns/Abort 推回上游**；按**依赖分池**（Bulkhead），外呼**强制超时**，命中拒绝→**降级+退避**；拒绝把 `LinkedBlockingQueue` 用成**无界**；SynchronousQueue 需配强限流；观测 `active/queue/rejected/p95` 做动态调度。
+
+场景题
+
+**面试官：**
+
+“大促瞬时高峰涌进来，你们的**下游限速**，结果你这边线程池一路涨、队列越积越多，延迟飙升甚至 OOM。你会怎么**选型与调参**，既**吸收突发**又不把下游打穿？”
+
+**你：**
+
+“我把线程池当成**背压阀**来设计：**有界队列 + 合理的 core/max + 拒绝策略推回上游**，再配超时/重试预算/熔断。”
+
+1 - 七参数怎么选
+
+`ThreadPoolExecutor(core, max, keepAlive, unit, workQueue, threadFactory, handler)`
+
+- **corePoolSize**
+  - **CPU 密集**：≈ `CPU核数`（或 `核数 * 1.0`）。
+  - **IO 阻塞**：按 `核数 * (1 + 阻塞比)` 估算；例如阻塞≈3 倍计算时长，可把 `max` 提高到 `~ 核数 * 4`。
+- **maximumPoolSize**：允许短时**扩张吸收突发**，但要**有限度**，避免把下游压穿。
+- **keepAliveTime**：突发型业务把**非核心线程** 30–120s 回收；也可 `allowCoreThreadTimeOut(true)` 让 core 也缩。
+- **workQueue（关键）**：强烈建议**有界**，容量体现你的**等待预算**。
+- **threadFactory**：起**可读名**（含依赖名/用途），便于诊断；可带 MDC/traceId。
+- **handler（拒绝策略）**：用来**施加背压**或**快速失败**，比“无限排队”更健康。
+
+2 - 队列选型（取舍）
+
+- **`ArrayBlockingQueue(cap)`（推荐）**：**有界 FIFO**，简单可控，最符合“背压”。
+- **`LinkedBlockingQueue`**：默认**无界**（反模式，可能 OOM）；如用务必**指定上限**。
+- **`SynchronousQueue`**：**零容量**直传；适合**低延迟 + 可弹性扩线程**，但**极易打穿下游**，除非有**强兜底**（限流/熔断）。
+- **`PriorityBlockingQueue`**：有优先级但**可能饿死**低优先任务；仅在确需优先级时用。
+
+3- 拒绝策略（语义与场景）
+
+- **`CallerRunsPolicy`（首选）**：把任务在**调用线程**执行 → **自然限速**，把压力**传回上游**；适合 BFF/同步链路。
+- **`AbortPolicy`**：抛 `RejectedExecutionException` → **快速失败**，让上层走**降级/重试**。
+- **`DiscardPolicy/DiscardOldestPolicy`**：静默丢弃/丢最老任务，**不建议**用于关键业务（难排障）。
+
+4 - 反模式 RISK 清单
+
+- **无界队列 + 巨大 max**：看似稳，其实**无限排队 → 高尾延迟/OOM**。
+- **一个池干所有事**：CPU 任务与 IO 任务**混用** → 互相拖垮（饥饿/死锁）。
+- **阻塞任务塞进 `ForkJoinPool`/默认 `CompletableFuture` 池** → 线程**饥饿**。
+- **任务内再 `submit()` 并同步等待**（嵌套提交）→ **线程耗尽**死锁。
+- **无限等待的下游调用**（无超时）→ 线程长期占用。
+
+> 修复：**按依赖分池（Bulkhead）**；阻塞任务用**自定义 Executor**；所有外呼**必须有超时**；避免同步等待嵌套。
+
+5 - 一套“突发但要保护下游”的实用模板
+
+```java
+int cores = Runtime.getRuntime().availableProcessors();
+int queueCap = 2000; // 等待预算：能接受在本层堆多少
+ThreadPoolExecutor pool = new ThreadPoolExecutor(
+    Math.max(cores, 8),          // core：基础吞吐
+    Math.max(cores * 4, 32),     // max：吸收突发，但有限度
+    60, TimeUnit.SECONDS,        // 非核心回收
+    new ArrayBlockingQueue<>(queueCap), // 有界FIFO = 背压阀
+    r -> { Thread t = new Thread(r, "outbound-stock-%d".formatted(r.hashCode())); t.setDaemon(true); return t; },
+    new ThreadPoolExecutor.CallerRunsPolicy() // 调用方背压
+);
+pool.allowCoreThreadTimeOut(true); // 突发过后及时收缩
+```
+
+**配套策略**
+
+- 任务里**强制超时**（`TimeLimiter`/`CompletableFuture.orTimeout`）；
+- 命中拒绝策略时：返回**清晰错误**或**降级**，并按**重试预算**退避；
+- 指标：`active/queue/rejected/p95`，看到**队列持续高位**优先**降入口 RPS/放大下游限额/扩容**，不是“盲目加线程”。
+
+6 - 与限流/重试/熔断的协同
+
+- **限流**：入口**令牌桶**控制进入线程池的速率；`429 + Retry-After` 指导上游退避。
+- **重试**：只对**幂等**请求；遵守**预算**，避免把队列堆满。
+- **熔断**：下游异常率/超时升高时**打开熔断**，线程池**不再接活**（或改走降级）。
+- **Bulkhead（分仓壁）**：为每个关键下游**单独线程池**（或信号量池），互不牵连。
+
+7 - 诊断与观测（上线就要有）
+
+- 导出：`poolSize/activeCount/queueSize/completedTaskCount/rejectedCount`；
+- 采样**任务耗时分位**，分依赖/分接口看；
+- **线程命名**可读（带依赖名），异常栈里一眼定位；
+- `rejectedCount` 异常抬头 = **背压生效**，不是“坏事”，配合**降级开关**即可。
+
+**项目口径**
+
+“凡新我们给每个外呼（支付、库存）各一组**有界池 + CallerRuns**，配上**重试预算**，高峰期把压力稳稳**卡在调用方**，尾延迟大幅收敛；
+
+麦克尔斯把原来单池改成**按依赖分池**，并给 `CompletableFuture` 指定自定义 Executor，解决了**默认池被阻塞任务吃光**的问题。”
