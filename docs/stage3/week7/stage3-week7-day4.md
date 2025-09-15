@@ -11,6 +11,7 @@
     - [LC23. Merge k Sorted Lists（小顶堆合并）](#lc23-merge-k-sorted-lists%E5%B0%8F%E9%A1%B6%E5%A0%86%E5%90%88%E5%B9%B6)
   - [Step 2 - Java 并发核心梳理](#step-2---java-%E5%B9%B6%E5%8F%91%E6%A0%B8%E5%BF%83%E6%A2%B3%E7%90%86)
     - [内存模型 & 可见性：happens-before / `volatile` 的边界](#%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B--%E5%8F%AF%E8%A7%81%E6%80%A7happens-before--volatile-%E7%9A%84%E8%BE%B9%E7%95%8C)
+    - [`synchronized` vs `ReentrantLock`：可中断 / 定时 / 公平 / 条件队列（外加：锁粗化与分段）](#synchronized-vs-reentrantlock%E5%8F%AF%E4%B8%AD%E6%96%AD--%E5%AE%9A%E6%97%B6--%E5%85%AC%E5%B9%B3--%E6%9D%A1%E4%BB%B6%E9%98%9F%E5%88%97%E5%A4%96%E5%8A%A0%E9%94%81%E7%B2%97%E5%8C%96%E4%B8%8E%E5%88%86%E6%AE%B5)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -306,3 +307,93 @@ class ConfHolder {
 **项目实话实说**
 
 “凡新那边促销统计我们一开始用 `AtomicLong`，峰值下自旋热点明显；换成 `LongAdder` 后 CPU 降了不少。Michaels 的开关配置用的是**不可变配置 + volatile 引用**，热更新后前端请求马上生效，不需要重启。”
+
+### `synchronized` vs `ReentrantLock`：可中断 / 定时 / 公平 / 条件队列（外加：锁粗化与分段）
+
+> **锁的选择**：短小互斥→`synchronized`；需要**可中断/定时/多条件/可观测**→`ReentrantLock`。公平锁减吞吐；`unlock` 一定放 `finally`；条件队列要**循环检查**；读多写少可上 `ReentrantReadWriteLock`（只允许**降级**）；热点用**锁分段**，长等待用 **tryLock(timeout)+重试/降级**。
+
+场景题
+
+**面试官：**
+“在（深圳市凡新科技 / 麦克尔斯深圳）的大促高峰，你们有个**库存预留**的热点段：偶发下游抖动时，线程在等待锁期间**堆积**，无法快速取消，导致**线程池被占死**。你会选择 `synchronized` 还是 `ReentrantLock`？为什么？”
+
+**你：**
+
+“我会把选择标准说清楚：
+
+- **简单互斥、临界区短、无需可中断/定时/多条件队列** → `synchronized` 就够，JIT 对偏向/轻量级锁已经很优化了；
+- **需要更细的控制**（例如**等待可中断**、**超时放弃**、**多条件变量**、或**可选公平性**）→ 用 `ReentrantLock`（基于 AQS）。库存预留这种‘热点且可能长等待’就该用 `ReentrantLock`，这样**等待线程可取消**，避免把线程池卡死。”
+
+**关键差异**
+
+- **可中断获取**：`lockInterruptibly()` 只有 `ReentrantLock` 支持 —— 等锁时能响应 `Thread.interrupt()`。
+- **定时获取**：`tryLock(timeout, unit)` 允许**超时退避**，可与**重试预算**协同；`synchronized` 没法。
+- **条件队列**：`newCondition()` 可建多个条件（如 `notEmpty/notFull`），`wait/notify` 只能一个条件队列且易误用。
+- **公平性**：`new ReentrantLock(true)` 可公平，但吞吐下降；大多数场景用**非公平**提升吞吐。
+- **可观测/灵活性**：`isLocked/hasQueuedThreads/getQueueLength` 等有助于指标化与排障。
+- **语义**：两者都**可重入**；`synchronized` 通过监视器，`ReentrantLock` 通过 AQS 队列。
+
+**等待可中断 + 超时退避（库存热点）**
+
+```java
+class StockGuard {
+  private final ReentrantLock lock = new ReentrantLock(); // 非公平更高吞吐
+  boolean runWithLock(Duration d, Runnable task) throws InterruptedException {
+    if (lock.tryLock(d.toMillis(), TimeUnit.MILLISECONDS)) { // 定时获取
+      try { task.run(); return true; }
+      finally { lock.unlock(); }
+    }
+    return false; // 超时放弃，交给上层重试/降级
+  }
+}
+// 调用处：失败则触发指数退避 + 幂等重试，避免长等待压死线程池
+```
+
+**多条件队列（有界缓存/异步出库）**
+
+```java
+class BoundedBuffer<T> {
+  private final ReentrantLock lock = new ReentrantLock();
+  private final Condition notEmpty = lock.newCondition();
+  private final Condition notFull  = lock.newCondition();
+  private final Deque<T> q = new ArrayDeque<>();
+  private final int cap;
+
+  void put(T x) throws InterruptedException {
+    lock.lockInterruptibly();
+    try {
+      while (q.size() == cap) notFull.await(); // 可中断等待
+      q.addLast(x);
+      notEmpty.signal(); // 唤醒一个取者
+    } finally { lock.unlock(); }
+  }
+  T take() throws InterruptedException {
+    lock.lockInterruptibly();
+    try {
+      while (q.isEmpty()) notEmpty.await();
+      T v = q.removeFirst();
+      notFull.signal();
+      return v;
+    } finally { lock.unlock(); }
+  }
+}
+```
+
+**读多写少补充 - 读写锁与降级**
+
+- `ReentrantReadWriteLock`：读多写少可提升吞吐；**可降级**（持有写锁时获取读锁再释放写锁），**不可升级**（先读后写会死锁/饥饿）。
+- 极端读场景可考虑 `StampedLock`（乐观读），但 API 更复杂，注意**中断与可重入限制**。
+
+**工程取舍与坑**
+
+- **一定 `unlock()` 放在 `finally`**；`Condition.await()` 需在**持锁**前提下调用，醒来要**循环检查条件（防虚假唤醒）**。
+- 公平锁**减少饥饿**但吞吐更低（队列严格 FIFO，缓存局部性变差）。
+- **锁粗化**（把多次短锁合并）能省切换，但要警惕临界区过大造成争用；
+- **锁分段/分片**（例如用 `stripe = hash(key) % N` 选择不同锁）能摊薄热点；
+- **避免双重检查单例未加 `volatile`** 导致半初始化可见；
+- `synchronized` 适合**非常短小**且无中断需求的路径（JIT 可内联/消除），否则用 `ReentrantLock` 获得**超时/可中断/多条件**这些工程特性。
+- 指标化：导出**活跃线程数、队列长度、等待时长分位、拒绝数**；看到长等待优先**缩小临界区/分段**，其次再调线程数。
+
+**项目口径**
+
+“凡新那边库存预留把热点 SKU 的临界区改成 `ReentrantLock.tryLock(100ms)`，拿不到就**快速失败 + 幂等重试**，线程池再也没被‘长等待’拖死。麦克尔斯那边有个有界队列用两个 `Condition` 做 `notEmpty/notFull`，比 `wait/notify` 可读且不容易误唤醒。”
