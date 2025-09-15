@@ -7,6 +7,7 @@
   - [API Design](#api-design)
   - [Slow queries & index misses](#slow-queries--index-misses)
   - [Message and Consistency](#message-and-consistency)
+  - [Java Concurrency](#java-concurrency)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -111,3 +112,28 @@ We’ve used this in production: instead of fragile 2PC, **local atomicity + at-
 * “**Outbox = data change and event in one local transaction.**”
 * “**Idempotent consumers with eventId + version.**”
 * “**Effectively-once > expensive end-to-end exactly-once.**”
+
+---
+
+## Java Concurrency
+
+1-min Answer — Tuning ThreadPoolExecutor for bursts while protecting downstreams
+
+**Script (≈60s)**
+On peak traffic I treat the thread pool as a **back-pressure valve, not a warehouse**.
+First, I **bulkhead by dependency**—inventory, payments, coupons each have their own bounded pool. For a typical IO-heavy caller I use something like: core ≈ CPU, max ≈ 4×CPU, and an **ArrayBlockingQueue** sized to my **waiting budget**. The rejection policy is **CallerRuns** or **Abort** so pressure propagates back instead of piling up.
+
+Every downstream call has **hard timeouts** and the orchestration has a **global deadline**. With `CompletableFuture` I run branches on a **custom bounded executor**, add `orTimeout`, and if a key branch fails I **cancel siblings** and degrade gracefully.
+
+**Retries are budgeted**—exponential backoff with jitter, ≤10% of success volume, and we honor `Retry-After`. When error rate spikes we flip the **circuit breaker**: no retries while open, only small probes in half-open.
+
+We watch **active/max**, **queue fill**, **rejections**, and **task wait/exec P95**. If the queue trends up for minutes we **lower incoming RPS** or widen capacity; we don’t “fix latency” by just adding threads.
+Finally, we avoid lock hot spots: short critical sections, `tryLock` with timeouts, and per-key striping when needed.
+
+This keeps tail latency flat during bursts **without melting downstreams**.
+
+**3 sound bites to emphasize**
+
+* “**Bounded queue + CallerRuns/Abort = back-pressure, not backlog.**”
+* “**Timeouts + deadline + cancellable fan-out** keep threads free.”
+* “**Retry budgets + circuit breaker** turn storms into controlled drizzle.”

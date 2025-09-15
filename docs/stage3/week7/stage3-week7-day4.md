@@ -22,6 +22,9 @@
     - [线程池饱和 + 重试风暴，如何协同治理？](#%E7%BA%BF%E7%A8%8B%E6%B1%A0%E9%A5%B1%E5%92%8C--%E9%87%8D%E8%AF%95%E9%A3%8E%E6%9A%B4%E5%A6%82%E4%BD%95%E5%8D%8F%E5%90%8C%E6%B2%BB%E7%90%86)
     - [线程池监控与告警：看哪些指标？阈值怎么定？](#%E7%BA%BF%E7%A8%8B%E6%B1%A0%E7%9B%91%E6%8E%A7%E4%B8%8E%E5%91%8A%E8%AD%A6%E7%9C%8B%E5%93%AA%E4%BA%9B%E6%8C%87%E6%A0%87%E9%98%88%E5%80%BC%E6%80%8E%E4%B9%88%E5%AE%9A)
     - [把并发策略整合落地：一段可直接用于面试的完整口语回答](#%E6%8A%8A%E5%B9%B6%E5%8F%91%E7%AD%96%E7%95%A5%E6%95%B4%E5%90%88%E8%90%BD%E5%9C%B0%E4%B8%80%E6%AE%B5%E5%8F%AF%E7%9B%B4%E6%8E%A5%E7%94%A8%E4%BA%8E%E9%9D%A2%E8%AF%95%E7%9A%84%E5%AE%8C%E6%95%B4%E5%8F%A3%E8%AF%AD%E5%9B%9E%E7%AD%94)
+  - [Step 4：1 分钟英文口语](#step-41-%E5%88%86%E9%92%9F%E8%8B%B1%E6%96%87%E5%8F%A3%E8%AF%AD)
+    - [1-min Answer — Tuning ThreadPoolExecutor for bursts while protecting downstreams](#1-min-answer--tuning-threadpoolexecutor-for-bursts-while-protecting-downstreams)
+    - [**3 sound bites to emphasize**](#3-sound-bites-to-emphasize)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -1130,3 +1133,32 @@ Timer execTimer = Timer.builder("task_exec_seconds").publishPercentiles(0.5,0.95
 **一句话总结**
 
 > 限流稳节拍，**有界池+CallerRuns/Abort** 做背压，`CF` **超时+取消+降级**，重试**预算化**并与**熔断**协同，热点锁用 **tryLock/分段/缩小临界区**，配上指标与 SOP——这套在我们两家公司的高峰都扛过实战。”
+
+---
+
+好—这是你的 **≈60s 英文口语稿**（可直接朗读）。贴到当日文档或 `elevator_pitch_en.md` 的 “ThreadPool tuning” 小节即可。
+
+---
+
+## Step 4：1 分钟英文口语
+
+### 1-min Answer — Tuning ThreadPoolExecutor for bursts while protecting downstreams
+
+**Script (≈60s)**
+On peak traffic I treat the thread pool as a **back-pressure valve, not a warehouse**.
+First, I **bulkhead by dependency**—inventory, payments, coupons each have their own bounded pool. For a typical IO-heavy caller I use something like: core ≈ CPU, max ≈ 4×CPU, and an **ArrayBlockingQueue** sized to my **waiting budget**. The rejection policy is **CallerRuns** or **Abort** so pressure propagates back instead of piling up.
+
+Every downstream call has **hard timeouts** and the orchestration has a **global deadline**. With `CompletableFuture` I run branches on a **custom bounded executor**, add `orTimeout`, and if a key branch fails I **cancel siblings** and degrade gracefully.
+
+**Retries are budgeted**—exponential backoff with jitter, ≤10% of success volume, and we honor `Retry-After`. When error rate spikes we flip the **circuit breaker**: no retries while open, only small probes in half-open.
+
+We watch **active/max**, **queue fill**, **rejections**, and **task wait/exec P95**. If the queue trends up for minutes we **lower incoming RPS** or widen capacity; we don’t “fix latency” by just adding threads.
+Finally, we avoid lock hot spots: short critical sections, `tryLock` with timeouts, and per-key striping when needed.
+
+This keeps tail latency flat during bursts **without melting downstreams**.
+
+### **3 sound bites to emphasize**
+
+* “**Bounded queue + CallerRuns/Abort = back-pressure, not backlog.**”
+* “**Timeouts + deadline + cancellable fan-out** keep threads free.”
+* “**Retry budgets + circuit breaker** turn storms into controlled drizzle.”
