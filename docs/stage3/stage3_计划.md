@@ -141,17 +141,46 @@ Week 8 - 成稿与模拟面试：
 - **产出**：≈60s 答案 *“How we guarantee eventual consistency with outbox and idempotent consumers”*（涵盖 Outbox、本地原子性、idempotent writes、version 进位、DLQ/重试预算/分区保序）。
 - **练习要点**：强调三句——“**Outbox = one local transaction**”、“**Idempotent consumers with eventId + version**”、“**Effectively-once > end-to-end exactly-once**”。
 
-今日小结（复盘三问）
+今日小结
 
 - **做得好**：树遍历三板斧成型；一致性从“写→传→落地→回放”形成闭环表述，可直接面试复述。
 - **可改进**：把“重试预算 & 熔断阈值”的**默认参数**沉淀成模板；为 `processed_events/agg_progress` 建表与索引规范清单。
 
 ### Day 4 - Java 并发
 
-- **算法**：回溯模板（子集/组合/排列之一）；做 2–3 题。
-- **面试能力/知识**：线程池参数、阻塞队列、可见性（volatile）、锁/无锁思路、CompletableFuture → `QBANK.md`。
-- **英语**：1 分钟回答 “How do you choose thread‑pool parameters?”。
-- **当日收尾**：并发排障清单（死锁/饥饿/线程泄漏）≤10 行。
+算法（堆 / Top-K）
+
+- **完成**：LC347（哈希+最小堆）、LC215（快选 / 最小堆），（选做）LC23（小顶堆合并）。
+- **要点速记**
+  - LC347：`Map<num→freq>` + **size-k 最小堆**，总复杂度 O(n log k)；比较器按**频次**。
+  - LC215：快选均摊 O(n)，目标索引 `n-k`；或用 **size-k 最小堆** O(n log k)。
+  - LC23：k 路小顶堆，时间 O(N log k)。
+- 已写 1 篇“高质量复盘”（建议放 LC347，说明为何选**最小堆**与边界处理）。
+
+并发核心（知识卡片 5 条）
+
+1. **内存模型 & `volatile`**：只保**可见/有序**不保**复合原子**；计数用 `LongAdder/Atomic*`；配置热更新用**不可变对象 + volatile 引用**；DCL 单例需 `volatile`。
+2. **`synchronized` vs `ReentrantLock`**：简单短临界区用前者；需要**可中断/定时/多条件/公平**选后者；`tryLock(timeout)` + 重试/降级避免长等待。
+3. **`ThreadPoolExecutor` 调参**：**有界队列**=`ArrayBlockingQueue`；按依赖**分池**；`core≈CPU`、`max≈4×CPU`（IO 型）；拒绝策略用 **CallerRuns/Abort** 形成**背压**；严禁无界队列。
+4. **`CompletableFuture` 编排**：自定义有界池；子任务 `orTimeout/completeOnTimeout + exceptionally` 明确降级；关键分支失败**取消 siblings**；整体 **deadline**。
+5. **并发排障 SOP**：看 `active/max`、`queue_fill`、`rejected`、依赖 P95 → `Thread.print -l`×3 判 I/O/锁/CPU → 当场**超时/降级/背压/熔断** → 修复（有界池、分池、`tryLock`、缩小临界区、重试预算）。
+
+场景题（6 条，口语化备答）
+
+- **#1 线程池背压**：有界队列 + CallerRuns/Abort；外呼强超时；与限流/重试/熔断协同。
+- **#2 CF 并行**：fail-fast、可取消、明确降级、1.2s 总超时。
+- **#3 锁竞争/死锁**：`Thread.print` 取证；当场 `tryLock(timeout)` + 缩小临界区 + 分段锁；统一加锁顺序根治。
+- **#4 饱和 + 重试风暴**：入口令牌桶、有界池背压、**重试预算 ≤10% + 抖动**、熔断半开探测。
+- **#5 监控与告警**：`active/max`、`queue_fill`、`rejected`、任务等待/执行 P95；阈值与 Runbook。
+- **#6 整合答法**：限流 → 背压 → 超时/取消 → 预算化重试 + 熔断 → 热点锁治理 → 观测 & 值班 SOP（含可落地参数）。
+
+英语（口语素材）
+
+- **产出**：≈60s 脚本 *“Tuning ThreadPoolExecutor for bursts while protecting downstreams”*。
+- **强调点**：
+  - “**Bounded queue + CallerRuns/Abort = back-pressure**”；
+  - “**Timeouts + deadline + cancellable fan-out**”；
+  - “**Retry budgets + circuit breaker**”。
 
 ### Day 5 - 可观测与发布
 

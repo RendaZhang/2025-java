@@ -24,7 +24,7 @@
     - [把并发策略整合落地：一段可直接用于面试的完整口语回答](#%E6%8A%8A%E5%B9%B6%E5%8F%91%E7%AD%96%E7%95%A5%E6%95%B4%E5%90%88%E8%90%BD%E5%9C%B0%E4%B8%80%E6%AE%B5%E5%8F%AF%E7%9B%B4%E6%8E%A5%E7%94%A8%E4%BA%8E%E9%9D%A2%E8%AF%95%E7%9A%84%E5%AE%8C%E6%95%B4%E5%8F%A3%E8%AF%AD%E5%9B%9E%E7%AD%94)
   - [Step 4：1 分钟英文口语](#step-41-%E5%88%86%E9%92%9F%E8%8B%B1%E6%96%87%E5%8F%A3%E8%AF%AD)
     - [1-min Answer — Tuning ThreadPoolExecutor for bursts while protecting downstreams](#1-min-answer--tuning-threadpoolexecutor-for-bursts-while-protecting-downstreams)
-    - [**3 sound bites to emphasize**](#3-sound-bites-to-emphasize)
+    - [3 sound bites to emphasize](#3-sound-bites-to-emphasize)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -1157,7 +1157,7 @@ Finally, we avoid lock hot spots: short critical sections, `tryLock` with timeou
 
 This keeps tail latency flat during bursts **without melting downstreams**.
 
-### **3 sound bites to emphasize**
+### 3 sound bites to emphasize
 
 * “**Bounded queue + CallerRuns/Abort = back-pressure, not backlog.**”
 * “**Timeouts + deadline + cancellable fan-out** keep threads free.”
