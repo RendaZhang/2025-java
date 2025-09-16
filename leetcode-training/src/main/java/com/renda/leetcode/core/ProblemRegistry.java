@@ -37,6 +37,7 @@ public final class ProblemRegistry {
         register(new LC23_MergeKSortedLists());
         register(new LC703_KthLargestElementInAStream());
         register(new LC378_KthSmallestElementInASortedMatrix());
+        register(new LC373_FindKPairswithSmallestSums());
     }
 
     private ProblemRegistry() {

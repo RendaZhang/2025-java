@@ -178,7 +178,7 @@ private void swap(Node[] a, int i, int j) {
 
 ### LC373. Find K Pairs with Smallest Sums（两数组和最小的 K 对）
 
-**思路**：把 `(i,0)`（固定 A\[i]，配 B\[0]）入**小顶堆**（按 `A[i]+B[j]` 排序），每次弹 `(i,j)` 后把 `(i, j+1)` 入堆。
+**思路**：把 `(i,0)`（固定 `A[i]`，配 `B[0]`）入**小顶堆**（按 `A[i]+B[j]` 排序），每次弹 `(i,j)` 后把 `(i, j+1)` 入堆。
 
 ```java
 public List<List<Integer>> kSmallestPairs(int[] A, int[] B, int k) {
