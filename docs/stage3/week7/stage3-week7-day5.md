@@ -85,17 +85,96 @@ private int countLE(int[][] a, int x) {
 
 **复杂度**：计数 O(n)，二分约 `log(hi-lo)` 次 → 总 O(n log V)；空间 O(1)
 
-**替代**：小顶堆合并法 O(k log n)（把每行首元素入堆，弹出 k-1 次）。
-
 **易错点**：`mid` 取法避免溢出；计数函数从**左下角或右上角**出发更易写对。
+
+**替代**：
+
+小顶堆合并法 O(k log n)（把每行首元素入堆，弹出 k-1 次）。
+
+```java
+public int kthSmallest(int[][] matrix, int k) {
+    int n = matrix.length;
+    if (n == 0) return -1;
+
+    // 最多只需要 n 个堆节点（每行一个游标）
+    Node[] heap = new Node[Math.min(n, k)];
+    int size = 0;
+
+    // 初始化：每行第 1 个元素入堆
+    for (int r = 0; r < n && r < k; r++) {
+        heap[size] = new Node(matrix[r][0], r, 0);
+        siftUp(heap, size++);
+    }
+
+    // 弹出 k-1 次：每次把该行的下一个元素补进堆
+    while (--k > 0) {
+        Node top = heap[0];
+        int r = top.r, c = top.c;
+
+        if (c + 1 < n) {                // 该行还有下一个
+            heap[0] = new Node(matrix[r][c + 1], r, c + 1);
+            siftDown(heap, 0, size);
+        } else {                         // 该行耗尽，缩小堆
+            heap[0] = heap[--size];
+            heap[size] = null;
+            siftDown(heap, 0, size);
+        }
+    }
+    return heap[0].val;
+}
+
+// ===== 手写最小堆 =====
+static class Node {
+    int val, r, c;
+    Node(int v, int r, int c) { this.val = v; this.r = r; this.c = c; }
+}
+
+private void siftUp(Node[] a, int i) {
+    while (i > 0) {
+        int p = (i - 1) >> 1;
+        if (a[i].val >= a[p].val) break;
+        swap(a, i, p);
+        i = p;
+    }
+}
+private void siftDown(Node[] a, int i, int n) {
+    while (true) {
+        int l = (i << 1) + 1;
+        if (l >= n) break;
+        int r = l + 1;
+        int s = (r < n && a[r].val < a[l].val) ? r : l;
+        if (a[i].val <= a[s].val) break;
+        swap(a, i, s);
+        i = s;
+    }
+}
+private void swap(Node[] a, int i, int j) {
+    Node t = a[i]; a[i] = a[j]; a[j] = t;
+}
+```
 
 ### LC378 高质量复盘
 
-- **为什么选“值域二分 + 计数”**（对比堆法的适用性与复杂度）
-- **关键不变量**：`countLE(mid) >= k` → 答案在左半区含 `mid`；计数的“Z 字走法”
-- **复杂度**：O(n log V)；当值域很大但 `n` 小时与堆法对比
-- **边界**：重复元素、单行/单列、极值（k=1 或 k=n²）
-- **踩坑**：计数方向写反、二分死循环、溢出
+**关键不变量**：`countLE(mid) >= k` → 答案在左半区含 `mid`；计数的“Z 字走法”
+
+**复杂度**：O(n log V)；当值域很大但 `n` 小时与堆法对比
+
+**边界**：重复元素、单行/单列、极值（k=1 或 k=n²）
+
+**踩坑**：计数方向写反、二分死循环、溢出
+
+**为什么选“值域二分 + 计数”**，对比堆法的适用性与复杂度。
+
+- 小顶堆合并
+  - 时间：**O(k log n)**（堆大小 ≤ n，每次弹出/插入 log n）
+  - 空间：**O(n)**
+  - 适合：**k 较小**时非常快（经验阈值：当 `k ≲ 30n` 左右通常优于二分）
+- 值域二分 + 单调计数
+  - 时间：**O(n · log(range))**；`log(range)`≈ 31 次左右（int 范围）
+  - 空间：**O(1)**
+  - 适合：**k 很大**或想要更稳定的性能/更低内存时
+
+> 小结：`k` 小选堆，`k` 大选二分；二者都对重复元素、负数友好，二分更省内存更稳定，堆在 Top-K 场景下常数更小。
 
 ### LC373. Find K Pairs with Smallest Sums（两数组和最小的 K 对）
 
