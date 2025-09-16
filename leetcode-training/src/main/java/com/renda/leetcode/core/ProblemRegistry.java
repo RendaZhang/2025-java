@@ -38,6 +38,7 @@ public final class ProblemRegistry {
         register(new LC703_KthLargestElementInAStream());
         register(new LC378_KthSmallestElementInASortedMatrix());
         register(new LC373_FindKPairswithSmallestSums());
+        register(new LC295_FindMedianFromDataStream());
     }
 
     private ProblemRegistry() {

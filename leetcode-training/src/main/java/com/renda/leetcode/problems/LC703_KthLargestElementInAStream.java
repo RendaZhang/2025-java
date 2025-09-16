@@ -18,10 +18,10 @@ import com.renda.leetcode.core.LeetCodeProblem;
 public class LC703_KthLargestElementInAStream implements LeetCodeProblem {
 
     private class KthLargest {
-        private static int[] minHeap;
-        private static int n;
-        private static boolean isFull;
-        private static int size;
+        private int[] minHeap;
+        private int n;
+        private boolean isFull;
+        private int size;
 
         public KthLargest(int k, int[] nums) {
             minHeap = new int[k];
