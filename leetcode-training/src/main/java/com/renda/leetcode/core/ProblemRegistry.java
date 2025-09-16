@@ -35,6 +35,7 @@ public final class ProblemRegistry {
         register(new LC145_BinaryTreePostorderTraversal());
         register(new LC215_KthLargestElementInAnArray());
         register(new LC23_MergeKSortedLists());
+        register(new LC703_KthLargestElementInAStream());
     }
 
     private ProblemRegistry() {

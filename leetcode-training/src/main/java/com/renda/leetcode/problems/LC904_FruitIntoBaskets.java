@@ -41,13 +41,14 @@ public class LC904_FruitIntoBaskets implements LeetCodeProblem {
                     curr_max++;
                 } else {
                     result = Math.max(curr_max, result);
-                    curr_max = curr_max - (next_start - start) + 1;
                     start = next_start;
+                    curr_max = i - start + 1;
                     basket.clear();
                     basket.add(curr_type);
                     basket.add(fruits[i]);
                 }
             }
+            // 遇到与当前类型不一样的时候，更新当前类型记录和下一次 start 位置
             if (fruits[i] != curr_type) {
                 curr_type = fruits[i];
                 next_start = i;
