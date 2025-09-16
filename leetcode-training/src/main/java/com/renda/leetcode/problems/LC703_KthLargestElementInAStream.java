@@ -90,7 +90,7 @@ public class LC703_KthLargestElementInAStream implements LeetCodeProblem {
 
         private int pi(int i) {return (i-1)/2;}
         private int lci(int i) {return (i*2)+1;}
-        private int rci(int i) {return (i*2)+2;}
+        // private int rci(int i) {return (i*2)+2;}
         private void swap(int i, int j) {
             int tmp = minHeap[i];
             minHeap[i] = minHeap[j];
