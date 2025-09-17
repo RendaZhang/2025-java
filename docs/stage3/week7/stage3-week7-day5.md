@@ -21,6 +21,10 @@
     - [发布与回滚（灰度/蓝绿/滚动）](#%E5%8F%91%E5%B8%83%E4%B8%8E%E5%9B%9E%E6%BB%9A%E7%81%B0%E5%BA%A6%E8%93%9D%E7%BB%BF%E6%BB%9A%E5%8A%A8)
     - [Runbook（10 分钟止血）](#runbook10-%E5%88%86%E9%92%9F%E6%AD%A2%E8%A1%80)
     - [安全与合规](#%E5%AE%89%E5%85%A8%E4%B8%8E%E5%90%88%E8%A7%84)
+  - [Step 4 - 1 分钟英文口语](#step-4---1-%E5%88%86%E9%92%9F%E8%8B%B1%E6%96%87%E5%8F%A3%E8%AF%AD)
+    - [60s Sample — Incident Postmortem (spoken)](#60s-sample--incident-postmortem-spoken)
+    - [Fill-in Template（30–60 秒直读）](#fill-in-template3060-%E7%A7%92%E7%9B%B4%E8%AF%BB)
+    - [3 Sound Bites（面试加分短句）](#3-sound-bites%E9%9D%A2%E8%AF%95%E5%8A%A0%E5%88%86%E7%9F%AD%E5%8F%A5)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -538,3 +542,45 @@ Feature Flags：部署≠发布；按人群/比例/租户灰度；熔断/降级�
 
 - 日志**字段级脱敏**（手机号/邮箱/令牌），限制异常栈深度与请求体落盘；
 - 临时调试：**按 traceId/路由**动态提级日志 + 事件采样上限，避免扰民与成本爆炸。
+
+---
+
+## Step 4 - 1 分钟英文口语
+
+### 60s Sample — Incident Postmortem (spoken)
+
+**Context & impact.**
+
+At **19:05** during a **5% canary** for the **Checkout API v3**, our **error rate hit 2.4%**—about **2× the baseline**—and **p95 latency** rose **60%**. The **guardrail** halted promotion and routed traffic back to **v2** within minutes.
+
+**Detection.**
+
+We were alerted by a **multi-window burn-rate** page at **\~3 minutes**, and used **exemplars** to jump from the Grafana p95 panel to a slow **trace**.
+
+**Mitigation.**
+
+We **closed the feature flag**, **stopped ramp-up**, enabled a **read-cache TTL bump**, and protected downstreams with **rate-limits**. **Error rate** dropped below **0.2%** and p95 normalized in **6 minutes**.
+
+**Root cause.**
+
+A schema change introduced a **new query pattern** without a **composite index**; it only surfaced under **real traffic mix**.
+
+**Fix & prevention.**
+
+We added the index, **backfilled**, re-ran the canary successfully, and updated the **runbook**: schema follows **expand → migrate → contract**, canary **gates on symptom metrics** (errors/latency/SLO), and CI now checks **query plans** for new access paths.
+
+### Fill-in Template（30–60 秒直读）
+
+- **Context & impact**: “At `time`, during `canary % / rollout type` for `service/version`, `metric` reached `value vs baseline`, **p95** increased `X%`. We `halted/froze/rolled back` to `stable version`.”
+- **Detection**: “`Alert type` triggered in `N mins`; we used `exemplars/trace link` from `dashboard` to pinpoint `span/dep`.”
+- **Mitigation**: “We `close flag/stop ramp/limit/degade`, `scale or cache tweak`; metrics recovered to `target` in `N mins`.”
+- **Root cause**: “`Cause` (e.g., **missing index / timeout mismatch / retry storm**), visible only under `pattern`.”
+- **Fix & prevention**: “We `code/db fix`, `re-canary result`; updated **runbook** and added `gate/CI check/playbook`. Schema changes follow **expand → migrate → contract**; canary **gates on symptom metrics**.”
+
+### 3 Sound Bites（面试加分短句）
+
+1. “**We gate promotion on symptom metrics**—error rate and p95—not just CPU.”
+2. “Schema changes follow **expand → migrate → contract**, so **rollback only reverts the app**.”
+3. “**Multi-window burn-rate** keeps alerts actionable: fast window pages, slow window opens a ticket.”
+
+> 先用上面的 **Sample** 朗读 1 次，再用 **Template** 换成最近一次真实问题/练习中的服务名和指标，各练 1 次，总计不超过 10 分钟。
