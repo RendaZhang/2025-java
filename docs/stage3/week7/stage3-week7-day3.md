@@ -9,7 +9,7 @@
     - [LC102. Binary Tree Level Order Traversal（层序 BFS）](#lc102-binary-tree-level-order-traversal%E5%B1%82%E5%BA%8F-bfs)
     - [LC102 高质量复盘](#lc102-%E9%AB%98%E8%B4%A8%E9%87%8F%E5%A4%8D%E7%9B%98)
     - [LC145. Binary Tree Postorder Traversal（迭代后序）](#lc145-binary-tree-postorder-traversal%E8%BF%AD%E4%BB%A3%E5%90%8E%E5%BA%8F)
-  - [Step 2 - 消息与一致性（Outbox & 去重 & 重试闭环）](#step-2---%E6%B6%88%E6%81%AF%E4%B8%8E%E4%B8%80%E8%87%B4%E6%80%A7outbox--%E5%8E%BB%E9%87%8D--%E9%87%8D%E8%AF%95%E9%97%AD%E7%8E%AF)
+  - [Step 2 - 消息与一致性](#step-2---%E6%B6%88%E6%81%AF%E4%B8%8E%E4%B8%80%E8%87%B4%E6%80%A7)
     - [Outbox（事务外箱）& 本地事务边界](#outbox%E4%BA%8B%E5%8A%A1%E5%A4%96%E7%AE%B1-%E6%9C%AC%E5%9C%B0%E4%BA%8B%E5%8A%A1%E8%BE%B9%E7%95%8C)
     - [幂等消费与去重键：表/Redis 实战与失败补偿](#%E5%B9%82%E7%AD%89%E6%B6%88%E8%B4%B9%E4%B8%8E%E5%8E%BB%E9%87%8D%E9%94%AE%E8%A1%A8redis-%E5%AE%9E%E6%88%98%E4%B8%8E%E5%A4%B1%E8%B4%A5%E8%A1%A5%E5%81%BF)
     - [重试策略与“重试预算”：退避 + 抖动 + 限额；与幂等/熔断的协同](#%E9%87%8D%E8%AF%95%E7%AD%96%E7%95%A5%E4%B8%8E%E9%87%8D%E8%AF%95%E9%A2%84%E7%AE%97%E9%80%80%E9%81%BF--%E6%8A%96%E5%8A%A8--%E9%99%90%E9%A2%9D%E4%B8%8E%E5%B9%82%E7%AD%89%E7%86%94%E6%96%AD%E7%9A%84%E5%8D%8F%E5%90%8C)
@@ -160,7 +160,7 @@ public List<Integer> postorderTraversal(TreeNode root) {
 
 ---
 
-## Step 2 - 消息与一致性（Outbox & 去重 & 重试闭环）
+## Step 2 - 消息与一致性
 
 ### Outbox（事务外箱）& 本地事务边界
 

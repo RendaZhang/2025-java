@@ -10,6 +10,8 @@
     - [LC378 高质量复盘](#lc378-%E9%AB%98%E8%B4%A8%E9%87%8F%E5%A4%8D%E7%9B%98)
     - [LC373. Find K Pairs with Smallest Sums（两数组和最小的 K 对）](#lc373-find-k-pairs-with-smallest-sums%E4%B8%A4%E6%95%B0%E7%BB%84%E5%92%8C%E6%9C%80%E5%B0%8F%E7%9A%84-k-%E5%AF%B9)
     - [LC295. Find Median from Data Stream（数据流中位数）](#lc295-find-median-from-data-stream%E6%95%B0%E6%8D%AE%E6%B5%81%E4%B8%AD%E4%BD%8D%E6%95%B0)
+  - [Step 2 - 可观测 × 发布核心](#step-2---%E5%8F%AF%E8%A7%82%E6%B5%8B-%C3%97-%E5%8F%91%E5%B8%83%E6%A0%B8%E5%BF%83)
+    - [日志 / 指标 / 追踪（OTel / Prom / Grafana）](#%E6%97%A5%E5%BF%97--%E6%8C%87%E6%A0%87--%E8%BF%BD%E8%B8%AAotel--prom--grafana)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -222,3 +224,71 @@ class MedianFinder {
 **复杂度**：单次插入 O(log n)，查询 O(1)
 
 ---
+
+## Step 2 - 可观测 × 发布核心
+
+### 日志 / 指标 / 追踪（OTel / Prom / Grafana）
+
+场景 A - Trace 贯穿与日志关联
+
+**面试官：** 你如何保证一次请求的 TraceID 能跨多个微服务，并且在日志里也能串起来？
+
+**我：** 我用 OTel 的 W3C `traceparent`/`tracestate` 头做上下文传播，Java 侧用 OTel Java agent 或 spring-boot autoconfigure 自动注入。HTTP 客户端/服务端会把上下文放进线程上下文。日志侧用 SLF4J MDC，logback pattern 带上 `%X{trace_id} %X{span_id}`。这样 Grafana 里看到异常点，点回 trace，再用 traceId grep 日志就能一跳到位。
+
+**面试官：** 给个日志模式的例子？
+
+**我：** logback pattern 类似：`%d{ISO8601} %-5level [%thread] %logger{36} traceId=%X{trace_id} spanId=%X{span_id} - %msg%n`。生产环境建议结构化 JSON，字段名固定，避免模糊解析。
+
+**面试官：** 高并发下如何避免漏链路或乱串？
+
+**我：** 三点：1 - 所有出口都用支持上下文的 HTTP/gRPC 客户端；2 - 禁掉线程池里“丢上下文”的自定义包装，或用 `ContextPropagators`/`TaskDecorator` 传递上下文；3 - 异步回调也要从 `Context.current()` 取 span。
+
+场景 B - 指标基线与 RED/USE
+
+**面试官：** 你在 Grafana 看一个服务，最先看哪些指标？
+
+**我：** 先 RED：Rate（QPS/吞吐）、Errors（4xx/5xx、失败率）、Duration（p50/p90/p95）。系统面看 USE：Utilization（CPU/内存/线程/连接池占用）、Saturation（排队长度、GC、磁盘队列）、Errors（系统级错误）。这两套能快速定位是应用逻辑问题还是资源瓶颈。
+
+**面试官：** 直方图怎么设置更有用？
+
+**我：** 用 Micrometer/OTel 的 histogram，把关键接口打直方图，并且合理分桶，比如 API 延迟 10ms–5s 对数分桶，避免过细导致时序规模爆炸；为高价值接口开启 exemplars，这样能从 p95 点直接跳到样本 trace。
+
+**面试官：** 标签会不会把 Prometheus 撑爆？
+
+**我：** 控卡三条：1 - 禁止高基数标签（如 userId、请求体 hash）；2 - 控制 path 归一（模板化 `/orders/{id}`）；3 - 聚合维度有限白名单，非必要不打点。必要时在 collector 侧做 relabel/drop。
+
+场景 C - 故障排查路径（p95 飙高）
+
+**面试官：** 晚高峰 p95 从 120ms 涨到 900ms，你怎么排？
+
+**我：** 先看 RED，确认是全局还是某两个接口；再看下游依赖面板（DB/Redis/外部 API）的 duration 和错误率；看 Saturation：线程池队列、连接池等待、GC、CPU 抢占。如果某接口异常，点 exemplars 拉一条慢 trace，看 span 哪一段膨胀，是 SQL 慢、重试风暴还是外部超时。最后回日志，用 traceId 定位代码上下文。
+
+**面试官：** 如果是数据库导致的呢？
+
+**我：** 短期：提高连接池上限+慢查询阈值观测、加缓存/只读副本、扩大超时并降低重试次数。长期：索引/SQL 计划优化、写读分离、热点拆表。并把回滚/降级开关写进 playbook。
+
+场景 D - 采样与成本
+
+**面试官：** Trace 量很大你怎么控成本？
+
+**我：** 常规用 head sampling，比如 5–10%，并为错误/高延迟的请求动态提高采样；关键交易链路可按路由白名单全采。高流量场景用 tail sampling 在 collector 聚合后决定保留“异常/代表性”的 trace。日志用事件级采样（如相同异常 1 分钟仅采集 N 条）。
+
+**面试官：** 什么时候必须全量？
+
+**我：** 金融结算、风控审计或发布窗口短时全量，保证可追溯；窗口外恢复采样，避免存储爆炸。
+
+场景 E - 日志质量与脱敏
+
+**面试官：** 如何保证日志既可排障又不泄露隐私？
+
+**我：** 结构化日志 + 字段级脱敏：手机号/邮箱打掩码或哈希；严禁落原始密钥/令牌；异常栈限制深度；在网关或 SDK 统一过滤敏感 query/body。落地上通过集中规则（logback turbo/filter 或 sidecar filter）统一治理。
+
+**面试官：** 线上临时调试怎么做而不打扰业务？
+
+**我：** 用日志级别动态开关（按 traceId/用户/路由范围），短时间提升到 DEBUG 并设置采样上限；或者用“诊断标记”头，仅对带标记的请求增加附加日志和 span 事件。
+
+场景 F - 看板到行动（Runbook）
+
+**面试官：** 看到错误率升高到 3%，你会怎么做？
+
+**我：** 先确认是否真错误（4xx 分离），若 5xx 超出阈值，执行 Runbook：1 - 启动限流/熔断，止血下游；2 - 切回上一稳定版本或关闭灰度批次；3 - 打开降级开关；4 - 在 10 分钟观察窗内复核 RED 和关键下游指标；5 - 复盘记录 root cause、修复项和阈值是否需要重估。
