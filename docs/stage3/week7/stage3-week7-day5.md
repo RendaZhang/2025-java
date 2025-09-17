@@ -14,6 +14,13 @@
     - [日志 / 指标 / 追踪（OTel / Prom / Grafana）](#%E6%97%A5%E5%BF%97--%E6%8C%87%E6%A0%87--%E8%BF%BD%E8%B8%AAotel--prom--grafana)
     - [SLO / 告警阈值 / 误差预算](#slo--%E5%91%8A%E8%AD%A6%E9%98%88%E5%80%BC--%E8%AF%AF%E5%B7%AE%E9%A2%84%E7%AE%97)
     - [发布与回滚（灰度 / 蓝绿 / 金丝雀）](#%E5%8F%91%E5%B8%83%E4%B8%8E%E5%9B%9E%E6%BB%9A%E7%81%B0%E5%BA%A6--%E8%93%9D%E7%BB%BF--%E9%87%91%E4%B8%9D%E9%9B%80)
+  - [Step 3 - 一页架构速记：可观测与发布策略](#step-3---%E4%B8%80%E9%A1%B5%E6%9E%B6%E6%9E%84%E9%80%9F%E8%AE%B0%E5%8F%AF%E8%A7%82%E6%B5%8B%E4%B8%8E%E5%8F%91%E5%B8%83%E7%AD%96%E7%95%A5)
+    - [TraceID 串联排障（4 步到位）](#traceid-%E4%B8%B2%E8%81%94%E6%8E%92%E9%9A%9C4-%E6%AD%A5%E5%88%B0%E4%BD%8D)
+    - [看板读法（RED/USE）](#%E7%9C%8B%E6%9D%BF%E8%AF%BB%E6%B3%95reduse)
+    - [SLI / SLO / 告警阈值](#sli--slo--%E5%91%8A%E8%AD%A6%E9%98%88%E5%80%BC)
+    - [发布与回滚（灰度/蓝绿/滚动）](#%E5%8F%91%E5%B8%83%E4%B8%8E%E5%9B%9E%E6%BB%9A%E7%81%B0%E5%BA%A6%E8%93%9D%E7%BB%BF%E6%BB%9A%E5%8A%A8)
+    - [Runbook（10 分钟止血）](#runbook10-%E5%88%86%E9%92%9F%E6%AD%A2%E8%A1%80)
+    - [安全与合规](#%E5%AE%89%E5%85%A8%E4%B8%8E%E5%90%88%E8%A7%84)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -446,3 +453,88 @@ class MedianFinder {
 - **分批金丝雀**：Argo Rollouts / Flagger 配 1%→5%→25%→50%→100% 阶梯与指标闸门。
 - **回滚**：`kubectl rollout undo` 或在 CD 系统一键回滚到上个 Stable。
 - **配置幂等**：镜像不可变 tag、ConfigMap/Secret 版本化，避免“回滚代码却加载新配置”。
+
+---
+
+## Step 3 - 一页架构速记：可观测与发布策略
+
+```
+Client ──traceparent──▶ API Gateway ──▶ Service A ──▶ Service B ──▶ DB/Redis/外部API
+   │                         │               │
+   │                         │               ├─ Metrics (Prom/OTel Histogram + Exemplars)
+   │                         │               └─ Traces (OTel Spans)
+   │                         └─ Logs(JSON + MDC trace_id/span_id)
+   │
+   ├─ Metrics ─▶ ADOT Collector ─▶ AMP/Prometheus ─▶ Grafana (RED/USE, SLO, Burn-rate)
+   ├─ Traces  ─▶ Collector Tail/Head Sampling ─▶ Tempo/Jaeger/X-Ray ─▶ Grafana Explore
+   ├─ Logs    ─▶ Loki/ES (Pipelines: 结构化/脱敏/采样)
+   └─ Alerts  ─▶ 多窗口燃尽率 → On-call（页警）/ 工单（根因类）
+
+CD/发布：Git → CI → Argo Rollouts/Flagger（1%→5%→25%→100%）→ K8s
+K8s 关键：startupProbe + readinessProbe；preStop + TerminationGrace；PDB；HPA
+DB 变更：Expand → Migrate → Contract（回滚只回应用，不回破坏性 schema）
+Feature Flags：部署≠发布；按人群/比例/租户灰度；熔断/降级开关
+```
+
+两句高分表达
+
+- “我们用**分阶段放量 + 多窗口燃尽率**做闸门，触发即关开关或回滚，爆炸半径可控。”
+- “**EMC 三段式数据库变更**让任何时刻都能 **只回应用** 安全退回上一稳定版本。”
+
+### TraceID 串联排障（4 步到位）
+
+1. **入口统一传播**：W3C `traceparent/tracestate`（OTel SDK/Agent 自动注入）。
+2. **日志带上下文**：MDC 固定字段：`trace_id`、`span_id`、`service`、`route`、`err_code`。
+   - Logback（建议结构化 JSON）：
+
+     ```
+     traceId=%X{trace_id} spanId=%X{span_id} route=%X{route} code=%X{err}
+     ```
+3. **面板直达 Trace**：关键接口用 Histogram + **Exemplars**，从 `p95` 一键跳到样本 Trace。
+4. **Trace→日志**：用 traceId 在日志系统一跳定位异常上下文（请求参数已脱敏）。
+
+> 采样建议：默认 head 5–10%，**错误/高延迟**动态升采；必要时 Collector **tail sampling** 聚焦异常链路。
+
+### 看板读法（RED/USE）
+
+- **RED（服务体验）**：Rate/QPS、Errors（5xx/网关失败）、Duration（p50/p95/p99）。
+- **USE（资源健康）**：Utilization（CPU/内存/连接数/线程）、Saturation（排队/GC/磁盘队列）、Errors。
+- 先看 RED 判“症状”，再看 USE 找“根因”；下游依赖单独分组面板。
+
+### SLI / SLO / 告警阈值
+
+- **SLI（事件口径统一在入口）**
+  - 可用性：`成功数 / 有效请求数`（2xx + 业务允许的 3xx；4xx 单列，不混入后端失败）。
+  - 延迟：`p95/p99 < 阈值的占比` 或尾延迟预算。
+- **SLO 推荐**
+  - 核心交易：99.95%～99.99%；一般读 API：99.9%。
+- **多窗口燃尽率（症状类页警）**
+  - 快窗 **1h**：Burn rate≈**14** → 立刻页警；
+  - 慢窗 **6h**：Burn rate≈**6** → 工单/白天处理。
+- **预算管理**：预算见底（<25%）→ 冻结非紧急发布 + 启动降级 + 聚焦稳定性缺陷。
+
+### 发布与回滚（灰度/蓝绿/滚动）
+
+- **策略选择**：小改无状态→滚动；零停机/极速回滚→蓝绿；高风险→**金丝雀**（度量驱动放量）。
+- **金丝雀闸门（双窗口）**
+  - **5 分钟快窗**：失败率 > **2×基线** 且绝对值 > **1%**；p95 **+40%**；饱和度 > **80%** ⇒ **停放量/回滚**
+  - **30 分钟慢窗**：SLO **burn rate** 触发 ⇒ 回滚/冻结
+  - 只盯**症状指标**（错误率/延迟/SLO），资源指标只作佐证，减少假阳性。
+- **K8s 落地关键**
+  - `startupProbe` 防冷启动误杀；`readinessProbe` 作为唯一“接流量”闸门；
+  - `preStop` + `terminationGracePeriodSeconds` **优雅下线**；
+  - **PDB** 保底副本数；镜像不可变 Tag；ConfigMap/Secret 版本化；`rollout undo` 一键回滚。
+- **DB 改动**：**Expand → Migrate → Contract**；影子表/双写/回填；**回滚只回应用版本**。
+
+### Runbook（10 分钟止血）
+
+1. 判断是否 **SLO 症状触发**（而非仅资源波动）。
+2. **止血**：限流/熔断；关特性开关；必要时切回旧环境/上个 Stable。
+3. **观察窗**：5 分钟快窗 + 30 分钟慢窗复核 RED/关键依赖。
+4. **记录**：Trace 样本、慢查询、错误分布；
+5. **复盘**：根因→修复项→回归用例→阈值/告警优化（是否降噪/合并）。
+
+### 安全与合规
+
+- 日志**字段级脱敏**（手机号/邮箱/令牌），限制异常栈深度与请求体落盘；
+- 临时调试：**按 traceId/路由**动态提级日志 + 事件采样上限，避免扰民与成本爆炸。
