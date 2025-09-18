@@ -5,6 +5,13 @@ import com.renda.leetcode.core.LeetCodeProblem;
 /**
  * LeetCode 221 - Maximal Square
  *
+ * 二维 DP。
+ *
+ * 如果 `matrix[i-1][j-1] == '1'`，
+ * 则当前以该格为右下角的最大正方形边长
+ * `dp[i][j] = 1 + min(dp[i-1][j] , dp[i][j-1], dp[i-1][j-1])`；
+ * 否则为 0。
+ *
  * Runtime 8 ms Beats 70.36%
  * Memory 60.12 MB Beats 75.45%
  *

@@ -9,6 +9,8 @@ import com.renda.leetcode.core.LeetCodeProblem;
 /**
  * LeetCode 139 - Word Break
  *
+ * 一维 DP + 长度剪枝
+ *
  * Runtime 1 ms Beats 99.47%
  * Memory 41.59 MB Beats 97.36%
  *

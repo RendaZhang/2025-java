@@ -2,16 +2,18 @@
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
-- [Day 6 - Kubernetes 云原生最小面](#day-6---kubernetes-%E4%BA%91%E5%8E%9F%E7%94%9F%E6%9C%80%E5%B0%8F%E9%9D%A2)
+- [Day 6 - Kubernetes / 云原生最小面](#day-6---kubernetes--%E4%BA%91%E5%8E%9F%E7%94%9F%E6%9C%80%E5%B0%8F%E9%9D%A2)
   - [今日目标](#%E4%BB%8A%E6%97%A5%E7%9B%AE%E6%A0%87)
   - [Step 1 - 算法：动态规划](#step-1---%E7%AE%97%E6%B3%95%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92)
     - [LC322. Coin Change（最少硬币个数）](#lc322-coin-change%E6%9C%80%E5%B0%91%E7%A1%AC%E5%B8%81%E4%B8%AA%E6%95%B0)
     - [LC139. Word Break（字符串能否被字典切分）](#lc139-word-break%E5%AD%97%E7%AC%A6%E4%B8%B2%E8%83%BD%E5%90%A6%E8%A2%AB%E5%AD%97%E5%85%B8%E5%88%87%E5%88%86)
     - [LC221. Maximal Square（最大全 1 正方形）](#lc221-maximal-square%E6%9C%80%E5%A4%A7%E5%85%A8-1-%E6%AD%A3%E6%96%B9%E5%BD%A2)
+  - [Step 2 - Kubernetes / 云原生](#step-2---kubernetes--%E4%BA%91%E5%8E%9F%E7%94%9F)
+    - [Pod & Container 基础](#pod--container-%E5%9F%BA%E7%A1%80)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
-# Day 6 - Kubernetes 云原生最小面
+# Day 6 - Kubernetes / 云原生最小面
 
 ## 今日目标
 
@@ -171,3 +173,9 @@ class Solution221 {
 - 注意输入是字符 `'0'/'1'`，别与整数 0/1 混淆。
 - 一维滚动时 `prevDiag` 的更新顺序：进入下一列前，用 `temp` 保存旧的 `dp[j]` 再赋给 `prevDiag`。
 - 返回的是**面积**（边长平方），不是边长。
+
+---
+
+## Step 2 - Kubernetes / 云原生
+
+### Pod & Container 基础
