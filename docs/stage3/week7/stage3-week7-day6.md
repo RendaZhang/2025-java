@@ -2,7 +2,8 @@
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
-- [Day 6 - Kubernetes / 云原生最小面](#day-6---kubernetes--%E4%BA%91%E5%8E%9F%E7%94%9F%E6%9C%80%E5%B0%8F%E9%9D%A2)
+- [Day 6 - Kubernetes 云原生最小面](#day-6---kubernetes-%E4%BA%91%E5%8E%9F%E7%94%9F%E6%9C%80%E5%B0%8F%E9%9D%A2)
+  - [今日目标](#%E4%BB%8A%E6%97%A5%E7%9B%AE%E6%A0%87)
   - [Step 1 - 算法：动态规划](#step-1---%E7%AE%97%E6%B3%95%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92)
     - [LC322. Coin Change（最少硬币个数）](#lc322-coin-change%E6%9C%80%E5%B0%91%E7%A1%AC%E5%B8%81%E4%B8%AA%E6%95%B0)
     - [LC139. Word Break（字符串能否被字典切分）](#lc139-word-break%E5%AD%97%E7%AC%A6%E4%B8%B2%E8%83%BD%E5%90%A6%E8%A2%AB%E5%AD%97%E5%85%B8%E5%88%87%E5%88%86)
@@ -10,7 +11,9 @@
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
-# Day 6 - Kubernetes / 云原生最小面
+# Day 6 - Kubernetes 云原生最小面
+
+## 今日目标
 
 - 算法：动态规划
 - 面试能力/知识：Kubernetes 最小面要点 —— Pod / Service / Ingress、探针（startup/readiness/liveness）、HPA、ConfigMap / Secret、PDB、最小权限（OIDC/IRSA）

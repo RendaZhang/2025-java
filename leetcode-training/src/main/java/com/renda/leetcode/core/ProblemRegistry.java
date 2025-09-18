@@ -39,6 +39,7 @@ public final class ProblemRegistry {
         register(new LC378_KthSmallestElementInASortedMatrix());
         register(new LC373_FindKPairswithSmallestSums());
         register(new LC295_FindMedianFromDataStream());
+        register(new LC322_CoinChange());
     }
 
     private ProblemRegistry() {
