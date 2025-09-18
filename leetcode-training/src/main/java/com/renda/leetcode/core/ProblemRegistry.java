@@ -40,6 +40,7 @@ public final class ProblemRegistry {
         register(new LC373_FindKPairswithSmallestSums());
         register(new LC295_FindMedianFromDataStream());
         register(new LC322_CoinChange());
+        register(new LC139_WordBreak());
     }
 
     private ProblemRegistry() {
