@@ -41,6 +41,7 @@ public final class ProblemRegistry {
         register(new LC295_FindMedianFromDataStream());
         register(new LC322_CoinChange());
         register(new LC139_WordBreak());
+        register(new LC221_MaximalSquare());
     }
 
     private ProblemRegistry() {
