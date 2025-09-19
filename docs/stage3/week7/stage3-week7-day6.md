@@ -179,3 +179,64 @@ class Solution221 {
 ## Step 2 - Kubernetes / 云原生
 
 ### Pod & Container 基础
+
+- **Pod 是“进程组”**：同 IP/localhost、共享 Volume、同调度命运；适合主容器 + sidecar/Init 协作。
+- **requests 决定放得下，limits 决定用得了**：延迟敏感服务常用“**内存有限、CPU 不限**”避免 throttle；关注 QoS 级别。
+- **OOM 与 CrashLoop**：内存超限 → OOMKill；启动期/探针过严 → CrashLoopBackOff；排查用 `describe`、`logs -p`、事件时间线。
+- **Init/Sidecar 生命周期**：Init 只做前置短任务；Sidecar 要配 `preStop` 与合理终止宽限，避免截断请求。
+- **日志首选 stdout/stderr + JSON**：集中采集、字段固定（建议含 `trace_id`/`span_id`）；避免无界本地文件。
+- **临时存储有额度**：为 `emptyDir`/日志等设 **ephemeral-storage** request/limit，防驱逐；监控磁盘压力量表。
+- **镜像不可变**：用 **Digest 或不可变 tag**，避免“回滚代码却拉到新镜像”。
+
+> “把 Pod 当作一个**共享网络与卷的 OS 进程组**；**调度看 requests，约束看 limits**。对延迟敏感应用，我们**内存设限、CPU 不限**，日志走 stdout 的结构化 JSON，再用 sidecar/daemon 采集。”
+
+场景 A - 为什么调度单位是 Pod 而不是容器
+
+**面试官：** K8s 为什么以 Pod 为最小调度单位？
+
+**我：** 因为同一 Pod 里的容器**共享一组资源与命名空间**：一个 IP/端口空间、同一 localhost、共享 Volume、同一调度命运。这让**主容器 + 辅助容器**（如 sidecar 代理、日志收集、初始化任务）能在**进程间通信成本极低**的前提下协作。调度放到“Pod 级别”，能把这些强耦合进程一次性编排、扩缩和回滚。
+
+场景 B - 资源请求/限制与 QoS
+
+**面试官：** `requests` 和 `limits` 分别起什么作用？如何避免性能抖动？
+
+**我：** `requests` 影响**调度**与预留；`limits` 由 cgroup **强制约束**。
+
+QoS 取决于两者配置：Guaranteed（req=lim 且全量设置）> Burstable > BestEffort。
+
+性能要稳：
+
+- 对**延迟敏感**服务，常用“**设内存 limit，CPU 不设 limit**（仅设 request）”避免 CPU throttle；
+- 内存超限会被 **OOMKill**，要留安全裕度，并观测 RSS 与堆外内存；
+- 结合 HPA 扩容，用**平均利用率**而不是瞬时峰值，配稳定窗口防抖。
+
+场景 C - 重启策略与常见陷阱
+
+**面试官：** `restartPolicy` 有哪些，和控制器的关系是？
+
+**我：** Pod 级有 `Always`/`OnFailure`/`Never`。Deployment/ReplicaSet 强制 `Always`（服务型进程），Job 通常 `OnFailure`。
+
+常见陷阱是**把启动失败**误当业务错误：探针/环境变量缺失导致 **CrashLoopBackOff**。
+
+排查顺序：`kubectl describe` 看事件 → `kubectl logs -p` 看上次崩溃日志 → 校验探针与资源是否过严。
+
+场景 D - Init/Sidecar 与生命周期
+
+**面试官：** Init 与 Sidecar 你怎么用？
+
+**我：** **InitContainer** 做**一次性前置**（拉配置、等待依赖、做数据迁移的“哨兵检查”）；全部成功后主容器才启动。**Sidecar**长期伴随主容器（如 envoy、日志/指标收集）。
+
+注意：
+
+- Init 不能做长时任务，否则**阻塞扩容**；
+- Sidecar 需要**优雅下线**（`preStop` + 合理 `terminationGracePeriodSeconds`），否则请求可能在退出时被截断。
+
+场景 E - 日志与临时存储
+
+**面试官：** 线上日志怎么落？为什么很多团队不建议写本地文件？
+
+**我：** **首选 stdout/stderr + 结构化 JSON**，由节点或 sidecar 采集器（如 Fluent Bit）拉走。
+
+写本地文件易踩：**轮转不可控、占用临时存储、迁移丢失**、侧车再采集一跳延迟。
+
+若必须本地，挂 `emptyDir` 并**限制临时存储 request/limit**，防止因磁盘压力被驱逐。
