@@ -2938,3 +2938,121 @@ spec:
 ```
 
 ### 最小权限与身份（RBAC / OIDC / IRSA）：ServiceAccount 绑定最小权限；云资源精细授权；密钥不落盘
+
+- **RBAC 粒度**：Role/RoleBinding 优先；仅在跨命名空间时用 ClusterRole/Binding。
+- **默认拒绝**：不给默认 SA 权限；每个工作负载**专用 SA**。
+- **IRSA 三件套**：OIDC Provider → 信任策略限定 `sub` → SA 注解 `role-arn`，全程**无静态密钥**。
+- **策略三减**：主体到 SA、资源到 ARN 前缀、动作到必要动词；拆分只读/只写角色。
+- **审计**：打开 CloudTrail；记录 **AWS 请求 ID + 角色名** 到应用日志，配合 traceId 串起链路。
+- **验证**：上线前跑策略模拟；灰度期监控 `AccessDenied` 与异常比率。
+- **轮换**：密钥走**云密管/External Secrets**，能不用静态密钥就不用。
+
+> “我们把权限当成**爆炸半径控制器**：RBAC 到 SA，IRSA 把角色限定到 `sub`，策略再按资源前缀和动词最小化，既无静态密钥，又能在 CloudTrail 里把每一次访问和 trace 串成闭环。”
+
+场景 A - 为什么“最小权限”与可观测同等重要
+
+**面试官：** 你为什么总强调最小权限？
+
+**我：**
+
+它直接决定**爆炸半径**。权限越细，误配/入侵带来的影响越小；而且有了**可观测**（审计日志、traceId、请求 ID），我们能把“谁用什么权限做了什么”串起来，既能**快速止血**也能**可追溯**。
+
+场景 B - RBAC 四件套与常见误用
+
+**面试官：** 说说 RBAC 的基本对象与误用？
+
+**我：**
+
+**Role / ClusterRole / RoleBinding / ServiceAccount**。
+
+常见误用：
+
+- 直接把 **ClusterRole cluster-admin** 绑给默认 SA；
+- 用 **ClusterRoleBinding** 给 **命名空间内** 的场景（过大）；
+- 忘了**按资源+动词**最小化（如只给 `get,list,watch`），导致“读写通杀”。
+
+场景 C - OIDC 与 IRSA 的工作流（EKS 示例）
+
+**面试官：** IRSA 是怎么把 AWS 权限给到 Pod 的？
+
+**我：**
+
+三步：
+
+1. 集群注册 **OIDC Provider**；
+2. 建一个 **IAM Role**，信任策略允许 `sts:AssumeRoleWithWebIdentity`，并按 **ServiceAccount 的 sub** 限定；
+3. 在 **ServiceAccount** 上加 **`eks.amazonaws.com/role-arn`** 注解即可。运行时 kubelet 注入 Web Identity Token，Pod 以此换取临时凭证，全程**无静态 AccessKey**。
+
+场景 D - 如何“只给需要的那一点点”
+
+**面试官：** 具体怎么做到“只给需要的”？
+
+**我：** 三层缩小：
+
+- **主体范围**：信任策略把 `sub` 精确到 `system:serviceaccount:<ns>:<sa>`；
+- **资源范围**：策略里按**资源 ARN/前缀**限到最小（如 `s3://bucket/prefix/*`）；
+- **动作范围**：只给必要动词（如 `s3:PutObject` 而非 `s3:*`）。
+
+再配**只读/只写**两套角色，按工作负载绑定。
+
+场景 E - 为什么不把密钥塞进 Pod
+
+**面试官：** 直接把 AccessKey 当 Secret 注入不更简单吗？
+
+**我：**
+
+风险巨大：**泄漏面广**、**轮换困难**、**审计不准**。IRSA 的 **STS 临时凭证**会自动轮换，落库的是**最小授权的角色**，CloudTrail 里能看到**操作主体=role**，可追溯。
+
+场景 F - 验证与审计
+
+**面试官：** 上线前如何验证权限“刚刚好”？
+
+**我：**
+
+预先用 **IAM Policy Simulator** 或最小化策略生成工具；灰度期间把**拒绝事件**（`AccessDenied`）与 **CloudTrail** 接到告警；应用侧日志带上**调用目标与请求 ID**，遇到拒绝能一跳定位。
+
+极简参考片段（EKS · IRSA）
+
+**IAM 信任策略（摘）**
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Principal": { "Federated": "arn:aws:iam::<ACCOUNT_ID>:oidc-provider/<OIDC_ISSUER>" },
+    "Action": "sts:AssumeRoleWithWebIdentity",
+    "Condition": {
+      "StringEquals": {
+        "<OIDC_ISSUER>:aud": "sts.amazonaws.com",
+        "<OIDC_ISSUER>:sub": "system:serviceaccount:observability:adot-collector"
+      }
+    }
+  }]
+}
+```
+
+**K8s ServiceAccount（摘）**
+
+```yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: adot-collector
+  namespace: observability
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::<ACCOUNT_ID>:role/adot-collector
+```
+
+**最小化 S3 写入策略（示例）**
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Action": ["s3:PutObject"],
+    "Resource": ["arn:aws:s3:::my-bucket/observability/*"]
+  }]
+}
+```

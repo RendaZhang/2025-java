@@ -15,6 +15,10 @@
     - [HPA 与自动扩缩容：CPU/内存 vs 自定义指标；`stabilizationWindow`、`scaleDownPolicy` 抖动治理；冷启动](#hpa-%E4%B8%8E%E8%87%AA%E5%8A%A8%E6%89%A9%E7%BC%A9%E5%AE%B9cpu%E5%86%85%E5%AD%98-vs-%E8%87%AA%E5%AE%9A%E4%B9%89%E6%8C%87%E6%A0%87stabilizationwindowscaledownpolicy-%E6%8A%96%E5%8A%A8%E6%B2%BB%E7%90%86%E5%86%B7%E5%90%AF%E5%8A%A8)
     - [配置与发布安全：ConfigMap/Secret 版本化与回滚；镜像不可变标签；RollingUpdate 参数；PDB 与 `drain`](#%E9%85%8D%E7%BD%AE%E4%B8%8E%E5%8F%91%E5%B8%83%E5%AE%89%E5%85%A8configmapsecret-%E7%89%88%E6%9C%AC%E5%8C%96%E4%B8%8E%E5%9B%9E%E6%BB%9A%E9%95%9C%E5%83%8F%E4%B8%8D%E5%8F%AF%E5%8F%98%E6%A0%87%E7%AD%BErollingupdate-%E5%8F%82%E6%95%B0pdb-%E4%B8%8E-drain)
     - [最小权限与身份（RBAC / OIDC / IRSA）：ServiceAccount 绑定最小权限；云资源精细授权；密钥不落盘](#%E6%9C%80%E5%B0%8F%E6%9D%83%E9%99%90%E4%B8%8E%E8%BA%AB%E4%BB%BDrbac--oidc--irsaserviceaccount-%E7%BB%91%E5%AE%9A%E6%9C%80%E5%B0%8F%E6%9D%83%E9%99%90%E4%BA%91%E8%B5%84%E6%BA%90%E7%B2%BE%E7%BB%86%E6%8E%88%E6%9D%83%E5%AF%86%E9%92%A5%E4%B8%8D%E8%90%BD%E7%9B%98)
+  - [Step 3 - 1 分钟英文口语](#step-3---1-%E5%88%86%E9%92%9F%E8%8B%B1%E6%96%87%E5%8F%A3%E8%AF%AD)
+    - [Why HPA + probes + least-privilege keep reliability (≈60s)](#why-hpa--probes--least-privilege-keep-reliability-%E2%89%8860s)
+    - [Fill-in template](#fill-in-template)
+    - [3 sound bites](#3-sound-bites)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -628,3 +632,149 @@ spec:
 ```
 
 ### 最小权限与身份（RBAC / OIDC / IRSA）：ServiceAccount 绑定最小权限；云资源精细授权；密钥不落盘
+
+- **RBAC 粒度**：Role/RoleBinding 优先；仅在跨命名空间时用 ClusterRole/Binding。
+- **默认拒绝**：不给默认 SA 权限；每个工作负载**专用 SA**。
+- **IRSA 三件套**：OIDC Provider → 信任策略限定 `sub` → SA 注解 `role-arn`，全程**无静态密钥**。
+- **策略三减**：主体到 SA、资源到 ARN 前缀、动作到必要动词；拆分只读/只写角色。
+- **审计**：打开 CloudTrail；记录 **AWS 请求 ID + 角色名** 到应用日志，配合 traceId 串起链路。
+- **验证**：上线前跑策略模拟；灰度期监控 `AccessDenied` 与异常比率。
+- **轮换**：密钥走**云密管/External Secrets**，能不用静态密钥就不用。
+
+> “我们把权限当成**爆炸半径控制器**：RBAC 到 SA，IRSA 把角色限定到 `sub`，策略再按资源前缀和动词最小化，既无静态密钥，又能在 CloudTrail 里把每一次访问和 trace 串成闭环。”
+
+场景 A - 为什么“最小权限”与可观测同等重要
+
+**面试官：** 你为什么总强调最小权限？
+
+**我：**
+
+它直接决定**爆炸半径**。权限越细，误配/入侵带来的影响越小；而且有了**可观测**（审计日志、traceId、请求 ID），我们能把“谁用什么权限做了什么”串起来，既能**快速止血**也能**可追溯**。
+
+场景 B - RBAC 四件套与常见误用
+
+**面试官：** 说说 RBAC 的基本对象与误用？
+
+**我：**
+
+**Role / ClusterRole / RoleBinding / ServiceAccount**。
+
+常见误用：
+
+- 直接把 **ClusterRole cluster-admin** 绑给默认 SA；
+- 用 **ClusterRoleBinding** 给 **命名空间内** 的场景（过大）；
+- 忘了**按资源+动词**最小化（如只给 `get,list,watch`），导致“读写通杀”。
+
+场景 C - OIDC 与 IRSA 的工作流（EKS 示例）
+
+**面试官：** IRSA 是怎么把 AWS 权限给到 Pod 的？
+
+**我：**
+
+三步：
+
+1. 集群注册 **OIDC Provider**；
+2. 建一个 **IAM Role**，信任策略允许 `sts:AssumeRoleWithWebIdentity`，并按 **ServiceAccount 的 sub** 限定；
+3. 在 **ServiceAccount** 上加 **`eks.amazonaws.com/role-arn`** 注解即可。运行时 kubelet 注入 Web Identity Token，Pod 以此换取临时凭证，全程**无静态 AccessKey**。
+
+场景 D - 如何“只给需要的那一点点”
+
+**面试官：** 具体怎么做到“只给需要的”？
+
+**我：** 三层缩小：
+
+- **主体范围**：信任策略把 `sub` 精确到 `system:serviceaccount:<ns>:<sa>`；
+- **资源范围**：策略里按**资源 ARN/前缀**限到最小（如 `s3://bucket/prefix/*`）；
+- **动作范围**：只给必要动词（如 `s3:PutObject` 而非 `s3:*`）。
+
+再配**只读/只写**两套角色，按工作负载绑定。
+
+场景 E - 为什么不把密钥塞进 Pod
+
+**面试官：** 直接把 AccessKey 当 Secret 注入不更简单吗？
+
+**我：**
+
+风险巨大：**泄漏面广**、**轮换困难**、**审计不准**。IRSA 的 **STS 临时凭证**会自动轮换，落库的是**最小授权的角色**，CloudTrail 里能看到**操作主体=role**，可追溯。
+
+场景 F - 验证与审计
+
+**面试官：** 上线前如何验证权限“刚刚好”？
+
+**我：**
+
+预先用 **IAM Policy Simulator** 或最小化策略生成工具；灰度期间把**拒绝事件**（`AccessDenied`）与 **CloudTrail** 接到告警；应用侧日志带上**调用目标与请求 ID**，遇到拒绝能一跳定位。
+
+极简参考片段（EKS · IRSA）
+
+**IAM 信任策略（摘）**
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Principal": { "Federated": "arn:aws:iam::<ACCOUNT_ID>:oidc-provider/<OIDC_ISSUER>" },
+    "Action": "sts:AssumeRoleWithWebIdentity",
+    "Condition": {
+      "StringEquals": {
+        "<OIDC_ISSUER>:aud": "sts.amazonaws.com",
+        "<OIDC_ISSUER>:sub": "system:serviceaccount:observability:adot-collector"
+      }
+    }
+  }]
+}
+```
+
+**K8s ServiceAccount（摘）**
+
+```yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: adot-collector
+  namespace: observability
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::<ACCOUNT_ID>:role/adot-collector
+```
+
+**最小化 S3 写入策略（示例）**
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Action": ["s3:PutObject"],
+    "Resource": ["arn:aws:s3:::my-bucket/observability/*"]
+  }]
+}
+```
+
+---
+
+## Step 3 - 1 分钟英文口语
+
+### Why HPA + probes + least-privilege keep reliability (≈60s)
+
+**Polished sample (ready to read, ~120–140 words)**
+
+“Reliability isn’t one switch. It’s three guardrails that work together.
+First, **probes** control the traffic valve: `startup` protects cold start, `readiness` is the only gate to receive traffic, and `liveness` is for self-heal. This prevents fake health and gives us graceful drain during rollouts.
+Second, **HPA** keeps capacity elastic. We pick metrics that match the workload—CPU for compute, queue depth or concurrency for I/O—and we configure **‘fast up, slow down’** with stabilization windows so scaling doesn’t oscillate.
+Third, **least-privilege** limits the blast radius. With RBAC and IRSA we bind each workload to a minimal role—no static keys, auditable in CloudTrail.
+Together, these three turn incidents into contained events: traffic only hits warm pods, capacity grows before tail latency explodes, and any misuse is fenced by policy and observable end-to-end.”
+
+### Fill-in template
+
+“At `team/service`, reliability = **probes + HPA + least-privilege**.
+**Probes**: `startup` shields cold start, `readiness` is the only traffic gate, `liveness` restarts only when necessary.
+**HPA**: metric = `CPU/queue depth/concurrency`, target `value`, behavior **fast up / slow down** with `window`.
+**Least-privilege**: RBAC + `IRSA/OIDC`, role scoped to `namespace/SA`, actions `verbs` on `ARN/prefix`; no static keys, full audit.
+Together they keep `tail latency/SLO` stable even during `rollouts/peaks`.”
+
+### 3 sound bites
+
+- “**Readiness is the only traffic gate.** Liveness is for self-heal.”
+- “HPA is **fast up, slow down** with metrics that match the workload.”
+- “**Least-privilege fences the blast radius**, and CloudTrail lets us prove it.”
