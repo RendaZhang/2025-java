@@ -2706,6 +2706,118 @@ QoS 取决于两者配置：Guaranteed（req=lim 且全量设置）> Burstable >
 
 ### HPA 与自动扩缩容：CPU/内存 vs 自定义指标；`stabilizationWindow`、`scaleDownPolicy` 抖动治理；冷启动
 
+- **按负载选指标**：CPU/内存适合计算型；I/O/外依赖型优先**队列深度/并发/QPS**等**自定义指标**。
+- **容量估算**：`副本 ≈ (峰值 QPS / 单 Pod QPS) × 1.2~1.5`；把这个目标转成**平均每 Pod 的目标值**给 HPA。
+- **快涨慢降**：v2 behavior：`scaleUp 0s 窗口 + (Pods/Percent)`；`scaleDown 稳定窗口 ≥300s`，每分钟最多 -20%。
+- **冷启动治理**：`startupProbe` + **预热后才 readiness**；`minReplicas` ≥ 稳态需求；必要时**过量预置**少量空载副本。
+- **联动策略**：重试有**预算 + 抖动**；必要时引入 **KEDA/Adapter** 用**队列/并发**扩容。
+- **与集群层协同**：确保 **requests** 合理，配 **Cluster Autoscaler** 与 **PDB**，避免“扩容无位可排”。
+- **限流优先**：扩容跟不上先**限流/降级**，再扩容，防止尾延迟雪崩。
+
+> “我们把 HPA 做成**快涨慢降**，指标按**负载类型**选择（CPU vs 队列/并发），**预热后才接流量**，并用 **Cluster Autoscaler + PDB** 保证扩容能落地；扩不及时时先**限流**守住尾延迟。”
+
+场景 A - 该选什么指标来扩缩容
+
+**面试官：** 你用什么作为 HPA 指标？CPU 就够了吗？
+
+**我：**
+
+看负载类型。
+
+- **CPU/内存**适合 **CPU 绑定**或**内存增长性**的服务；
+- **自定义指标**适合业务负载，比如**每 Pod 并发数/QPS、队列长度、pending jobs**；
+- I/O 或外部依赖主导的服务，用 CPU 扩容常常**动作滞后**或**放大抖动**。这类我更偏向**队列深度/吞吐**或**请求在途数**做目标。
+
+场景 B - 如何设定目标值与估算容量
+
+**面试官:** 有一个 API，每个 Pod 稳态能抗 `~200` QPS，峰值要 3k QPS，你怎么估？
+
+**我：**
+
+先给**容量心智算式**：`需要副本 ≈ 峰值 QPS / 单 Pod 可承载 QPS × 安全系数(1.2~1.5)`。
+
+所以 `3000/200=15`，×1.3 安全系数 ≈ **20 副本**。HPA 的**自定义平均目标**就设为**每 Pod 200 QPS 左右**（或并发 200），`minReplicas` 至少**略大于稳态需求**，防止频繁冷启动。
+
+场景 C - 控制抖动与“锯齿”
+
+**面试官：** 怎么避免 HPA 来回抖？
+
+**我：**
+
+用 **v2 behavior** 做“**快涨慢降**”：
+
+- **scaleUp**：窗口 0s，允许**每分钟 +100% 或 +10 个 Pod**，取较大者；
+- **scaleDown**：**稳定窗口 300s**，每分钟最多 `-20%`；
+- 另外配合 **readiness 预热**与**队列排空**，保证新 Pod 真能接流量，旧 Pod 退场不丢请求。
+
+> 示例片段（可参考）：
+
+```yaml
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata: { name: api-hpa }
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: api
+  minReplicas: 4
+  maxReplicas: 50
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 60
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      selectPolicy: Max
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 60
+      - type: Pods
+        value: 10
+        periodSeconds: 60
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      selectPolicy: Max
+      policies:
+      - type: Percent
+        value: 20
+        periodSeconds: 60
+```
+
+场景 D - 冷启动与“扩容不见效”
+
+**面试官：** 扩容了，但延迟仍然高，是不是 HPA 没用？
+
+**我：**
+
+常见是**冷启动/连接预热**没做：新 Pod 标记 ready 太早，缓存/连接/JIT 还没好；或者节点资源不足，需要 **Cluster Autoscaler** 先拉新节点。
+
+处理：
+
+- **startupProbe** + **预热**后再通过 **readiness**；
+- `minReplicas` 给到**稳态需要量**，避免每次从 1 拉满；
+- 结合 **集群自动扩容**与 **PDB**，保证新副本有位可调度。
+
+场景 E - 与重试/超时/队列的联动
+
+**面试官：** 高峰下，扩容跟不上，重试会把问题放大吗？
+
+**我：** 会。
+
+对**幂等请求**保留**有限重试 + 抖动回退**，同时以**队列长度/在途数**作为**外部指标**驱动扩容（KEDA 或 Prometheus Adapter）。把**重试预算 ≤10%** 写进策略，避免“重试风暴”。
+
+场景 F - HPA 与 VPA/requests 的关系
+
+**面试官：** 用 HPA 的同时，requests/limits 和 VPA 怎么配？
+
+**我：** **CPU HPA 依赖 requests 计算利用率**，所以必须合理设置 `requests`；**VPA 与 HPA 不要同时调同一资源**（常见是 VPA 只建议或只动内存，HPA 只看 CPU/自定义指标）。还要避免 **CPU limit 过低**导致节流，引起**假高利用率**误扩容。
+
 ### 配置与发布安全：ConfigMap/Secret 版本化与回滚；镜像不可变标签；RollingUpdate 参数；PDB 与 `drain`
 
 ### 最小权限与身份（RBAC / OIDC / IRSA）：ServiceAccount 绑定最小权限；云资源精细授权；密钥不落盘
