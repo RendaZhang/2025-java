@@ -42,7 +42,12 @@
     - [SLO / 告警阈值 / 误差预算](#slo--%E5%91%8A%E8%AD%A6%E9%98%88%E5%80%BC--%E8%AF%AF%E5%B7%AE%E9%A2%84%E7%AE%97)
     - [发布与回滚（灰度 / 蓝绿 / 金丝雀）](#%E5%8F%91%E5%B8%83%E4%B8%8E%E5%9B%9E%E6%BB%9A%E7%81%B0%E5%BA%A6--%E8%93%9D%E7%BB%BF--%E9%87%91%E4%B8%9D%E9%9B%80)
   - [Kubernetes / Cloud-Native](#kubernetes--cloud-native)
-    - [Pod & Container 基础](#pod--container-%E5%9F%BA%E7%A1%80)
+    - [Pod & Container 基础：Pod 为什么是最小调度单位；资源请求/限制；重启策略；日志规范](#pod--container-%E5%9F%BA%E7%A1%80pod-%E4%B8%BA%E4%BB%80%E4%B9%88%E6%98%AF%E6%9C%80%E5%B0%8F%E8%B0%83%E5%BA%A6%E5%8D%95%E4%BD%8D%E8%B5%84%E6%BA%90%E8%AF%B7%E6%B1%82%E9%99%90%E5%88%B6%E9%87%8D%E5%90%AF%E7%AD%96%E7%95%A5%E6%97%A5%E5%BF%97%E8%A7%84%E8%8C%83)
+    - [Service / Ingress / Gateway：流量路径；超时/重试/黏性会话；常见 502/504 排查口径](#service--ingress--gateway%E6%B5%81%E9%87%8F%E8%B7%AF%E5%BE%84%E8%B6%85%E6%97%B6%E9%87%8D%E8%AF%95%E9%BB%8F%E6%80%A7%E4%BC%9A%E8%AF%9D%E5%B8%B8%E8%A7%81-502504-%E6%8E%92%E6%9F%A5%E5%8F%A3%E5%BE%84)
+    - [Probes 与优雅下线：startup/readiness/liveness 的边界；`preStop` + `terminationGrace`；预热与缓存](#probes-%E4%B8%8E%E4%BC%98%E9%9B%85%E4%B8%8B%E7%BA%BFstartupreadinessliveness-%E7%9A%84%E8%BE%B9%E7%95%8Cprestop--terminationgrace%E9%A2%84%E7%83%AD%E4%B8%8E%E7%BC%93%E5%AD%98)
+    - [HPA 与自动扩缩容：CPU/内存 vs 自定义指标；`stabilizationWindow`、`scaleDownPolicy` 抖动治理；冷启动](#hpa-%E4%B8%8E%E8%87%AA%E5%8A%A8%E6%89%A9%E7%BC%A9%E5%AE%B9cpu%E5%86%85%E5%AD%98-vs-%E8%87%AA%E5%AE%9A%E4%B9%89%E6%8C%87%E6%A0%87stabilizationwindowscaledownpolicy-%E6%8A%96%E5%8A%A8%E6%B2%BB%E7%90%86%E5%86%B7%E5%90%AF%E5%8A%A8)
+    - [配置与发布安全：ConfigMap/Secret 版本化与回滚；镜像不可变标签；RollingUpdate 参数；PDB 与 `drain`](#%E9%85%8D%E7%BD%AE%E4%B8%8E%E5%8F%91%E5%B8%83%E5%AE%89%E5%85%A8configmapsecret-%E7%89%88%E6%9C%AC%E5%8C%96%E4%B8%8E%E5%9B%9E%E6%BB%9A%E9%95%9C%E5%83%8F%E4%B8%8D%E5%8F%AF%E5%8F%98%E6%A0%87%E7%AD%BErollingupdate-%E5%8F%82%E6%95%B0pdb-%E4%B8%8E-drain)
+    - [最小权限与身份（RBAC / OIDC / IRSA）：ServiceAccount 绑定最小权限；云资源精细授权；密钥不落盘](#%E6%9C%80%E5%B0%8F%E6%9D%83%E9%99%90%E4%B8%8E%E8%BA%AB%E4%BB%BDrbac--oidc--irsaserviceaccount-%E7%BB%91%E5%AE%9A%E6%9C%80%E5%B0%8F%E6%9D%83%E9%99%90%E4%BA%91%E8%B5%84%E6%BA%90%E7%B2%BE%E7%BB%86%E6%8E%88%E6%9D%83%E5%AF%86%E9%92%A5%E4%B8%8D%E8%90%BD%E7%9B%98)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -2488,7 +2493,7 @@ Timer execTimer = Timer.builder("task_exec_seconds").publishPercentiles(0.5,0.95
 
 ## Kubernetes / Cloud-Native
 
-### Pod & Container 基础
+### Pod & Container 基础：Pod 为什么是最小调度单位；资源请求/限制；重启策略；日志规范
 
 - **Pod 是“进程组”**：同 IP/localhost、共享 Volume、同调度命运；适合主容器 + sidecar/Init 协作。
 - **requests 决定放得下，limits 决定用得了**：延迟敏感服务常用“**内存有限、CPU 不限**”避免 throttle；关注 QoS 级别。
@@ -2550,3 +2555,85 @@ QoS 取决于两者配置：Guaranteed（req=lim 且全量设置）> Burstable >
 写本地文件易踩：**轮转不可控、占用临时存储、迁移丢失**、侧车再采集一跳延迟。
 
 若必须本地，挂 `emptyDir` 并**限制临时存储 request/limit**，防止因磁盘压力被驱逐。
+
+### Service / Ingress / Gateway：流量路径；超时/重试/黏性会话；常见 502/504 排查口径
+
+- **路径心智图**：Client → DNS → 外部 LB → **Ingress/Gateway(L7)** → **Service(L4)** → Pod。
+- **Service 取舍**：ClusterIP 内网；NodePort 兜底；LoadBalancer 云上对外。公网常用 **LB + Ingress**。
+- **502 vs 504**：502 看**上游断连/协议/TLS/探针**；504 看**超时不匹配**（Ingress 超时 < 应用时长）。
+- **超时/重试对齐**：**外松内紧**，幂等请求才有限重试；加**抖动回退**，避免放大故障。
+- **会话保持**：优先**无状态**；粘性仅作短期权衡，注意**滚动升级 + TTL**。
+- **真实 IP 与限流**：信任链路明确；`X-Forwarded-For`/Proxy Protocol 配套；限流优先按**令牌/租户**。
+
+> “我把流量治理分层：**L7 的 Ingress/Gateway 负责路由与策略，L4 的 Service 负责发现与均衡**；**超时与重试外松内紧**，502 查协议/探针，504 查超时链路，尽量无状态避免粘性副作用。”
+
+场景 A - 从 Client 到 Pod 的流量路径
+
+**面试官：** 说一下从用户到后端 Pod 的典型路径，以及各层的职责？
+
+**我：** 常见是 **Client → DNS → 外部 LB → Ingress/Gateway → Service → Pod**。
+
+- **Ingress** 是 L7 路由与 TLS 终止（基于域名/路径），**Gateway API** 是 Ingress 的升级版，能力更细（超时、重试、流量分配更原生）；
+- **Service** 做 L4 发现与负载（ClusterIP/NodePort/LoadBalancer），屏蔽 Pod 漂移；
+- **Pod** 由 kube-proxy/iptables/ipvs 命中，落到后端容器。
+
+场景 B - ClusterIP / NodePort / LoadBalancer 什么时候用
+
+**面试官：** 三种 Service 类型你怎么取舍？
+
+**我：**
+
+- **ClusterIP**：集群内访问（默认）；
+- **NodePort**：简单对外、无云厂商 LB 时兜底；
+- **LoadBalancer**：云上最常用，对外暴露一个公网/私网 VIP。
+
+通常**公网进来用 LB + Ingress**；集群内服务间通信用 ClusterIP。
+
+场景 C  - 502 vs 504 如何快速定位
+
+**面试官：** 线上有时 502，有时 504，你怎么分辨与排查？
+
+**我：**
+
+- **502** 多为**上游断连/握手失败**（后端没起好、协议不匹配、TLS 终止错位、readiness 失败）；
+- **504** 是**超时**（Ingress/Gateway 超时 < 应用处理时长）。
+
+排查顺序：看 Ingress/Gateway 日志与**后端探针**；核对**超时链路**（Client / Ingress / Service / 应用）是否一致；若是 gRPC，要检查 **:authority / HTTP2** 与 **grpc-timeout** 是否正确。
+
+场景 D - 超时与重试的对齐
+
+**面试官：** 超时与重试在 Ingress、应用、客户端各如何配置更稳妥？
+
+**我：** 原则是**从内到外逐级放宽**、且**只对幂等请求有限重试**：
+
+- **客户端**设置**总超时**；
+- **Ingress/Gateway** 设置**请求超时 < 客户端**，并限制**最大重试次数 + 抖动回退**；
+- **应用**内部更短的**下游超时**，避免被外层重试放大。
+
+同时把**429/503**这类**可重试**与**不可重试**错误区分，避免“重试风暴”。
+
+场景 E - 会话保持与无状态改造
+
+**面试官：** 要不要开 sticky session？
+
+**我：** 能**无状态**就无状态，状态放**外部存储（Redis/DB）**。
+
+确需粘性：
+
+- 短期解决“冷缓存命中率低/长连接握手成本高”；
+- 注意**滚动升级**时粘性会把旧 Pod“粘死”，要配较短 cookie TTL 或在灰度阶段只对小流量粘性。
+- 长期建议**一致性哈希或外部会话**来替代。
+
+场景 F - 真实客户端 IP 与限流
+
+**面试官：** 应用层如何拿到用户真实 IP 做审计/限流？
+
+**我：** 在 Ingress/Gateway **保留并信任** `X-Forwarded-For` / `X-Real-IP`，应用只读**受信代理**插入的头。若外部 LB 用 **Proxy Protocol**，Ingress 要同步开启。限流优先按**用户令牌/租户**，IP 只作兜底（NAT 下 IP 不稳定）。
+
+### Probes 与优雅下线：startup/readiness/liveness 的边界；`preStop` + `terminationGrace`；预热与缓存
+
+### HPA 与自动扩缩容：CPU/内存 vs 自定义指标；`stabilizationWindow`、`scaleDownPolicy` 抖动治理；冷启动
+
+### 配置与发布安全：ConfigMap/Secret 版本化与回滚；镜像不可变标签；RollingUpdate 参数；PDB 与 `drain`
+
+### 最小权限与身份（RBAC / OIDC / IRSA）：ServiceAccount 绑定最小权限；云资源精细授权；密钥不落盘
