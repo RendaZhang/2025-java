@@ -203,10 +203,25 @@ Week 8 - 成稿与模拟面试：
 
 ### Day 6 - Kubernetes/云原生最小面
 
-- **算法**：动态规划入门（爬楼梯/打家劫舍思路抽象）；做 2–3 题。
-- **面试能力/知识**：Pod/Service/Ingress、探针、HPA、Config/Secret、PDB、最小权限（OIDC/IRSA）→ `QBANK.md`。
-- **英语**：1 分钟说明 “Why HPA + probes + least‑privilege?”。
-- **当日收尾**：把“扩缩容与故障演练”的回答写成 5–7 条 bullet。
+- **Step 1 - 算法（DP）**：
+  - 完成 LC322 Coin Change（完全背包/最少枚数）、LC139 Word Break（布尔可达性 + 长度剪枝）、LC221 Maximal Square（二维 DP → 一维滚动）
+  - **通用范式**：状态定义 → 转移方程 → 边界条件 → 滚动优化；辅以“样例→反例”自测。
+- **Step 2 - 面试能力（6 小步）**：
+  1. **Pod/Container**：requests 影响调度、limits 约束执行；延迟敏感应用常用“内存设限、CPU 不限”。
+  2. **Service/Ingress/Gateway**：分层治理；502 查协议/探针，504 查超时链路；尽量无状态避免粘性副作用。
+  3. **Probes & 优雅下线**：`readiness` 唯一接流量闸门；`SIGTERM→readiness=false→preStop 排空→宽限→SIGKILL`。
+  4. **HPA**：指标匹配负载；v2 behavior“快涨慢降”；预热后再接流量，联动队列/并发指标。
+  5. **配置与发布安全**：配置即代码，`checksum/config` 触发滚动；镜像用 **digest**；Rolling `0/1` + **PDB** + 规范 drain。
+  6. **最小权限（RBAC/OIDC/IRSA）**：权限=爆炸半径控制器；按 **SA/sub/资源前缀/动词** 最小化；无静态密钥、全链路可审计。
+- **Step 3 - 英语（60s）**：完成“**Probes + HPA + Least-Privilege**”口述稿与模板；三句加分短句可直接背诵。
+
+今日关键收获：
+
+- **readiness 是唯一接流量闸门**；liveness 只做自愈；发布前先预热。
+- HPA 指标**匹配负载**，用 v2 **快涨慢降** + 稳定窗口止抖。
+- 配置即代码：**不可变镜像 + checksum/config + revisionHistoryLimit**。
+- **最小权限 = 小爆炸半径**：RBAC 到 SA，IRSA 限 `sub`，策略三减（主体/资源/动词）。
+- 故障优先“**限流/降级/回滚**”，再扩容；观测链路 **RED→USE→Trace→日志**。
 
 ### Day 7 - 全栈与一周复盘
 

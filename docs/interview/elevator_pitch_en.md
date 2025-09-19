@@ -9,6 +9,7 @@
   - [Message and Consistency](#message-and-consistency)
   - [Java Concurrency](#java-concurrency)
   - [Observability and Release](#observability-and-release)
+  - [Kubernetes / Cloud-Native](#kubernetes--cloud-native)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -180,3 +181,29 @@ Fill-in Template（30–60 秒直读）：
 3. “**Multi-window burn-rate** keeps alerts actionable: fast window pages, slow window opens a ticket.”
 
 > 先用上面的 **Sample** 朗读 1 次，再用 **Template** 换成最近一次真实问题/练习中的服务名和指标，各练 1 次，总计不超过 10 分钟。
+
+## Kubernetes / Cloud-Native
+
+Why HPA + probes + least-privilege keep reliability (≈60s)
+
+**Polished sample (ready to read, ~120–140 words)**
+
+“Reliability isn’t one switch. It’s three guardrails that work together.
+First, **probes** control the traffic valve: `startup` protects cold start, `readiness` is the only gate to receive traffic, and `liveness` is for self-heal. This prevents fake health and gives us graceful drain during rollouts.
+Second, **HPA** keeps capacity elastic. We pick metrics that match the workload—CPU for compute, queue depth or concurrency for I/O—and we configure **‘fast up, slow down’** with stabilization windows so scaling doesn’t oscillate.
+Third, **least-privilege** limits the blast radius. With RBAC and IRSA we bind each workload to a minimal role—no static keys, auditable in CloudTrail.
+Together, these three turn incidents into contained events: traffic only hits warm pods, capacity grows before tail latency explodes, and any misuse is fenced by policy and observable end-to-end.”
+
+Fill-in template
+
+“At `team/service`, reliability = **probes + HPA + least-privilege**.
+**Probes**: `startup` shields cold start, `readiness` is the only traffic gate, `liveness` restarts only when necessary.
+**HPA**: metric = `CPU/queue depth/concurrency`, target `value`, behavior **fast up / slow down** with `window`.
+**Least-privilege**: RBAC + `IRSA/OIDC`, role scoped to `namespace/SA`, actions `verbs` on `ARN/prefix`; no static keys, full audit.
+Together they keep `tail latency/SLO` stable even during `rollouts/peaks`.”
+
+3 sound bites
+
+- “**Readiness is the only traffic gate.** Liveness is for self-heal.”
+- “HPA is **fast up, slow down** with metrics that match the workload.”
+- “**Least-privilege fences the blast radius**, and CloudTrail lets us prove it.”
