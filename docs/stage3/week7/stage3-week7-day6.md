@@ -322,6 +322,78 @@ QoS 取决于两者配置：Guaranteed（req=lim 且全量设置）> Burstable >
 
 ### Probes 与优雅下线：startup/readiness/liveness 的边界；`preStop` + `terminationGrace`；预热与缓存
 
+- **三分工**：startup 保护冷启动；**readiness 是唯一接流量闸门**；liveness 只为**自愈重启**。
+- **轻量 readiness**：只测“可安全接流量”的内部条件；外部依赖用**熔断/降级**而非探针硬连。
+- **优雅下线五步**：`SIGTERM → readiness false → preStop 排空 → 宽限期 → SIGKILL`；HTTP/2/gRPC 要做 **drain**。
+- **发布保护**：`startupProbe` 足够宽松、**预热**后才 ready；`maxUnavailable=0`、`maxSurge=1`、关键服务加 **PDB**。
+- **时序一致性**：Ingress/Gateway/应用的**超时与 Keep-Alive** 与 `terminationGrace` 对齐，避免 502/504。
+- **观测字段**：在日志/指标中记录 **probe 状态变化、终止信号、排空耗时、未完成请求数**，便于复盘。
+
+> “我们把 **readiness 当唯一闸门**、**liveness 只做自愈**，发布时先 `SIGTERM`→`readiness=false`→`preStop` 排空并对 gRPC 做 **drain**，让**时序与超时**严格对齐，就不会在滚动升级里炸出 502/504。”
+
+场景 A - 三类 Probe 到底怎么分工
+
+**面试官：** startup、readiness、liveness 的边界？
+
+**我：**
+
+- **startupProbe**：**冷启动期的保护罩**。在它“放行”前，liveness/readiness 都**不生效**，避免慢启动被误杀。
+- **readinessProbe**：**唯一接流量的闸门**。失败 = 从 Service 端点摘除，不再分到新请求。
+- **livenessProbe**：进程**自愈**开关。持续失败 = kubelet **重启容器**。
+
+调参：先给 startup 足够的 `initialDelaySeconds`/`failureThreshold`，readiness 再严格一些，liveness 最保守，避免“自杀循环”。
+
+场景 B - “假健康报错”与依赖检查
+
+**面试官：** 常见“健康但报错”的原因？
+
+**我：**
+
+两类坑：
+
+1. **探针写太重**：readiness 每次都跑依赖探活（连 DB/外部 API），一旦下游抖动就把自己摘流，形成雪崩；
+2. **指标口径错**：liveness 监控业务错误码，导致小抖动触发重启。
+
+实践：**readiness 仅检查“是否能安全接流量”**（线程/队列/连接池可用、关键本地依赖就绪），**下游依赖用熔断/降级**兜住，不要让探针放大故障。
+
+场景 C - 优雅下线的完整序列
+
+**面试官：** 描述一次优雅下线的时序。
+
+**我：**
+
+1. **接收 SIGTERM**（或节点驱逐/滚动升级触发）；
+2. 立刻让 **readiness 返回失败** → 从 Service 端点摘除，**不再接新流量**；
+3. 执行 **preStop**：停止接受新连接，开启**连接/队列排空**，等待飞行中的请求完成；
+4. 在 `terminationGracePeriodSeconds` **宽限期**内完成收尾；
+5. 若仍未完成，最后 **SIGKILL** 强制终止。
+
+细节：HTTP/2/gRPC 要开启**连接耗尽**（drain），设置**服务器/反代的 Keep-Alive 超时**覆盖宽限期，避免升级时 502/504。
+
+场景 D - 发布时 502/504 的探针与时序问题
+
+**面试官：** 滚动升级偶发 502/504，你会怎么看？
+
+**我：**
+
+多半是**时序没对齐**：新 Pod **未预热**就被判 ready（缓存未建、JIT/连接未起），或旧 Pod **还在处理**时已被摘除/被 SIGKILL。
+
+动作：
+
+- 给 **startupProbe** 足够时间；
+- **预热**：启动后先拉缓存/建连接再放行 readiness；
+- **preStop + 合理的 terminationGrace** 保证排空；
+- Ingress/网关配置**上游连接耗尽**与**超时一致性**；
+- Deployment 设 `maxUnavailable=0, maxSurge=1`，关键服务配 **PDB**，杜绝容量“塌陷”。
+
+场景 E - gRPC / 长连接的健康与排空
+
+**面试官：** gRPC 如何做健康检查与排空？
+
+**我：**
+
+健康用 **gRPC health check**（`grpc.health.v1.Health/Check`），readiness 只要返回 SERVING；下线时先**停止新流量**，再对现有 HTTP/2 流开启 **drain**（发送 GOAWAY/限制新流），等待活跃 RPC 完成，宽限期内强制截止未完成的长尾。
+
 ### HPA 与自动扩缩容：CPU/内存 vs 自定义指标；`stabilizationWindow`、`scaleDownPolicy` 抖动治理；冷启动
 
 ### 配置与发布安全：ConfigMap/Secret 版本化与回滚；镜像不可变标签；RollingUpdate 参数；PDB 与 `drain`
