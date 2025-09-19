@@ -510,4 +510,121 @@ spec:
 
 ### 配置与发布安全：ConfigMap/Secret 版本化与回滚；镜像不可变标签；RollingUpdate 参数；PDB 与 `drain`
 
+- **配置即代码**：只走 Git；变更 = 新对象 + **`checksum/config` 注解触发滚动**；保留 `revisionHistoryLimit` 可回滚。
+- **Secret 安全链**：etcd **KMS 加密** → **不落盘** → **最小权限** → **外部密管（External Secrets/ASM）** 同步。
+- **镜像不可变**：禁用 `:latest`，用 **digest 或唯一 tag**；保证回滚是字节级一致。
+- **Rolling 护栏**：`maxUnavailable=0`、`maxSurge=1`、**PDB**；与 startup/readiness、preStop 配套。
+- **drain 规范**：评估 emptyDir；按 PDB 节奏驱逐；必要时先扩后 drain，观察排空指标。
+- **ConfigMap/Secret `immutable: true`**：线上默认打开；更新走“新名 + 滚动”，热更仅在明确支持热加载的组件上用。
+- **审计**：记录镜像 digest、配置版本、rollout 修订号到变更单，问题可追溯。
+
+> “我们把配置当代码，用 `checksum/config` 驱动**可审计、可回滚**的发布；镜像以 **digest** 固定，Rolling 配 **0/1**（`maxUnavailable/Surge`）和 **PDB**，节点维护走 drain，Secret 交给云密管同步，整条链路既安全又可控。”
+
+场景 A - 配置改了，怎么“像代码一样可回滚”
+
+**面试官：** 线上改配置最怕不可追溯，你怎么管？
+
+**我：**
+
+规则是“**配置即代码**”：
+
+1. ConfigMap/Secret **只经由 Git** 合并到主干；
+2. **不直接热改**，而是**生成新对象 + 触发滚动**；
+3. 在 Deployment 的 **podTemplate 加 `checksum/config` 注解**，值为配置内容 hash，变更即滚动；
+4. 开启 `revisionHistoryLimit`，用 `kubectl rollout undo` 一键回滚到上个稳定版本。
+
+场景 B - Secret 安全与来源
+
+**面试官：** Secret 放 K8s 里就安全吗？
+
+**我：** 只 base64 **不等于加密**。
+
+要点：
+
+- 集群层开 **etcd 加密（KMS 包封）**；
+- 应用层**不落盘**（优先 env 或 tmpfs volume），**最小权限**读取；
+- 建议用 **External Secrets/ASM** 同步（结合 IRSA），密钥托管在云密管里，K8s 只拿到用量副本；
+- 对 Secret 也可用 `immutable: true`，误改直接创建新名。
+
+场景 C - 镜像标签为何必须“不可变”
+
+**面试官：** 我们一直用 `:latest`，有什么问题？
+
+**我：**
+
+回滚会“**名同实异**”。必须**不可变镜像**：
+
+- 用 **digest**：`image: repo/app@sha256:...`；
+- 或 CI 产出 **唯一 tag（含 commit SHA）** 并冻结。
+
+回滚到版本 X 才是**字节级一致**，诊断与审计才可信。
+
+场景 D - RollingUpdate 的护栏
+
+**面试官：** 如何减少滚动升级的抖动与风险？
+
+**我：**
+
+- `strategy.rollingUpdate`: **`maxUnavailable=0`，`maxSurge=1`** 保容量；
+- 关键服务配 **PDB**（如 `minAvailable: 80%`），防止维护/升级把副本一次性赶没；
+- 结合 **startup/readiness + preStop**（上一步讲过）确保**预热后才接流量、下线先排空**；
+- `revisionHistoryLimit` ≥ 3，出现异常 `kubectl rollout undo` 秒退。
+
+场景 E - 节点维护与 drain 的正确姿势
+
+**面试官：** 节点维护常见翻车点？
+
+**我：**
+
+忽视 **PDB** 与 **临时存储**：
+
+- 维护前 `kubectl drain <node> --ignore-daemonsets --delete-emptydir-data`，但提前评估是否有**关键信息在 emptyDir**；
+- 没有 PDB 的服务可能被一次性驱逐，**容量塌陷**；
+- 观测 **排空时长/未完成请求数**，必要时临时**加副本**再 drain。
+
+场景 F - ConfigMap/Secret 的“热更与不可变”
+
+**面试官：** 要不要开 `immutable: true`？
+
+**我：**
+
+推荐**线上默认 immutable**，避免被临时改坏；要更新就**新建对象名**（或新 key），更新 `checksum/config` 触发滚动。
+
+确需热更：挂 **volume** 模式（非 env），应用自己**监听文件变动**并热加载，同时仍需保留 Git 源与审计。
+
+极简参考片段：
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: api-config-v3
+immutable: true
+data:
+  APP_MODE: "prod"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+spec:
+  revisionHistoryLimit: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  template:
+    metadata:
+      annotations:
+        checksum/config: "sha256:abcd1234..." # 来自 ConfigMap 内容的 hash
+    spec:
+      containers:
+      - name: app
+        image: repo/api@sha256:... # 不可变镜像
+        envFrom:
+        - configMapRef:
+            name: api-config-v3
+```
+
 ### 最小权限与身份（RBAC / OIDC / IRSA）：ServiceAccount 绑定最小权限；云资源精细授权；密钥不落盘
