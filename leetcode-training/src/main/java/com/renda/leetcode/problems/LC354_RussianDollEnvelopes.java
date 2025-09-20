@@ -7,6 +7,12 @@ import com.renda.leetcode.core.LeetCodeProblem;
 /**
  * LeetCode - 354 Russian Doll Envelopes
  *
+ * 排序 + 一维 LIS：
+ * - 先按宽度 `w` 升序排序；**宽度相等时按高度 `h` 降序**，这样相同宽度不会被误计入 LIS。
+ * - 再对排序后的高度序列做 **LIS（严格递增）**，得到最多可嵌套的数量。
+ * - LIS 用“耐心排序”思路：维护 `tails[]`，对每个高度二分找到第一个 `>= h` 的位置替换；
+ *   严格递增保证相等高度不会算作嵌套。
+ *
  * Runtime 37 ms Beats 97.86%
  * Memory 104.62 MB Beats 23.96%
  *

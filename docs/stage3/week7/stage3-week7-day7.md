@@ -85,11 +85,13 @@ class Solution354 {
 - `sold`：今天刚卖出（进入冷冻日）；
 - `rest`：空仓且不在冷冻日（可买）。
 
-  转移（遍历每天价格 `p`）：
+转移（遍历每天价格 `p`）：
+
 - `sold' = hold + p`（今天把之前持有的卖了）；
 - `hold' = max(hold, rest - p)`（继续持有或从休息中买入）；
 - `rest' = max(rest, sold)`（空仓维持，或由前一天卖出度过冷冻日）。
-  答案 `max(sold, rest)`。
+
+答案 `max(sold, rest)`。
 
 **Java 代码**
 
