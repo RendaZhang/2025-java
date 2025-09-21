@@ -52,6 +52,7 @@
     - [React/TypeScript 基础最小面（函数组件/Hook、受控 vs 非受控、常用 TS 工具类型、错误边界）](#reacttypescript-%E5%9F%BA%E7%A1%80%E6%9C%80%E5%B0%8F%E9%9D%A2%E5%87%BD%E6%95%B0%E7%BB%84%E4%BB%B6hook%E5%8F%97%E6%8E%A7-vs-%E9%9D%9E%E5%8F%97%E6%8E%A7%E5%B8%B8%E7%94%A8-ts-%E5%B7%A5%E5%85%B7%E7%B1%BB%E5%9E%8B%E9%94%99%E8%AF%AF%E8%BE%B9%E7%95%8C)
     - [路由与表单（React Router v6、嵌套路由/懒加载、表单校验与数据流）](#%E8%B7%AF%E7%94%B1%E4%B8%8E%E8%A1%A8%E5%8D%95react-router-v6%E5%B5%8C%E5%A5%97%E8%B7%AF%E7%94%B1%E6%87%92%E5%8A%A0%E8%BD%BD%E8%A1%A8%E5%8D%95%E6%A0%A1%E9%AA%8C%E4%B8%8E%E6%95%B0%E6%8D%AE%E6%B5%81)
     - [SSR / CSR / 选择性水合（取舍与指标：TTFB/TTI/CLS；岛屿架构要点）](#ssr--csr--%E9%80%89%E6%8B%A9%E6%80%A7%E6%B0%B4%E5%90%88%E5%8F%96%E8%88%8D%E4%B8%8E%E6%8C%87%E6%A0%87ttfbtticls%E5%B2%9B%E5%B1%BF%E6%9E%B6%E6%9E%84%E8%A6%81%E7%82%B9)
+    - [CSP / 缓存策略（CSP `nonce/hash`、Cache-Control/ETag、CDN/Edge/浏览器多级缓存）](#csp--%E7%BC%93%E5%AD%98%E7%AD%96%E7%95%A5csp-noncehashcache-controletagcdnedge%E6%B5%8F%E8%A7%88%E5%99%A8%E5%A4%9A%E7%BA%A7%E7%BC%93%E5%AD%98)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -3345,3 +3346,115 @@ import Chart from '../components/Chart.jsx' // 交互组件
 const bootstrap = (window as any).__BOOTSTRAP__;
 queryClient.setQueryData(['page', id], bootstrap.pageData);
 ```
+
+### CSP / 缓存策略（CSP `nonce/hash`、Cache-Control/ETag、CDN/Edge/浏览器多级缓存）
+
+- **CSP 最小模板**：`default-src 'self'`; `script-src 'self' 'nonce-<nonce>' 'strict-dynamic'`; `object-src 'none'`; `base-uri 'self'`; `frame-ancestors 'none'`; 按需补 `img-src`/`font-src`/`connect-src` 白名单。
+- **先 Report-Only** 再收紧：用 `Content-Security-Policy-Report-Only` 收集违例。
+- **指纹化文件名 + 超长缓存**：`app.[hash].js` 配 `max-age=31536000, immutable`。
+- **HTML 用 SWR**：`s-maxage + stale-while-revalidate` 给 CDN；浏览器侧 `no-store` 或 `max-age=0`。
+- **API 分公有/私有**：公有数据 `ETag/Last-Modified + s-maxage`；私有数据 `Vary: Authorization, Cookie` 并短 TTL/不缓存。
+- **前端监控放行**：`connect-src` 白 Sentry/上报域；上报携带 `release/env/trace_id`。
+- **不要把机密注入前端**：机密留在后端/边缘密管；前端只收短期令牌。
+
+> “**快靠缓存，稳靠指纹，安全靠 CSP**：指纹化静态资源配一年 immutable，HTML 用 SWR 短缓存可回源，CSP 用 `nonce + strict-dynamic` 收紧脚本面，再把上报域放进 `connect-src`，既跑得快也守得住。”
+
+场景 A - 30 秒讲清“安全头 + 缓存”的组合拳
+
+**面试官：** 为啥前端要同时谈 CSP 和缓存？
+
+**我：** 因为“**快**”和“**安全**”是一对门神：**缓存**让静态资源飞起来，**CSP** 兜住 XSS 与第三方脚本风险；两者要配合——比如**带哈希指纹的不可变资源**才能安全地设超长缓存；而页面 HTML 因为含动态内容和 nonce，要**短缓存/可回源**。
+
+场景 B - CSP 最小可用策略
+
+**面试官：** 你的 CSP 最小落地长啥样？
+
+**我：** 以“**默认严、按需白**”为原则：`default-src 'self'`，脚本用 `'nonce-<nonce>' + strict-dynamic`，禁用 `object-src`，限制 `frame-ancestors`。图片/字体/CDN 按域名白。错误先用 `Content-Security-Policy-Report-Only` 观测，再转正。
+
+场景 C - nonce vs hash
+
+**面试官：** 用 nonce 还是 hash？
+
+**我：** **SSR 页面**推荐 **nonce**（每次响应注入、和 CSP 头一致）；**稳定内联片段**可用 **hash**。若使用构建产物（React/Astro），我们尽量**不写内联脚本**，而是外链脚本 + nonce，仅留极小的启动脚本。
+
+场景 D - 缓存分层与策略
+
+**面试官：** 静态资源、HTML、API 各怎么配缓存？
+
+**我：**
+
+- **静态资源（带指纹）**：`Cache-Control: public, max-age=31536000, immutable`（CDN/浏览器都长缓存）。
+- **HTML**：`s-maxage=60, stale-while-revalidate=30`（CDN 可短缓存并回源刷新），浏览器端 `max-age=0` 或 `no-store`。
+- **API**：公开数据可 `s-maxage` + ETag；**用户态**加 `Vary: Authorization, Cookie`，多用短 TTL 或 `no-store`，避免缓存越权。
+
+场景 E - ETag / SWR / 版本灰度
+
+**面试官：** 如何在“新版本上线”时既快又稳？
+
+**我：** **文件名指纹**保证老用户缓存不冲突；HTML 走 **SWR**（CDN 先回旧副本，再异步回源），回源命中 **ETag/Last-Modified** 省流量。灰度时以**路由级别**逐步上新模板，失败即刻回退，而静态资源保持不可变。
+
+场景 F - 前端监控与 CSP 的联动
+
+**面试官：** CSP 开了以后，Sentry 之类的上报受影响吗？
+
+**我：** 需要在 `connect-src` 放行 Sentry 上报域名；Source Map 下载域也要白。推荐**前后端统一 TraceID**，前端错误上报携带 `release/environment/trace_id`，后端能一跳串联。
+
+场景 G - 常见坑
+
+**面试官：** 说三个你见过的坑？
+
+**我：**
+
+1. **把 nonce 只加在 `<script>` 标签**，却忘了 CSP 头里的 `script-src` 没带同一 nonce；
+2. **静态资源没做指纹**却设了长缓存，导致热修无法生效；
+3. **把敏感变量烘焙进 HTML/JS**，CSP 再严也拦不住泄漏，因此**机密只在服务端或边缘机密管控**，前端只接收**临时令牌**。
+
+迷你配置片段（可直接参考改造）
+
+**Nginx（静态资源与 HTML）**
+
+```nginx
+# 静态资源（带指纹）
+location ~* \.(js|css|png|jpg|svg|woff2)$ {
+  add_header Cache-Control "public, max-age=31536000, immutable";
+  try_files $uri =404;
+}
+
+# HTML：CDN 前可短缓存，浏览器不缓存
+location = /index.html {
+  add_header Cache-Control "no-store";
+  try_files $uri /index.html;
+}
+```
+
+**CSP 头（后端或边缘注入，带 nonce）**
+
+```http
+Content-Security-Policy:
+  default-src 'self';
+  script-src 'self' 'nonce-{{nonce}}' 'strict-dynamic';
+  style-src 'self' 'unsafe-inline';
+  img-src 'self' data: blob:;
+  font-src 'self';
+  connect-src 'self' https://o123456.ingest.sentry.io https://api.example.com;
+  frame-ancestors 'none';
+  base-uri 'self';
+  object-src 'none';
+  report-to csp-endpoint; report-uri https://report.example.com/csp;
+```
+
+**服务器模板中注入 nonce（伪代码）**
+
+```html
+<!-- 服务端生成 nonce，并同值写入 CSP 头与标签 -->
+<script nonce="{{nonce}}">
+  window.__BOOT__ = {...}; // 仅小型启动脚本
+</script>
+<script src="/static/app.3a9f1c.js" nonce="{{nonce}}"></script>
+```
+
+**CloudFront / CDN（HTML SWR 示例）**
+
+- Behavior for `/*.html`: `Cache-Control: s-maxage=60, stale-while-revalidate=30`
+- Behavior for `/static/*`: `Cache-Control: public, max-age=31536000, immutable`
+- Add `Accept-Encoding`, `Authorization`, `Cookie` to **Vary/Cache key** 视业务而定（私人页不要共享缓存）。
