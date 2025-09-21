@@ -50,6 +50,7 @@
     - [最小权限与身份（RBAC / OIDC / IRSA）：ServiceAccount 绑定最小权限；云资源精细授权；密钥不落盘](#%E6%9C%80%E5%B0%8F%E6%9D%83%E9%99%90%E4%B8%8E%E8%BA%AB%E4%BB%BDrbac--oidc--irsaserviceaccount-%E7%BB%91%E5%AE%9A%E6%9C%80%E5%B0%8F%E6%9D%83%E9%99%90%E4%BA%91%E8%B5%84%E6%BA%90%E7%B2%BE%E7%BB%86%E6%8E%88%E6%9D%83%E5%AF%86%E9%92%A5%E4%B8%8D%E8%90%BD%E7%9B%98)
   - [全栈](#%E5%85%A8%E6%A0%88)
     - [React/TypeScript 基础最小面（函数组件/Hook、受控 vs 非受控、常用 TS 工具类型、错误边界）](#reacttypescript-%E5%9F%BA%E7%A1%80%E6%9C%80%E5%B0%8F%E9%9D%A2%E5%87%BD%E6%95%B0%E7%BB%84%E4%BB%B6hook%E5%8F%97%E6%8E%A7-vs-%E9%9D%9E%E5%8F%97%E6%8E%A7%E5%B8%B8%E7%94%A8-ts-%E5%B7%A5%E5%85%B7%E7%B1%BB%E5%9E%8B%E9%94%99%E8%AF%AF%E8%BE%B9%E7%95%8C)
+    - [路由与表单（React Router v6、嵌套路由/懒加载、表单校验与数据流）](#%E8%B7%AF%E7%94%B1%E4%B8%8E%E8%A1%A8%E5%8D%95react-router-v6%E5%B5%8C%E5%A5%97%E8%B7%AF%E7%94%B1%E6%87%92%E5%8A%A0%E8%BD%BD%E8%A1%A8%E5%8D%95%E6%A0%A1%E9%AA%8C%E4%B8%8E%E6%95%B0%E6%8D%AE%E6%B5%81)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -3132,3 +3133,113 @@ type ApiResult<T> = { data: T; error?: string };
 1. **稳定的 key**（业务 id），避免索引当 key；
 2. **虚拟列表**（如 react-window）减少真实节点数；
 3. 把**纯展示子组件 `React.memo`**，并用 `useCallback/useMemo` 稳定 props 引用，配合选择性水合/分片渲染优化首屏。
+
+### 路由与表单（React Router v6、嵌套路由/懒加载、表单校验与数据流）
+
+- **布局壳 + `<Outlet/>`**：壳承载导航/鉴权/面包屑，子页只换内容。
+- **路由层鉴权**：刷新/直链可拦截；角色/租户细分放在壳或守卫组件。
+- **懒加载 + 骨架屏 + 预取**：体感更丝滑，避免白屏。
+- **表单选型**：小表单受控；大表单**非受控 + 表单库 + schema 校验**；提交端再做一次服务器校验。
+- **服务器状态交给 Query**：提交后 `invalidateQueries`；筛选/分页用 **search params**。
+- **乐观更新 + 快照回滚**：不卡 UI，失败可还原；危险操作要二次确认。
+- **类型与可及性**：字符串→数字/日期的安全转换；`aria-*` 与错误聚焦别缺。
+
+> “我把**路由当布局与守卫层**、把**表单当数据契约**：壳管鉴权与骨架，页面只管内容；校验走 schema，服务器状态交给 Query，提交用**乐观更新 + 快照回滚**提升体验。”
+
+场景 A - 路由最小心智
+
+**面试官：** React Router v6 里，嵌套路由与布局你怎么解释？
+
+**我：** 把“父路由”当**布局壳**，子路由在 `<Outlet/>` 里渲染。好处是：壳只渲一次，内部页面切换更快；权限/导航/面包屑都挂在壳上，避免重复实现。
+
+场景 B - 受保护路由与重定向
+
+**面试官：** 鉴权怎么做最稳妥？
+
+**我：** 把**鉴权逻辑放在路由层**：若未登录就 `navigate('/login', { replace:true })`；若有角色/租户限制，**在布局壳判断**并给出 403 页。这样比页面里再判断更不易遗漏，刷新/直链都能拦住。
+
+场景 C - 懒加载与骨架屏
+
+**面试官：** 路由懒加载会带白屏吗？
+
+**我：** 用 `lazy()` + `<Suspense fallback={<Skeleton/>}>`，**父壳不重渲**，只替换子路由；列表页配**骨架屏 + 首屏最小数据**，同时在 `onMouseEnter` 的导航上**预取下一页模块**，减少感知延迟。
+
+场景 D - 表单：受控 vs 非受控
+
+**面试官：** 大表单怎么选型？
+
+**我：** 小表单**受控**最直观；大表单 **非受控 + 表单库（react-hook-form）** 更省渲染。校验放 **schema（Zod/Yup）**，表单库只负责收集与错误展示；**提交再做一次服务器校验**，口径一致。
+
+场景 E - 数据流与缓存
+
+**面试官：** 表单提交成功后，列表如何同步刷新？
+
+**我：** 用**请求层缓存**（TanStack Query）管理服务器状态：提交成功后 `invalidateQueries(['items'])`。路由层用**搜索参数**表达筛选（`useSearchParams`），避免把服务器状态塞进全局 store。
+
+场景 F - 乐观更新与回滚
+
+**面试官：** 创建/删除要不卡 UI？
+
+**我：** 做**乐观更新**：先改本地缓存显示成功，再发请求；失败时**回滚**到之前的快照，并弹出错误。对“不可逆/高风险”动作仍需**二次确认**。
+
+场景 G - 常见踩坑
+
+**面试官：** 表单里最常见的三个坑？
+
+**我：**
+
+1. **数字/日期类型**：HTML 输入拿到的是字符串，提交前要做类型安全转换；
+2. **受控组件性能**：大表单每击键 re-render，需**节流/去抖**或改走非受控；
+3. **可访问性**：`label htmlFor`、`aria-invalid`、错误聚焦到第一个有问题的控件。
+
+迷你代码片段（TypeScript，精简可复用）
+
+**受保护路由（布局壳守卫）**
+
+```tsx
+function ProtectedLayout() {
+  const user = useUser(); // null 或 {role: 'admin'}
+  const navigate = useNavigate();
+  useEffect(() => { if (!user) navigate('/login', { replace: true }); }, [user]);
+  if (!user) return null; // or spinner
+  return <Outlet/>;
+}
+```
+
+**表单（react-hook-form + Zod）**
+
+```tsx
+const schema = z.object({
+  title: z.string().min(1),
+  price: z.coerce.number().min(0) // 字符串安全转数字
+});
+type FormData = z.infer<typeof schema>;
+
+const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
+  resolver: zodResolver(schema)
+});
+const onSubmit = (data: FormData) => mutate(data); // TanStack mutation
+
+<form onSubmit={handleSubmit(onSubmit)}>
+  <input {...register('title')} aria-invalid={!!errors.title}/>
+  <input {...register('price')} />
+  <button type="submit">Save</button>
+</form>
+```
+
+**乐观更新 + 回滚（TanStack Query）**
+
+```ts
+const qc = useQueryClient();
+const mutation = useMutation({
+  mutationFn: createItem,
+  onMutate: async (newItem) => {
+    await qc.cancelQueries({ queryKey: ['items'] });
+    const snapshot = qc.getQueryData<Item[]>(['items']);
+    qc.setQueryData<Item[]>(['items'], (old = []) => [{ ...newItem, id: 'temp' }, ...old]);
+    return { snapshot };
+  },
+  onError: (_err, _vars, ctx) => { qc.setQueryData(['items'], ctx?.snapshot); },
+  onSettled: () => qc.invalidateQueries({ queryKey: ['items'] })
+});
+```
