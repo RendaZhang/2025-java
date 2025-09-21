@@ -48,6 +48,8 @@
     - [HPA 与自动扩缩容：CPU/内存 vs 自定义指标；`stabilizationWindow`、`scaleDownPolicy` 抖动治理；冷启动](#hpa-%E4%B8%8E%E8%87%AA%E5%8A%A8%E6%89%A9%E7%BC%A9%E5%AE%B9cpu%E5%86%85%E5%AD%98-vs-%E8%87%AA%E5%AE%9A%E4%B9%89%E6%8C%87%E6%A0%87stabilizationwindowscaledownpolicy-%E6%8A%96%E5%8A%A8%E6%B2%BB%E7%90%86%E5%86%B7%E5%90%AF%E5%8A%A8)
     - [配置与发布安全：ConfigMap/Secret 版本化与回滚；镜像不可变标签；RollingUpdate 参数；PDB 与 `drain`](#%E9%85%8D%E7%BD%AE%E4%B8%8E%E5%8F%91%E5%B8%83%E5%AE%89%E5%85%A8configmapsecret-%E7%89%88%E6%9C%AC%E5%8C%96%E4%B8%8E%E5%9B%9E%E6%BB%9A%E9%95%9C%E5%83%8F%E4%B8%8D%E5%8F%AF%E5%8F%98%E6%A0%87%E7%AD%BErollingupdate-%E5%8F%82%E6%95%B0pdb-%E4%B8%8E-drain)
     - [最小权限与身份（RBAC / OIDC / IRSA）：ServiceAccount 绑定最小权限；云资源精细授权；密钥不落盘](#%E6%9C%80%E5%B0%8F%E6%9D%83%E9%99%90%E4%B8%8E%E8%BA%AB%E4%BB%BDrbac--oidc--irsaserviceaccount-%E7%BB%91%E5%AE%9A%E6%9C%80%E5%B0%8F%E6%9D%83%E9%99%90%E4%BA%91%E8%B5%84%E6%BA%90%E7%B2%BE%E7%BB%86%E6%8E%88%E6%9D%83%E5%AF%86%E9%92%A5%E4%B8%8D%E8%90%BD%E7%9B%98)
+  - [全栈](#%E5%85%A8%E6%A0%88)
+    - [React/TypeScript 基础最小面（函数组件/Hook、受控 vs 非受控、常用 TS 工具类型、错误边界）](#reacttypescript-%E5%9F%BA%E7%A1%80%E6%9C%80%E5%B0%8F%E9%9D%A2%E5%87%BD%E6%95%B0%E7%BB%84%E4%BB%B6hook%E5%8F%97%E6%8E%A7-vs-%E9%9D%9E%E5%8F%97%E6%8E%A7%E5%B8%B8%E7%94%A8-ts-%E5%B7%A5%E5%85%B7%E7%B1%BB%E5%9E%8B%E9%94%99%E8%AF%AF%E8%BE%B9%E7%95%8C)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -3056,3 +3058,77 @@ metadata:
   }]
 }
 ```
+
+---
+
+## 全栈
+
+### React/TypeScript 基础最小面（函数组件/Hook、受控 vs 非受控、常用 TS 工具类型、错误边界）
+
+- Hooks 遵循**顺序模型**：只在顶层、只在函数组件/自定义 Hook 调用。
+- **State 触发渲染，Ref 不触发**；昂贵派生用 `useMemo`，函数引用稳定用 `useCallback`。
+- `useEffect` 防三坑：**漏依赖 / 误用副作用 / 请求竞态**（用 AbortController 清理）。
+- 表单：**小表单受控**，**大表单非受控 + 表单库 + schema 校验**；事件类型用 `React.ChangeEvent<>` 等。
+- Props 建模：优先 `ComponentProps`、`Pick/Partial/Record`，**显式 children**。
+- 错误边界：仍用**类组件** + Sentry 上报，链上 **release/environment/traceId**。
+- 大列表：**稳定 key + 虚拟化 + React.memo**，必要时路由/组件级拆分与选择性水合。
+
+> “我把 React 当**纯函数 + 状态槽位**来写：**State 负责可见变化、Ref 负责持久引用、Effect 只做副作用**；类型上用 `ComponentProps` 组合与显式 `children`，错误边界交给类组件并配合 Sentry 串起 trace。”
+
+场景 A - Hooks 心智与规则
+
+**面试官：** 用一句话讲讲 Hooks 的工作方式和两条硬规则？
+
+**我：** Hooks 基于**渲染顺序**存取状态，每次渲染都会拿到独立的快照；两条硬规则是**只在最顶层调用**、**只在 React 函数组件或自定义 Hook 中调用**。违反顺序（如条件里调用）会把状态槽位对乱，导致“幽灵状态”。
+
+场景 B - State vs Ref vs Memo
+
+**面试官：** 什么时候用 `useState`，什么时候用 `useRef` 或 `useMemo`？
+
+**我：** 需要**触发重新渲染**用 `useState`；只是**跨渲染持久存值**且**不触发渲染**用 `useRef`（比如保存上一次的值/计时器句柄）；**昂贵计算缓存**或**派生数据**用 `useMemo`，**函数稳定引用**用 `useCallback`，否则子组件容易反复重渲。
+
+场景 C - `useEffect` 依赖与常见坑
+
+**面试官：** `useEffect` 最容易踩的坑？
+
+**我：** 三个：
+
+1. **漏依赖**：依赖数组少了变量导致读到旧值；
+2. **不必要的副作用**：可以放到渲染阶段的纯计算不该进 effect；
+3. **竞态**：发请求没做取消/标记，晚返回覆盖早返回。实践里我会**把数据获取放到事件/路由层**，并在 effect 中清理 AbortController。
+
+场景 D - 受控 vs 非受控表单
+
+**面试官：** 复杂表单你怎么选？
+
+**我：** 简单场景用**受控组件**（值走 state）；大表单或高频输入用**非受控 + 表单库**（如 `react-hook-form`）减少重渲，**校验放 schema**（Zod/Yup），提交时统一做**客户端 + 服务器**双校验。TS 上事件类型常用：`React.ChangeEvent<HTMLInputElement>`、`React.FormEvent<HTMLFormElement>`。
+
+场景 E - Props 的类型建模
+
+**面试官：** 复用已有组件的 Props，你怎么在 TS 里写？
+
+**我：** 用工具类型组合，比如：
+
+```ts
+type ButtonProps = React.ComponentProps<'button'> & { loading?: boolean };
+type CardTitleProps = Pick<CardProps, 'title' | 'subtitle'>;
+type ApiResult<T> = { data: T; error?: string };
+```
+
+避免 `React.FC` 的隐式 `children` 争议，**显式声明 `children?: React.ReactNode`** 更清晰。默认值用函数参数默认值，不再用 `defaultProps`。
+
+场景 F - 错误边界与异常收敛
+
+**面试官：** 函数组件如何做错误边界？
+
+**我：** 错误边界目前仍是**类组件**（`componentDidCatch`），我会写一个通用 `ErrorBoundary` 包裹路由级或关键区域；函数组件内部用 `try/catch` 只能抓**事件处理**，抓不到渲染期错误。上报走 **Sentry**，带上 **release/environment/traceId**，方便和后端串联。
+
+场景 G - 列表渲染与性能
+
+**面试官：** 大列表卡顿怎么治？
+
+**我：** 三点：
+
+1. **稳定的 key**（业务 id），避免索引当 key；
+2. **虚拟列表**（如 react-window）减少真实节点数；
+3. 把**纯展示子组件 `React.memo`**，并用 `useCallback/useMemo` 稳定 props 引用，配合选择性水合/分片渲染优化首屏。
