@@ -29,6 +29,13 @@
     - [Fill-in Template (30–60s)](#fill-in-template-3060s)
     - [3 Sound Bites](#3-sound-bites)
   - [Step 5 - Week 8 Day 1（简历日）改写清单](#step-5---week-8-day-1%E7%AE%80%E5%8E%86%E6%97%A5%E6%94%B9%E5%86%99%E6%B8%85%E5%8D%95)
+    - [后端 & 可靠性（Observability + Release）](#%E5%90%8E%E7%AB%AF--%E5%8F%AF%E9%9D%A0%E6%80%A7observability--release)
+    - [云原生（Kubernetes / 安全）](#%E4%BA%91%E5%8E%9F%E7%94%9Fkubernetes--%E5%AE%89%E5%85%A8)
+    - [前端 & 体验（渲染、性能、安全、观测）](#%E5%89%8D%E7%AB%AF--%E4%BD%93%E9%AA%8C%E6%B8%B2%E6%9F%93%E6%80%A7%E8%83%BD%E5%AE%89%E5%85%A8%E8%A7%82%E6%B5%8B)
+    - [英文亮点（可做简历小标题或要点）](#%E8%8B%B1%E6%96%87%E4%BA%AE%E7%82%B9%E5%8F%AF%E5%81%9A%E7%AE%80%E5%8E%86%E5%B0%8F%E6%A0%87%E9%A2%98%E6%88%96%E8%A6%81%E7%82%B9)
+    - [句式模板库（中/英，可直接套用）](#%E5%8F%A5%E5%BC%8F%E6%A8%A1%E6%9D%BF%E5%BA%93%E4%B8%AD%E8%8B%B1%E5%8F%AF%E7%9B%B4%E6%8E%A5%E5%A5%97%E7%94%A8)
+    - [常见雷区 → 改写建议](#%E5%B8%B8%E8%A7%81%E9%9B%B7%E5%8C%BA-%E2%86%92-%E6%94%B9%E5%86%99%E5%BB%BA%E8%AE%AE)
+    - [核对清单](#%E6%A0%B8%E5%AF%B9%E6%B8%85%E5%8D%95)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -982,3 +989,91 @@ For rollouts, we **toggle by route** and rollback via **template switch**, with 
 ---
 
 ## Step 5 - Week 8 Day 1（简历日）改写清单
+
+### 后端 & 可靠性（Observability + Release）
+
+**优先替换/强化的表达（7 条）**
+
+- “负责日志” → “落地**结构化 JSON 日志**，MDC 注入 `trace_id/span_id`；**Grafana p95 → exemplars → Trace → 日志**一跳联动”
+- “搭建监控” → “以 **RED/USE** 建面板；**事件口径 SLI**（成功率/尾延迟）→ **SLO** + **错误预算**治理发布”
+- “处理告警” → “**多窗口燃尽率**告警：1h 页警、6h 工单；症状（错误/延迟）叫醒人，原因（CPU/队列）降级”
+- “保障上线稳定” → “**金丝雀 1%→5%→25%** 放量，**症状阈值闸门**（错误率↑/p95↑/Burn rate）→ **自动回滚** / 关特性”
+- “数据库改造” → “**EMC**（三段式：Expand→Migrate→Contract），**回滚仅回应用**；影子表/双写/回填”
+- “排查慢请求” → “OTel Trace 结合日志 **traceId** 定位**SQL/外部依赖**瓶颈；**采样策略**：基础 5–10%，异常升采”
+- “优化错误处理” → “统一**错误码/映射 4xx/5xx**，入口去重重试；**Runbook** ‘症状→动作→回滚判定’”
+
+**ATS 关键词**：OpenTelemetry, Prometheus, Grafana, exemplars, RED/USE, SLI/SLO/SLA, error budget, canary, feature flag, blue-green, rollout undo, runbook.
+
+### 云原生（Kubernetes / 安全）
+
+**优先替换/强化的表达（7 条）**
+
+- “容器部署” → “**Pod 为最小调度单位**（主+Sidecar）；**stdout JSON** 日志采集”
+- “健康检查” → “**startup/readiness/liveness** 分工：**readiness=唯一接流量闸门**；`preStop` 排空 + `terminationGrace`”
+- “自动扩缩容” → “HPA v2 **快涨慢降**（scaleUp 0s；scaleDown 稳定窗 ≥300s）；指标按负载选（CPU/并发/队列）”
+- “发布升级” → “RollingUpdate `maxUnavailable=0` `maxSurge=1` + **PDB**；**镜像不可变 Digest**”
+- “配置管理” → “**配置即代码**：ConfigMap/Secret **checksum 注解**触发滚动；`revisionHistoryLimit` 可回滚”
+- “节点维护” → “规范 **drain**（评估 emptyDir），按 PDB 节奏驱逐；排空时长可观测”
+- “最小权限” → “RBAC 到 **ServiceAccount**；EKS **IRSA**（OIDC + `AssumeRoleWithWebIdentity`）**无静态密钥**”
+
+**ATS 关键词**：HPA v2 behavior, PDB, RollingUpdate, startupProbe/readinessProbe/livenessProbe, ConfigMap/Secret, immutable image, RBAC, IRSA, Cluster Autoscaler, drain.
+
+### 前端 & 体验（渲染、性能、安全、观测）
+
+**优先替换/强化的表达（7 条）**
+
+- “做了首屏优化” → “按 **TTFB/LCP/TTI/INP** 选型：内容页 **SSR/Streaming**，复杂交互 **CSR**，混合页 **选择性水合（岛屿）**”
+- “减少 JS 体积” → “仅对**交互岛**水合；非首屏组件 **可见/空闲**再水合；路由懒加载 + 资源预取”
+- “前端监控” → “**Sentry BrowserTracing** 透传 `sentry-trace/baggage`；后端延续 Trace；**release/environment/traceId** 三件套”
+- “缓存策略” → “**指纹化静态**：`max-age=31536000, immutable`；**HTML：SWR**；API 公私分层 + ETag”
+- “安全加固” → “**CSP nonce + strict-dynamic**；不把机密注入前端；`connect-src` 放行上报域；SourceMap 私有上传”
+- “表单与数据流” → “react-hook-form + **schema 校验**（Zod）；TanStack Query **invalidate** 与**乐观更新回滚**”
+- “环境变量管理” → “**公开前缀白名单**（`VITE_`/`NEXT_PUBLIC_`…）+ 运行期 `/env.json` 注水，不重建即可切配置”
+
+**ATS 关键词**：SSR/Streaming, CSR, selective hydration, Astro/Next, LCP/INP/CLS, SWR, CSP nonce/strict-dynamic, Sentry, Source Map, TanStack Query, optimistic update.
+
+### 英文亮点（可做简历小标题或要点）
+
+- “**Server for first paint, islands for interaction.**”
+- “**Readiness is the only traffic gate; liveness is for self-heal.**”
+- “**Scale fast, decay slow** with HPA v2 stabilization windows.”
+- “**Permissions define the blast radius**—RBAC + IRSA, no static keys.”
+- “**Symptoms, not resources, page humans**—burn-rate alerts, multi-window.”
+- “**Deploy ≠ Release**—feature flags and canary guardrails.”
+- “**EMC for schema**—expand→migrate→contract; roll back app only.”
+
+### 句式模板库（中/英，可直接套用）
+
+- **中**：“主导/落地【措施A】，以【指标/机制】为目标，采用【技术/策略】，实现【相对改善/稳态达标】。”
+- **英**：“Led **[initiative]** and implemented **[tech/strategy]** to improve **[metric]**, achieving **[relative gain / SLO adherence]**.”
+
+- **中**：“将【X】与【Y】打通：**面板 → Trace → 日志**，定位【瓶颈类型】。”
+- **英**：“Unified **dashboard → trace → logs** to pinpoint **[bottleneck]**.”
+
+- **中**：“以【SLO/错误预算】约束发布：**阈值触发→自动回滚/降级**。”
+- **英**：“Governed releases with **SLO/error budgets**: **threshold → auto-rollback / degrade**.”
+
+- **中**：“通过【HPA 指标 + 行为】实现**快涨慢降**，并与【队列/并发】联动。”
+- **英**：“Configured HPA **fast-up/slow-down** with **[metric]**, integrated with **[queue/concurrency]**.”
+
+- **中**：“采用【SSR/CSR/选择性水合】组合，保障【TTFB/LCP/TTI】目标与安全（**CSP nonce**）。”
+- **英**：“Mixed **SSR/CSR/selective hydration** to hit **[TTFB/LCP/TTI]** with **CSP nonce**.”
+
+> **占位建议**：用相对表述（如 “p95 ↓”, “错误率 ↓”, “告警噪声 ↓”），不写具体业务数字。
+
+### 常见雷区 → 改写建议
+
+- “负责/参与” → **“主导/设计/落地/建立/治理/复盘”**
+- 内部代号/机密参数 → **通用名词**（“交易 API / 营销页 / 结算任务”）
+- 资源指标当成果指标 → 用**症状/体验指标**（错误率、p95、SLO）
+- “解决了很多问题” → **动作 + 机制**（Runbook、自动回滚、阈值闸门）
+- “上线一个平台” → **带出方法论**（配置即代码、不可变镜像、最小权限）
+
+### 核对清单
+
+- 每条要点都有**动作动词**（Led/Designed/Implemented/Governed/Instrumented/Migrated）
+- 只写**相对改善/达标**（不含敏感绝对数）
+- 出现 **SLO/错误预算/金丝雀/EMC/HPA/CSP/IRSA** 等关键词（匹配 ATS）
+- **Deploy ≠ Release / Readiness gate / Immutable image / checksum/config** 等术语出现≥1 次
+- 前后端都提到 **traceId 串联 + Sentry**
+- 无任何机密（密钥、内网域名、客户名）
