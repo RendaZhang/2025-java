@@ -22,7 +22,16 @@
     - [安全与合规](#%E5%AE%89%E5%85%A8%E4%B8%8E%E5%90%88%E8%A7%84)
     - [3 个常见告警场景与处置策略](#3-%E4%B8%AA%E5%B8%B8%E8%A7%81%E5%91%8A%E8%AD%A6%E5%9C%BA%E6%99%AF%E4%B8%8E%E5%A4%84%E7%BD%AE%E7%AD%96%E7%95%A5)
   - [安全（Security）](#%E5%AE%89%E5%85%A8security)
-  - [前端集成（Frontend Integration）](#%E5%89%8D%E7%AB%AF%E9%9B%86%E6%88%90frontend-integration)
+  - [前端集成](#%E5%89%8D%E7%AB%AF%E9%9B%86%E6%88%90)
+    - [Web Rendering & Caching Strategy（SSR / CSR / Selective Hydration + 安全与缓存）](#web-rendering--caching-strategyssr--csr--selective-hydration--%E5%AE%89%E5%85%A8%E4%B8%8E%E7%BC%93%E5%AD%98)
+    - [渲染模式取舍（以指标驱动）](#%E6%B8%B2%E6%9F%93%E6%A8%A1%E5%BC%8F%E5%8F%96%E8%88%8D%E4%BB%A5%E6%8C%87%E6%A0%87%E9%A9%B1%E5%8A%A8)
+    - [数据获取与“注水”避免二次请求](#%E6%95%B0%E6%8D%AE%E8%8E%B7%E5%8F%96%E4%B8%8E%E6%B3%A8%E6%B0%B4%E9%81%BF%E5%85%8D%E4%BA%8C%E6%AC%A1%E8%AF%B7%E6%B1%82)
+    - [缓存与版本策略（分层）](#%E7%BC%93%E5%AD%98%E4%B8%8E%E7%89%88%E6%9C%AC%E7%AD%96%E7%95%A5%E5%88%86%E5%B1%82)
+    - [CSP（最小可用基线）](#csp%E6%9C%80%E5%B0%8F%E5%8F%AF%E7%94%A8%E5%9F%BA%E7%BA%BF)
+    - [选择性水合（岛屿）落地要点](#%E9%80%89%E6%8B%A9%E6%80%A7%E6%B0%B4%E5%90%88%E5%B2%9B%E5%B1%BF%E8%90%BD%E5%9C%B0%E8%A6%81%E7%82%B9)
+    - [可观测与错误上报（前后端一跳串联）](#%E5%8F%AF%E8%A7%82%E6%B5%8B%E4%B8%8E%E9%94%99%E8%AF%AF%E4%B8%8A%E6%8A%A5%E5%89%8D%E5%90%8E%E7%AB%AF%E4%B8%80%E8%B7%B3%E4%B8%B2%E8%81%94)
+    - [发布与回滚的 HTML/缓存配合](#%E5%8F%91%E5%B8%83%E4%B8%8E%E5%9B%9E%E6%BB%9A%E7%9A%84-html%E7%BC%93%E5%AD%98%E9%85%8D%E5%90%88)
+    - [Checklist（上线前 1 分钟复核）](#checklist%E4%B8%8A%E7%BA%BF%E5%89%8D-1-%E5%88%86%E9%92%9F%E5%A4%8D%E6%A0%B8)
   - [运行手册（Runbooks）](#%E8%BF%90%E8%A1%8C%E6%89%8B%E5%86%8Crunbooks)
   - [API 风格与错误码（Appendix）](#api-%E9%A3%8E%E6%A0%BC%E4%B8%8E%E9%94%99%E8%AF%AF%E7%A0%81appendix)
   - [数据与模型（Appendix）](#%E6%95%B0%E6%8D%AE%E4%B8%8E%E6%A8%A1%E5%9E%8Bappendix)
@@ -293,12 +302,110 @@ Feature Flags：部署≠发布；按人群/比例/租户灰度；熔断/降级�
 
 ---
 
-## 前端集成（Frontend Integration）
+## 前端集成
 
 - **框架与渲染**：Astro + React + TypeScript；SSR/CSR/选择性水合（按页面类型选用）。
 - **契约**：BFF 或 API 契约优先；类型共享/SDK 生成（可选）。
 - **性能与交付**：Asset 分割、懒加载、LQIP；Nginx/CDN 缓存策略；CSP。
 - **可观测**：Sentry/前端埋点与后端 Trace 关联；统一错误码与排障链路。
+
+### Web Rendering & Caching Strategy（SSR / CSR / Selective Hydration + 安全与缓存）
+
+
+```
+Client ─▶ CDN/Edge ──┬──▶ SSR Renderer (Streaming + Suspense)
+                      │
+                      ├──▶ Static Assets (/static/* with fingerprint)
+                      │
+                      └──▶ API Gateway/Services
+                                  │
+                                  ├─ Traces (OTel) ◀── sentry-trace / baggage
+                                  ├─ Metrics (Prom/Micrometer: RED/USE)
+                                  └─ Logs (JSON + MDC: trace_id / user_hash)
+```
+
+### 渲染模式取舍（以指标驱动）
+
+| 页面类型          | SEO 需求 | 交互复杂度 | 首屏指标目标       | 推荐模式                 | 加法策略                    |
+| ------------- | ------ | ----- | ------------ | -------------------- | ----------------------- |
+| 内容/营销页、文档     | 高      | 低-中   | TTFB/LCP 优先  | **SSR**（可 Streaming） | 骨架屏、Edge 缓存 + SWR       |
+| 登录后仪表盘、大量交互   | 低      | 高     | TTI/INP 优先   | **CSR**              | 路由懒加载、Query 缓存、虚拟列表     |
+| 混合复杂页（图表+富文本） | 中      | 高     | LCP & TTI 平衡 | **SSR + 选择性水合（岛屿）**  | 首屏只水合交互岛屿，非首屏组件可见/空闲再水合 |
+
+> 准则：**首屏靠服务器，交互靠岛屿，JS 只为交互而来**。用 Streaming SSR 提升 TTFB/LCP；用选择性水合拉早 TTI/INP。
+
+### 数据获取与“注水”避免二次请求
+
+* SSR 拉到的页面数据以 **`window.__BOOTSTRAP__`** 或 `/env.json` 注入客户端；
+* 客户端请求层（TanStack Query 等）**用注水数据初始化缓存**，避免首屏重复拉取；
+* 跨端一致性：时间/货币/时区统一，避免水合不一致（Hydration Mismatch）。
+
+### 缓存与版本策略（分层）
+
+**静态资源（指纹文件）**
+
+`Cache-Control: public, max-age=31536000, immutable`（CDN/浏览器长缓存；文件名含 hash）。
+
+**HTML（SSR 输出）**
+
+CDN：`s-maxage=60, stale-while-revalidate=30`；浏览器：`no-store` 或 `max-age=0`。
+灰度：按**路由**逐步上新模板，失败回退；静态资源不变。
+
+**API**
+
+* 公共数据：`ETag/Last-Modified + s-maxage`；
+* 登录态/个性化：`Vary: Authorization, Cookie`，短 TTL 或 `no-store`，严防越权缓存。
+
+**Source Map**
+
+`Cache-Control: private, no-store`；仅上传到错误平台（如 Sentry），不对外公开。
+
+### CSP（最小可用基线）
+
+* 头部建议：
+```
+default-src 'self';
+script-src 'self' 'nonce-{{nonce}}' 'strict-dynamic';
+style-src 'self' 'unsafe-inline';
+img-src 'self' data: blob:;
+font-src 'self';
+connect-src 'self' https://<api> https://<sentry>;
+frame-ancestors 'none';
+base-uri 'self';
+object-src 'none';
+```
+* 先以 `Content-Security-Policy-Report-Only` 观测，再转正；
+* **页面每次响应注入相同的 nonce** 到 CSP 头与 `<script>` 标签。
+
+### 选择性水合（岛屿）落地要点
+
+* **只水合需要交互的组件**（表单、图表、编辑器）；纯展示 SSR 直出；
+* 非首屏组件：**可见时**或**空闲时**再水合（`client:visible` / `client:idle`）；
+* 统一随机数/时区/国际化格式，禁用仅客户端可见的副作用污染首屏 HTML。
+
+### 可观测与错误上报（前后端一跳串联）
+
+* 前端 Sentry：携带 `release / environment / traceId`，开启 BrowserTracing（自动注入 `sentry-trace`/`baggage`）；
+* 后端 OTel：接受 trace 头并延续，日志（Logback/MDC）固定字段：`trace_id, span_id, route, err_code`；
+* 指标面板：RED（Rate/Errors/Duration）、USE（Util/Saturation/Errors）分层；开启 exemplars 实现 **面板 → Trace → 日志** 一跳到位；
+* 隐私：`beforeSend`/`beforeBreadcrumb` 在前端脱敏；后端禁止落真实密钥/令牌；用户标识使用 hash（不可逆）。
+
+### 发布与回滚的 HTML/缓存配合
+
+* **文件名指纹 + 不变资源**，回滚=切回旧 HTML 模板；
+* CDN 对 HTML 使用 **SWR**（旧副本可用、后台回源刷新）保障稳定；
+* 金丝雀阶段只放少量路由或租户，触发症状指标（错误率/尾延迟）即回退；
+* 对 SEO 页设置 **预渲染/预取**，但严格校验 Vary 和 Cookie 以防私有内容被缓存成公有。
+
+### Checklist（上线前 1 分钟复核）
+
+* [ ] 关键页面渲染模式已标注（SSR/CSR/岛屿），并通过指标目标验证（TTFB/LCP/TTI/INP/CLS）；
+* [ ] 静态资源 **指纹化** + `immutable`；HTML **SWR**；API 缓存按**公有/私有**分层；
+* [ ] CSP 头启用，nonce 注入与脚本标签一致；Sentry 上报域在 `connect-src` 白名单；
+* [ ] SSR 注水与客户端缓存初始化一致，不重复请求，不暴露机密；
+* [ ] 前后端 **traceId** 串联，日志含 MDC 固定字段，面板可跳 trace；
+* [ ] 灰度与回滚路径清晰：模板/路由级别回退，资源不变；
+* [ ] Source Map 私有上传，release 标识与构建产物一致。
 
 ---
 
