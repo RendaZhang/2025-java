@@ -10,6 +10,7 @@
   - [Java Concurrency](#java-concurrency)
   - [Observability and Release](#observability-and-release)
   - [Kubernetes / Cloud-Native](#kubernetes--cloud-native)
+  - [Full-Stack](#full-stack)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -182,6 +183,8 @@ Fill-in Template（30–60 秒直读）：
 
 > 先用上面的 **Sample** 朗读 1 次，再用 **Template** 换成最近一次真实问题/练习中的服务名和指标，各练 1 次，总计不超过 10 分钟。
 
+---
+
 ## Kubernetes / Cloud-Native
 
 Why HPA + probes + least-privilege keep reliability (≈60s)
@@ -207,3 +210,37 @@ Together they keep `tail latency/SLO` stable even during `rollouts/peaks`.”
 - “**Readiness is the only traffic gate.** Liveness is for self-heal.”
 - “HPA is **fast up, slow down** with metrics that match the workload.”
 - “**Least-privilege fences the blast radius**, and CloudTrail lets us prove it.”
+
+---
+
+## Full-Stack
+
+60-second Script (ready to read)
+
+“**We pick rendering modes by metrics, not preference.**
+
+For content or SEO pages, we use **SSR—often streaming with Suspense**—to cut **TTFB/LCP**. For heavy dashboards, we stay **CSR** to keep client-side interactivity simple. For mixed pages, we adopt **selective hydration**: render most HTML on the server, then hydrate only the **interactive islands** like forms and charts, so **TTI/INP** stays low.
+
+Performance and safety ship together: **fingerprinted static assets** get long-cache; **HTML uses SWR** so the CDN can serve stale while refreshing. **CSP with a nonce** locks scripts down—no secrets baked into the page.
+
+On reliability, the browser **propagates trace IDs** to the backend; **Sentry** captures errors and performance spans, so we can jump from a slow page to the exact backend trace. During rollouts we flip modes **per route** and rollback by switching templates, with assets immutable. In short: **server for first paint, islands for interaction, and guardrails for safety and observability**.”
+
+Fill-in Template (30–60s)
+
+“At `team/app`, we choose **SSR / CSR / selective hydration** by `metrics: TTFB/LCP/TTI/INP`.
+
+- **SSR (streaming)** for `content/SEO pages` to improve `TTFB/LCP`.
+- **CSR** for `dashboards/heavy interactions`.
+- **Selective hydration** so only `forms/charts/widgets` hydrate, keeping `TTI/INP` low.
+
+We cache **fingerprinted assets** long-term and serve **HTML with SWR**. **CSP + nonce** secures scripts; **no secrets in the bundle**.
+
+We **propagate trace IDs** and use **Sentry** for errors and spans, letting us jump from `p95 panel` to the backend trace.
+
+For rollouts, we **toggle by route** and rollback via **template switch**, with immutable assets.”
+
+3 Sound Bites
+
+- “**Server for first paint, islands for interaction.**”
+- “**Pick SSR/CSR by TTFB, LCP, and TTI—not taste.**”
+- “**CSP + SWR + trace IDs = fast, safe, debuggable.**”
