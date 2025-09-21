@@ -53,6 +53,7 @@
     - [路由与表单（React Router v6、嵌套路由/懒加载、表单校验与数据流）](#%E8%B7%AF%E7%94%B1%E4%B8%8E%E8%A1%A8%E5%8D%95react-router-v6%E5%B5%8C%E5%A5%97%E8%B7%AF%E7%94%B1%E6%87%92%E5%8A%A0%E8%BD%BD%E8%A1%A8%E5%8D%95%E6%A0%A1%E9%AA%8C%E4%B8%8E%E6%95%B0%E6%8D%AE%E6%B5%81)
     - [SSR / CSR / 选择性水合（取舍与指标：TTFB/TTI/CLS；岛屿架构要点）](#ssr--csr--%E9%80%89%E6%8B%A9%E6%80%A7%E6%B0%B4%E5%90%88%E5%8F%96%E8%88%8D%E4%B8%8E%E6%8C%87%E6%A0%87ttfbtticls%E5%B2%9B%E5%B1%BF%E6%9E%B6%E6%9E%84%E8%A6%81%E7%82%B9)
     - [CSP / 缓存策略（CSP `nonce/hash`、Cache-Control/ETag、CDN/Edge/浏览器多级缓存）](#csp--%E7%BC%93%E5%AD%98%E7%AD%96%E7%95%A5csp-noncehashcache-controletagcdnedge%E6%B5%8F%E8%A7%88%E5%99%A8%E5%A4%9A%E7%BA%A7%E7%BC%93%E5%AD%98)
+    - [Sentry 埋点与错误上报（前后端统一 TraceID、Source Map、错误分级与去噪）](#sentry-%E5%9F%8B%E7%82%B9%E4%B8%8E%E9%94%99%E8%AF%AF%E4%B8%8A%E6%8A%A5%E5%89%8D%E5%90%8E%E7%AB%AF%E7%BB%9F%E4%B8%80-traceidsource-map%E9%94%99%E8%AF%AF%E5%88%86%E7%BA%A7%E4%B8%8E%E5%8E%BB%E5%99%AA)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -3458,3 +3459,129 @@ Content-Security-Policy:
 - Behavior for `/*.html`: `Cache-Control: s-maxage=60, stale-while-revalidate=30`
 - Behavior for `/static/*`: `Cache-Control: public, max-age=31536000, immutable`
 - Add `Accept-Encoding`, `Authorization`, `Cookie` to **Vary/Cache key** 视业务而定（私人页不要共享缓存）。
+
+### Sentry 埋点与错误上报（前后端统一 TraceID、Source Map、错误分级与去噪）
+
+- **三类信号**：错误 + 性能事务 + breadcrumbs；统一携带 `release / environment / traceId`。
+- **自动链路**：BrowserTracing 为匹配域注入 `sentry-trace`/`baggage`，后端 SDK 接续；日志里加 **traceId 到 MDC**。
+- **控噪三件套**：`sampleRate / tracesSampler` 分层采样；`ignoreErrors / denyUrls` 去噪；`fingerprint` 合并。
+- **PII 保护**：`beforeSend/beforeBreadcrumb` 脱敏；只记录 **URL 模板 + 状态码/时长**，不带请求体。
+- **Source Map & Release**：以 **commitSHA** 做 release；构建时上传 Source Map；环境分离告警。
+- **分级告警**：新问题/回归/频率三触发；On-call 看 **Issues/Performance/Releases** 联动。
+- **回放可选**：必要时开启 `Replays`（低采样），仅在问题定位阶段临时提升。
+
+> “我们让 **release / environment / traceId** 成为三件套：前端用 BrowserTracing 自动透传到后端，日志写入 MDC；上报前统一脱敏，采样与去噪分层做，既能一跳复现，也不被噪音淹没。
+
+场景 A - 我们到底想从前端采集哪些“信号”？
+
+**面试官：** Sentry 在前端主要采集什么？
+
+**我：** 三类：
+
+1. **错误事件**（未捕获异常、Promise 拒绝、资源加载失败）；
+2. **性能事务**（页面加载、路由切换、接口调用的 span，定位尾延迟）；
+3. **用户线索**（breadcrumbs：点击/路由/控制台日志），用于复现路径。都带上 **release / environment / traceId**，方便和后端一跳串联。
+
+场景 B - 如何把前后端 Trace 串起来？
+
+**面试官：** Sentry 怎么实现“前端点到后端 span”？
+
+**我：** 开启 **BrowserTracing** 后，前端对匹配域名自动注入 `sentry-trace` 与 `baggage` 头；后端 SDK 会据此继续当前 trace。若你用 OTel，也能与 `traceparent` 并存，通过**统一的请求 ID / traceId** 写入日志（MDC），做到 **Grafana → Trace → 日志** 全链打通。
+
+场景 C - 如何控噪？（采样与忽略）
+
+**面试官：** Sentry 事件很多会噪音，怎么控？
+
+**我：** 分层：
+
+- **错误采样**：`sampleRate` 控整体上报；对**高价值路由**在 `beforeSend` 提升（或在 `tracesSampler` 里提升事务采样）；
+- **忽略名单**：`ignoreErrors`（如 *ResizeObserver loop limit*）、`denyUrls`（如浏览器插件脚本）；
+- **归并 & 指纹**：对“同栈同路由”合并；设置 `fingerprint` 统一某类业务错误。
+
+场景 D - PII 与脱敏
+
+**面试官：** 隐私怎么保证？
+
+**我：** 默认关闭 PII，上报前在 `beforeSend / beforeBreadcrumb` **删或掩码** email/手机号/Token；Network 面包屑只保留 **URL 模板**与**状态码/时长**，**不带请求体**。必要时收敛域名到白名单。
+
+场景 E - Source Map 与 Release
+
+**面试官：** 线上压缩代码如何还原栈？
+
+**我：** 打包生成 **Source Map** 并随 **release 版本**上传到 Sentry（以 commit SHA 作为 release），然后在客户端 `Sentry.init` 中设置同名 `release`。上线后按 **environment**（prod/staging）拆分告警与面板。
+
+场景 F - 告警与落地闭环
+
+**面试官：** 告警怎么配？
+
+**我：** **错误级别分级**（Fatal/High/Medium），按 **新问题/回归/频率** 触发；把告警推到 **On-call 通道**；看板用 **Issues + Performance + Releases** 三视图，值班按“**症状→定位→复现→修复→验证**”走闭环。
+
+最小可用片段
+
+**前端（React/TS）Sentry 初始化（含脱敏 + 性能 + 采样 + 追踪）**
+
+```ts
+import * as Sentry from '@sentry/react';
+import { BrowserTracing } from '@sentry/browser';
+
+Sentry.init({
+  dsn: import.meta.env.VITE_SENTRY_DSN,
+  release: import.meta.env.VITE_COMMIT_SHA,     // e.g. "web@a1b2c3d"
+  environment: import.meta.env.MODE,            // "prod"/"staging"
+  integrations: [
+    new BrowserTracing({
+      tracePropagationTargets: [/^https:\/\/api\.example\.com/, /^\//], // 只对这些域注入追踪头
+      routingInstrumentation: Sentry.reactRouterV6Instrumentation(history),
+    }),
+  ],
+  tracesSampleRate: 0.1,                        // 性能事务采样（基础）
+  replaysSessionSampleRate: 0.0,                // 需要时再临时打开
+  replaysOnErrorSampleRate: 0.1,
+  beforeSend(event) {
+    // 脱敏示例：掩码 email/phone
+    const redact = (s?: string) => s?.replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/ig, '[email]')
+                                     .replace(/\b1[3-9]\d{9}\b/g, '[phone]');
+    if (event.user?.email) event.user.email = '[email]';
+    event.request && (event.request.url = event.request.url?.replace(/\?.*$/, '')); // 去掉 query
+    if (event.message) event.message = redact(event.message);
+    return event;
+  },
+  ignoreErrors: [/ResizeObserver loop limit exceeded/i],
+  denyUrls: [/extensions\//i, /chrome-extension:\/\//i],
+});
+```
+
+**后端（Spring Boot）串联 Trace → 日志（MDC）→ Sentry**
+
+```java
+// 依赖：io.sentry:sentry-spring-boot-starter
+@Component
+public class TraceMdcFilter implements Filter {
+  @Override public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain)
+      throws IOException, ServletException {
+    try {
+      String traceId = io.sentry.Sentry.getSpan() != null
+          ? io.sentry.Sentry.getSpan().getTraceId().toString()
+          : java.util.UUID.randomUUID().toString();
+      org.slf4j.MDC.put("trace_id", traceId);
+      chain.doFilter(req, res);
+    } finally {
+      org.slf4j.MDC.clear();
+    }
+  }
+}
+// logback pattern: traceId=%X{trace_id}
+```
+
+**构建时上传 Source Map（示意）**
+
+```bash
+export SENTRY_AUTH_TOKEN=xxxx
+export SENTRY_ORG=my-org
+export SENTRY_PROJECT=web
+export SENTRY_RELEASE="web@$(git rev-parse --short HEAD)"
+npm run build
+npx sentry-cli releases new "$SENTRY_RELEASE"
+npx sentry-cli releases files "$SENTRY_RELEASE" upload-sourcemaps dist --url-prefix "~/static" --rewrite
+npx sentry-cli releases finalize "$SENTRY_RELEASE"
+```
