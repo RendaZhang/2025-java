@@ -54,6 +54,7 @@
     - [SSR / CSR / 选择性水合（取舍与指标：TTFB/TTI/CLS；岛屿架构要点）](#ssr--csr--%E9%80%89%E6%8B%A9%E6%80%A7%E6%B0%B4%E5%90%88%E5%8F%96%E8%88%8D%E4%B8%8E%E6%8C%87%E6%A0%87ttfbtticls%E5%B2%9B%E5%B1%BF%E6%9E%B6%E6%9E%84%E8%A6%81%E7%82%B9)
     - [CSP / 缓存策略（CSP `nonce/hash`、Cache-Control/ETag、CDN/Edge/浏览器多级缓存）](#csp--%E7%BC%93%E5%AD%98%E7%AD%96%E7%95%A5csp-noncehashcache-controletagcdnedge%E6%B5%8F%E8%A7%88%E5%99%A8%E5%A4%9A%E7%BA%A7%E7%BC%93%E5%AD%98)
     - [Sentry 埋点与错误上报（前后端统一 TraceID、Source Map、错误分级与去噪）](#sentry-%E5%9F%8B%E7%82%B9%E4%B8%8E%E9%94%99%E8%AF%AF%E4%B8%8A%E6%8A%A5%E5%89%8D%E5%90%8E%E7%AB%AF%E7%BB%9F%E4%B8%80-traceidsource-map%E9%94%99%E8%AF%AF%E5%88%86%E7%BA%A7%E4%B8%8E%E5%8E%BB%E5%99%AA)
+    - [环境变量管理（构建期 vs 运行期、公开变量白名单、CI/CD 注入、敏感信息不入包）](#%E7%8E%AF%E5%A2%83%E5%8F%98%E9%87%8F%E7%AE%A1%E7%90%86%E6%9E%84%E5%BB%BA%E6%9C%9F-vs-%E8%BF%90%E8%A1%8C%E6%9C%9F%E5%85%AC%E5%BC%80%E5%8F%98%E9%87%8F%E7%99%BD%E5%90%8D%E5%8D%95cicd-%E6%B3%A8%E5%85%A5%E6%95%8F%E6%84%9F%E4%BF%A1%E6%81%AF%E4%B8%8D%E5%85%A5%E5%8C%85)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -3584,4 +3585,141 @@ npm run build
 npx sentry-cli releases new "$SENTRY_RELEASE"
 npx sentry-cli releases files "$SENTRY_RELEASE" upload-sourcemaps dist --url-prefix "~/static" --rewrite
 npx sentry-cli releases finalize "$SENTRY_RELEASE"
+```
+
+### 环境变量管理（构建期 vs 运行期、公开变量白名单、CI/CD 注入、敏感信息不入包）
+
+- **构建期 vs 运行期**：后端读运行期 env；前端 SSR/边缘**运行期注入**公开变量，避免重建。
+- **白名单前缀**：`VITE_* / NEXT_PUBLIC_* / REACT_APP_* / PUBLIC_*`；**机密不打包**。
+- **注水/端点**：`/env.json` 或 `window.__ENV__` 只含公开信息（域名、版本、上报 DSN 等）。
+- **.env 分层**：`.env` → `.env.<env>` → `.env.local`（不入库）→ CI/CD 注入为最终来源。
+- **密钥治理**：机密通过**密管→K8s Secret→运行期 env**，前端只拿临时令牌/公开变量。
+- **缓存配合**：HTML 短缓存 + SWR；静态指纹资源长缓存。
+- **启动校验**：用 schema 校验环境变量（缺失/格式错立刻 fail fast）。
+
+> “**构建期决定可见，运行期决定行为**：机密只在服务器/边缘，以 env 注入；前端只读**公开前缀**，HTML 用 **SWR**，配置改了**无需重建**。”
+
+场景 A - 构建期 vs 运行期
+
+**面试官：** 前端/后端的环境变量，最大的分界线是什么？
+
+**我：** **构建期决定“打进包里”的常量，运行期决定“服务的行为”**。后端天然读**运行期**环境（`process.env`/`System.getenv`）；纯前端 SPA 若把变量烘焙进 bundle，就**必须重建才能改**。所以 SSR/边缘网关推荐**运行期注入**（如 `/env.json` 或 HTML 注水），前端仅读取**公开白名单**。
+
+场景 B - 前端“公开变量”的白名单机制
+
+**面试官：** 怎么防止把机密打进前端包？
+
+**我：**
+
+用**白名单前缀**：
+
+- **Vite**：`VITE_*`，通过 `import.meta.env.VITE_XXX` 访问；
+- **Next.js**：`NEXT_PUBLIC_*`；**CRA**：`REACT_APP_*`；**Astro**：`PUBLIC_*`。
+
+**不带前缀**的一律仅在构建/服务器可见，**机密绝不进入前端 bundle**。
+
+场景 C - SSR/边缘的“运行期注入”
+
+**面试官：** 既要不打包机密，又要前端拿到 API Base 等地址怎么办？
+
+**我：** 让服务器在**运行期**提供一个只含**公开信息**的端点（例如 `/env.json`）或在 HTML 注水一个 `window.__ENV__`。这样**灰度/多环境切换**不用重建包，边缘/CDN 也能按路由或租户回不同配置。
+
+场景 D - .env 分层与 CI/CD
+
+**面试官：** `.env` 怎么管理不会乱？
+
+**我：**
+
+**12-Factor** 思路：
+
+`.env`（默认）→ `.env.development` / `.env.production` → `.env.local`（**不入库**）→ **CI/CD 注入为最终来源**。机密走**密钥管控**（Vault/ASM），通过管道注入到 **K8s Secret**，后端再以环境变量读取；前端只拿公开变量。
+
+场景 E - 常见坑与规避
+
+**面试官：** 说三个你见过的坑？
+
+**我：**
+
+1. **把私钥/令牌打进前端包**（爬虫轻松拿走）→ **白名单前缀 + 审计构建产物**；
+2. **静态 HTML 被 CDN 长缓存**，环境切了但页面里旧的注水还在 → HTML 走**短缓存/SWR**；
+3. **变量未校验**导致线上才报错 → 启动时用 **schema 校验**（Zod/Yup）强约束。
+
+场景 F - K8s/容器里的映射关系
+
+**面试官：** 你如何把“配置即代码”落到容器？
+
+**我：** **ConfigMap（非机密）/ Secret（机密） → env/envFrom/volume 挂载**。镜像保持**不可变**，环境差异通过 **Deployment 的 env** 注入；回滚只需 `rollout undo`，不用重打镜像。
+
+迷你落地片段
+
+**前端（Vite/TS）—— 公开变量的类型校验**
+
+```ts
+// env.ts
+import { z } from 'zod';
+
+const Env = z.object({
+  VITE_API_BASE: z.string().url(),
+  VITE_SENTRY_DSN: z.string().optional(),
+  VITE_RELEASE: z.string().min(7)
+});
+export const env = Env.parse(import.meta.env);
+```
+
+**SSR 运行期注入（Node/Express 版 /env.json）**
+
+```ts
+// server.ts
+import express from 'express';
+const app = express();
+app.get('/env.json', (_req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.json({
+    API_BASE: process.env.API_BASE,      // 仅公开信息
+    SENTRY_DSN: process.env.SENTRY_DSN_PUBLIC,
+    RELEASE: process.env.RELEASE
+  });
+});
+```
+
+前端启动时拉 `/env.json`，再初始化请求层/监控，不需要重建包即可切换环境。
+
+**K8s：ConfigMap/Secret 注入运行期 env**
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata: { name: web-config }
+data:
+  API_BASE: "https://api.example.com"
+  RELEASE: "web@a1b2c3d"
+
+---
+apiVersion: v1
+kind: Secret
+metadata: { name: web-secret }
+type: Opaque
+stringData:
+  SENTRY_DSN_PUBLIC: "https://***" # 公开可用的上报 DSN（不含管理密钥）
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: web }
+spec:
+  template:
+    spec:
+      containers:
+      - name: web
+        image: repo/web@sha256:....
+        envFrom:
+        - configMapRef: { name: web-config }
+        - secretRef:    { name: web-secret }
+```
+
+**Spring Boot 读取 env（后端仅运行期）**
+
+```java
+@Value("${API_BASE}") private String apiBase;
+@Value("${SENTRY_DSN_PUBLIC:}") private String sentryDsn;
 ```
