@@ -4,16 +4,16 @@
 
 - [第三阶段 后端 & 全栈 Sprint](#%E7%AC%AC%E4%B8%89%E9%98%B6%E6%AE%B5-%E5%90%8E%E7%AB%AF--%E5%85%A8%E6%A0%88-sprint)
   - [时间轴](#%E6%97%B6%E9%97%B4%E8%BD%B4)
-  - [Week 7 - 每日清单](#week-7---%E6%AF%8F%E6%97%A5%E6%B8%85%E5%8D%95)
+  - [Week 7](#week-7)
     - [Day 1 - 开场与 API 设计](#day-1---%E5%BC%80%E5%9C%BA%E4%B8%8E-api-%E8%AE%BE%E8%AE%A1)
     - [Day 2 - 数据库与缓存](#day-2---%E6%95%B0%E6%8D%AE%E5%BA%93%E4%B8%8E%E7%BC%93%E5%AD%98)
     - [Day 3 - 消息与一致性](#day-3---%E6%B6%88%E6%81%AF%E4%B8%8E%E4%B8%80%E8%87%B4%E6%80%A7)
     - [Day 4 - Java 并发](#day-4---java-%E5%B9%B6%E5%8F%91)
     - [Day 5 - 可观测与发布](#day-5---%E5%8F%AF%E8%A7%82%E6%B5%8B%E4%B8%8E%E5%8F%91%E5%B8%83)
     - [Day 6 - Kubernetes/云原生最小面](#day-6---kubernetes%E4%BA%91%E5%8E%9F%E7%94%9F%E6%9C%80%E5%B0%8F%E9%9D%A2)
-    - [Day 7 - 全栈与一周复盘](#day-7---%E5%85%A8%E6%A0%88%E4%B8%8E%E4%B8%80%E5%91%A8%E5%A4%8D%E7%9B%98)
-  - [Week 8 - 每日清单](#week-8---%E6%AF%8F%E6%97%A5%E6%B8%85%E5%8D%95)
-    - [Day 1 - 简历日（唯一任务）](#day-1---%E7%AE%80%E5%8E%86%E6%97%A5%E5%94%AF%E4%B8%80%E4%BB%BB%E5%8A%A1)
+    - [Day 7 - 全栈](#day-7---%E5%85%A8%E6%A0%88)
+  - [Week 8](#week-8)
+    - [Day 1 - 简历日](#day-1---%E7%AE%80%E5%8E%86%E6%97%A5)
     - [Day 2 - Mock #1 行为面 + 英语沟通](#day-2---mock-1-%E8%A1%8C%E4%B8%BA%E9%9D%A2--%E8%8B%B1%E8%AF%AD%E6%B2%9F%E9%80%9A)
     - [Day 3 - Mock #2 编码/算法沟通](#day-3---mock-2-%E7%BC%96%E7%A0%81%E7%AE%97%E6%B3%95%E6%B2%9F%E9%80%9A)
     - [Day 4 - Mock #3 后端问答（Java/DB/缓存/并发）](#day-4---mock-3-%E5%90%8E%E7%AB%AF%E9%97%AE%E7%AD%94javadb%E7%BC%93%E5%AD%98%E5%B9%B6%E5%8F%91)
@@ -45,7 +45,7 @@ Week 8 - 成稿与模拟面试：
 
 ---
 
-## Week 7 - 每日清单
+## Week 7
 
 > 每天三件事：**算法（60–90m） + 面试能力/知识（90m） + 英语（30–45m）**，学习即按需更新文档（`architecture.md / QBANK.md / star_stories.md / elevator_pitch_en.md`）。不做重型实操。
 
@@ -223,20 +223,38 @@ Week 8 - 成稿与模拟面试：
 - **最小权限 = 小爆炸半径**：RBAC 到 SA，IRSA 限 `sub`，策略三减（主体/资源/动词）。
 - 故障优先“**限流/降级/回滚**”，再扩容；观测链路 **RED→USE→Trace→日志**。
 
-### Day 7 - 全栈与一周复盘
+### Day 7 - 全栈
 
-- **算法**：周错题复盘 + 计时 1 题（30–45m）。
-- **面试能力/知识**：全栈关键点（React/TS、路由与表单、SSR/CSR/选择性水合、CSP/缓存、Sentry、env 管理）→ `QBANK.md`；`architecture.md` 补 1 小节。
-- **英语**：解释 “SSR vs CSR vs selective hydration” 的取舍（1 分钟）。
-- **当日收尾**：形成“简历日（Week 8 D1）需要改写的表达与关键词”清单（不写具体业务数据）。
+今天完成了什么
+
+- **Step 1｜算法**：
+  - LC354（排序 + 严格 LIS，宽相等高降序）、LC309（状态机：hold/sold/rest）、LC72（二维 DP → 一维滚动）。
+  - 模板与坑位：严格递增的 `lower_bound`；冷冻期转移顺序；滚动数组 `prev/temp` 的时序。
+- **Step 2｜面试能力（7 小步）**：
+  1. **React/TS**：Hooks 两规则；State 触发渲染 / Ref 不触发；错误边界用类组件+Sentry。
+  2. **路由&表单**：布局壳 + `<Outlet>`；路由层鉴权；大表单=非受控+schema；Query 做服务器状态。
+  3. **SSR/CSR/选择性水合**：**用指标选型**（TTFB/LCP/TTI/INP）；Streaming SSR + 岛屿只水合交互区。
+  4. **CSP/缓存**：指纹化静态一年 `immutable`；HTML 用 **SWR**；`nonce + strict-dynamic` 最小可用 CSP。
+  5. **Sentry**：`release/environment/traceId` 三件套；BrowserTracing 透传到后端；采样与去噪分层。
+  6. **环境变量**：**构建期 vs 运行期**；前端公开前缀白名单；`/env.json` 运行期注水；CI/CD 注入。
+  7. **architecture.md 新节**：Web Rendering & Caching Strategy（流程图 + 取舍表 + 安全/缓存清单 + 观测串联）。
+- **Step 3｜英语（60s）**：完成“**Server for first paint, islands for interaction**”脚本与模板。
+- **Step 4｜Week 8 简历清单**：按“四区”输出关键词与句式模板，避免敏感数据。
+
+关键收获
+
+- **选型靠指标**：内容页走 SSR/Streaming 抢 **TTFB/LCP**，混合页用**选择性水合**保 **TTI/INP**。
+- **安全与性能并举**：**指纹化 + SWR** 提速，**CSP nonce + strict-dynamic** 护航。
+- **观测闭环**：前端 Sentry → 后端 Trace（透传 `sentry-trace/baggage`）→ 日志 `trace_id`，面板一跳定位。
+- **配置即代码**：前端**运行期注水**不重建，后端 env/Secret 注入；发布回滚只切模板，资源不可变。
 
 ---
 
-## Week 8 - 每日清单
+## Week 8
 
 > 总原则：**Day 1 只做简历**；Day 2–Day 7 每天一场 **模拟面试（Mock）+ 当日复盘**。全程不做重型实操；以“可复述、能过线”为准。
 
-### Day 1 - 简历日（唯一任务）
+### Day 1 - 简历日
 
 - **前置准备**
   - 打开并备份两份最新简历：`20250622_张人大_Java后端开发.docx` 与 `20250622_RendaZhang_JavaBackendDeveloper.docx`（另存为当日副本）。
