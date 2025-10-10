@@ -32,6 +32,13 @@ mvn clean
 2. VS Code 会在内置终端中编译并运行该题目的示例代码；
 3. 如需清理，仍可在终端执行 `mvn clean`。
 
+## IntelliJ IDEA 运行
+
+1. 在 `leetcode-training` 模块上右键选择 **Run 'Main.main()'**；
+2. 程序会在运行时列出可用题号，并提示在控制台输入题号；
+3. 输入题号并回车，即可在 IntelliJ IDEA 的 **Run** 窗口中看到输出结果；
+4. 若需再次运行，只需重新执行 `Main.main()` 并输入新的题号。
+
 ## 新增题目（用例）
 
 1. 在 `src/main/java/com/renda/leetcode/problems` 包下创建文件，例如 `LC123_NewProblem.java`；

@@ -45,6 +45,7 @@ public final class ProblemRegistry {
         register(new LC354_RussianDollEnvelopes());
         register(new LC309_BestTimeToBuyAndSellStockWithCooldown());
         register(new LC72_EditDistance());
+        register(new LC981_TimeBasedKeyValueStore());
     }
 
     private ProblemRegistry() {
