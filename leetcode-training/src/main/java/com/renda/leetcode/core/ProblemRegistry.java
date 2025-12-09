@@ -46,6 +46,7 @@ public final class ProblemRegistry {
         register(new LC309_BestTimeToBuyAndSellStockWithCooldown());
         register(new LC72_EditDistance());
         register(new LC981_TimeBasedKeyValueStore());
+        register(new LC15_3Sum());
     }
 
     private ProblemRegistry() {
