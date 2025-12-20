@@ -47,6 +47,7 @@ public final class ProblemRegistry {
         register(new LC72_EditDistance());
         register(new LC981_TimeBasedKeyValueStore());
         register(new LC15_3Sum());
+        register(new LC16_3SumClosest());
     }
 
     private ProblemRegistry() {
