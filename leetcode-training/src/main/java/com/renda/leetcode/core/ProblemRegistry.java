@@ -50,6 +50,7 @@ public final class ProblemRegistry {
         register(new LC16_3SumClosest());
         register(new LC17_LetterCombinationsOfAPhoneNumber());
         register(new LC18_4Sum());
+        register(new LC19_RemoveNthNodeFromEndOfList());
     }
 
     private ProblemRegistry() {
