@@ -52,6 +52,7 @@ public final class ProblemRegistry {
         register(new LC18_4Sum());
         register(new LC19_RemoveNthNodeFromEndOfList());
         register(new LC21_MergeTwoSortedLists());
+        register(new LC22_GenerateParentheses());
     }
 
     private ProblemRegistry() {
