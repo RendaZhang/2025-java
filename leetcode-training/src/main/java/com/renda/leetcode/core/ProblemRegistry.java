@@ -54,6 +54,8 @@ public final class ProblemRegistry {
         register(new LC21_MergeTwoSortedLists());
         register(new LC22_GenerateParentheses());
         register(new LC24_SwapNodesInPairs());
+        register(new LC25_ReverseNodesInKGroup());
+        register(new LC26_RemoveDuplicatesFromSortedArray());
     }
 
     private ProblemRegistry() {
