@@ -57,6 +57,7 @@ public final class ProblemRegistry {
         register(new LC25_ReverseNodesInKGroup());
         register(new LC26_RemoveDuplicatesFromSortedArray());
         register(new LC27_RemoveElement());
+        register(new LC28_FindIndexOfFirstOccurrenceinString());
     }
 
     private ProblemRegistry() {
